@@ -18,14 +18,6 @@ dumps do. The plan:
 - A `chap-devops doctor` check that compares the limits with the memory that docker
   can give.
 
-### Templates for the compose files
-
-`compose.dhis2.yml`, `compose.ocs.yml` and `compose.s3.yml` are minijinja
-templates: their conditions are in the template files, and the Rust code only
-gives the values. A model overlay still gets its optional parts from Rust: the
-init container and the mounts. It changes to minijinja next. The golden files in `tests/fixtures/` make sure that the
-output does not change.
-
 ### A confirmation for an image outside the marketplace
 
 `chap-admin install --image` needs `--accept-risk` each time, because nobody

@@ -1,9 +1,0 @@
-  @SERVICE_ID@-init:
-@LABELS@    image: busybox:1.38
-    command: ["sh", "-c", "chown -R @UID_GID@ @DATA_DIR@"]
-    user: "0:0"
-    volumes:
-      - type: volume
-        source: @VOLUME@
-        target: @DATA_DIR@
-    restart: "no"
