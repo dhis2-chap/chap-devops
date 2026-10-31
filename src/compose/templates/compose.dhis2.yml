@@ -62,7 +62,7 @@ services:
       interval: 10s
       timeout: 5s
       # Generous, because on a seeded deployment the first start is the restore.
-      start_period: 600s
+      start_period: ${@START_VAR@:-@DB_START_PERIOD@}
       retries: 30
     expose:
       - "5432"

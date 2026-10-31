@@ -162,6 +162,9 @@ pub const DHIS2_DB_PASSWORD_ENV_VAR: &str = "DHIS2_DB_PASSWORD";
 pub const DHIS2_ENCRYPTION_PASSWORD_ENV_VAR: &str = "DHIS2_ENCRYPTION_PASSWORD";
 /// The `.env` variable that moves the seed dump the one-shot fetches.
 pub const DHIS2_SEED_ENV_VAR: &str = "DHIS2_DB_DUMP_URL";
+/// The `.env` variable that replaces the time `dhis2-db` gets to restore its
+/// seed before a failed health check counts.
+pub const DHIS2_DB_START_ENV_VAR: &str = "DHIS2_DB_START_PERIOD";
 /// The `.env` variable that replaces the JVM options, the heap sizes among them.
 pub const DHIS2_JAVA_ENV_VAR: &str = "DHIS2_JAVA_TOOL_OPTIONS";
 /// What the compose file passes when [`DHIS2_JAVA_ENV_VAR`] is unset, written

@@ -726,6 +726,20 @@ the two whenever the image's amd64 variant is pulled here.
 wrong about itself. See
 [Data directories and users](./models.md#data-directories-and-users).
 
+## `dependency failed to start: container ...-dhis2-db-1 is unhealthy` while the restore continues
+
+The restore of a large seed took longer than the `start_period` of
+`dhis2-db`. If `chap-devops logs dhis2-db` shows no error and the restore
+continues, the database is not broken. Give the restore more time:
+
+1. Set `DHIS2_DB_START_PERIOD=7200s` in `.env`, or a longer time.
+2. Run `chap-devops components disable dhis2 --purge`.
+3. Run `chap-devops components enable dhis2`.
+4. Run `chap-devops up`.
+
+A seed that is a file gets a time that grows with its size. A seed from a URL
+gets 600 s. See [The time for the restore](./dhis2.md#the-time-for-the-restore).
+
 ## `dependency failed to start: container ... is unhealthy`
 
 `chap-devops up` reads that line and then says why, out of the failing container's

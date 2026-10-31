@@ -518,9 +518,33 @@ The honest budget, measured:
 | Seeded | the above, plus the restore: about 10 seconds for the climate demo (7 MB), much longer for a national dump |
 
 The health check allows for that: `/api/ping` - the one route that answers
-unauthenticated - with a `start_period` of 240 s and 60 retries, and 600 s on
-`dhis2-db`, because on a seeded deployment the database's first start *is* the
-restore.
+unauthenticated - with a `start_period` of 240 s and 60 retries. On `dhis2-db`
+the `start_period` is the time for the restore, because on a seeded deployment
+the database's first start *is* the restore.
+
+### The time for the restore
+
+A failed health check of `dhis2-db` counts only after its `start_period`. The
+default is 600 s. When the seed is a file in the deployment directory,
+`chap-devops sync` reads its size and gives 2 s for each MB, if that is more:
+
+| Dump | `start_period` |
+| --- | --- |
+| a URL, or no seed | 600 s |
+| a file of 300 MB or less | 600 s |
+| a file of 2 GB | 4096 s |
+
+The rate is twice the slower of two measurements: the climate demo (7.5 MB) in
+7 seconds, and a national dump (3.9 GB) in 24 to 40 minutes. A URL is not read
+by `sync`, so a large dump from a URL keeps 600 s. For a URL, or a restore that
+is slower than this, set the time in `.env`:
+
+```sh
+DHIS2_DB_START_PERIOD=7200s
+```
+
+A longer time has a cost: a restore that stopped shows as `unhealthy` only
+after it.
 
 ## Memory
 

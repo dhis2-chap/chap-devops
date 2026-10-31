@@ -203,6 +203,9 @@ pub struct Dhis2Spec {
     /// The password the restore gives every DHIS2 user. Only with a seed: an
     /// empty database has no users to give it to.
     pub seed_password: Option<String>,
+    /// The size of the seed dump in bytes, when it is a file that sync found.
+    /// The time the restore gets grows with it.
+    pub seed_bytes: Option<u64>,
     /// Map `host.docker.internal` to the host gateway, for a DHIS2 whose route
     /// goes to a chap-core outside the deployment.
     pub host_gateway: bool,
@@ -229,6 +232,7 @@ impl Dhis2Spec {
             seed_password: components
                 .dhis2_seed_source()
                 .and(components.dhis2.seed_password.clone()),
+            seed_bytes: None,
             host_gateway: components.chap_core_external.is_some(),
             group: None,
         }

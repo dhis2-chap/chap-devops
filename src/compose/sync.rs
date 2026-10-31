@@ -163,10 +163,13 @@ pub fn sync(project: &mut Project, registry: &Registry, check: bool) -> Result<S
         ));
     }
     if components.dhis2.enabled {
-        let spec = Dhis2Spec {
+        let mut spec = Dhis2Spec {
             group: group.clone(),
             ..Dhis2Spec::from_components(&components)
         };
+        if let Some(crate::compose::spec::Dhis2SeedSource::File(path)) = &spec.seed {
+            spec.seed_bytes = std::fs::metadata(dir.join(path)).ok().map(|m| m.len());
+        }
         let rendered = render_dhis2(&spec);
         // The seed was left at `default` and the pinned minor line publishes no
         // dump chap-devops knows the path of, so this deployment starts empty. Said

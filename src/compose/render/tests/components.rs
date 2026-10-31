@@ -343,6 +343,7 @@ fn dhis2_spec() -> Dhis2Spec {
         image: crate::components::DHIS2_IMAGE.to_string(),
         seed: Some(Dhis2SeedSource::Url(DHIS2_DEFAULT_SEED_URL.to_string())),
         seed_password: None,
+        seed_bytes: None,
         host_gateway: false,
         group: None,
     }
@@ -1146,4 +1147,29 @@ fn only_a_downloaded_dump_is_checked_for_its_version() {
     });
     assert_no_tokens(&file);
     assert!(!file.contains("dump_minor="), "{file}");
+}
+
+/// The restore gets 2 seconds a MB of dump, and never less than 600 seconds.
+#[test]
+fn the_restore_time_grows_with_the_size_of_the_dump() {
+    assert_eq!(db_start_period(None), 600);
+    assert_eq!(db_start_period(Some(7_536_993)), 600);
+    assert_eq!(db_start_period(Some(300 << 20)), 600);
+    assert_eq!(db_start_period(Some((300 << 20) + 1)), 602);
+    assert_eq!(db_start_period(Some(2 << 30)), 4096);
+
+    let text = render_dhis2(&Dhis2Spec {
+        seed: Some(Dhis2SeedSource::File("dumps/big.sql.gz".to_string())),
+        seed_bytes: Some(2 << 30),
+        ..dhis2_spec()
+    });
+    assert!(
+        text.contains("start_period: ${DHIS2_DB_START_PERIOD:-4096s}"),
+        "{text}"
+    );
+    assert!(
+        unseeded_dhis2_spec().seed_bytes.is_none()
+            && render_dhis2(&unseeded_dhis2_spec())
+                .contains("start_period: ${DHIS2_DB_START_PERIOD:-600s}")
+    );
 }

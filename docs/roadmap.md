@@ -18,12 +18,6 @@ dumps do. The plan:
 - A `chap-devops doctor` check that compares the limits with the memory that docker
   can give.
 
-### A longer wait for a large seed
-
-The health check of `dhis2-db` waits at most about 15 minutes. A large
-dump takes longer, so `chap-devops up` stops with "unhealthy" while the restore
-continues. The wait must grow with the size of the dump.
-
 ### Levels for the output of every command
 
 Most commands print their closing lines with a level (info, warning, hint),

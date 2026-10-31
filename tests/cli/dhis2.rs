@@ -1576,3 +1576,45 @@ fn enable_dhis2_seed_sets_the_seed_of_a_new_database() {
         .failure()
         .stderr(predicates::str::contains("--seed is a DHIS2 setting"));
 }
+
+/// A dump that is a file gives `dhis2-db` a restore time that grows with its
+/// size, and `DHIS2_DB_START_PERIOD` in `.env` can replace it.
+#[test]
+fn a_large_seed_file_gives_the_restore_more_time() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .init(&[
+            "--models",
+            "none",
+            "--only",
+            "dhis2",
+            "--dhis2-port",
+            &free_port().to_string(),
+            "--dhis2-tag",
+            "2.42",
+        ])
+        .assert()
+        .success();
+    let compose = sandbox.project().join("compose.dhis2.yml");
+    assert!(
+        read(&compose).contains("start_period: ${DHIS2_DB_START_PERIOD:-600s}"),
+        "{}",
+        read(&compose)
+    );
+
+    // Sparse: 2 GiB on paper and nothing on disk.
+    let dumps = sandbox.project().join("dumps");
+    std::fs::create_dir_all(&dumps).expect("a dumps directory");
+    std::fs::File::create(dumps.join("big.sql.gz"))
+        .and_then(|file| file.set_len(2 << 30))
+        .expect("a sparse dump");
+    sandbox
+        .components(&["enable", "dhis2", "--seed", "dumps/big.sql.gz"])
+        .assert()
+        .success();
+    assert!(
+        read(&compose).contains("start_period: ${DHIS2_DB_START_PERIOD:-4096s}"),
+        "{}",
+        read(&compose)
+    );
+}

@@ -299,6 +299,17 @@ fn db_health_test(seeded: bool) -> String {
     }
 }
 
+/// The time `dhis2-db` gets before a failed health check counts, in seconds.
+///
+/// On a seeded deployment the first start is the restore. Measured: the Laos
+/// demo dump (7.5 MB) in 7 seconds under amd64 emulation, about 1 second a MB,
+/// and a national dump (3.9 GB) in 24 to 40 minutes, about 0.5 seconds a MB.
+/// The restore gets twice the slower rate, and never less than 600 seconds.
+pub(crate) fn db_start_period(seed_bytes: Option<u64>) -> u64 {
+    const FLOOR: u64 = 600;
+    seed_bytes.map_or(FLOOR, |bytes| FLOOR.max(bytes.div_ceil(1 << 20) * 2))
+}
+
 /// Container port DHIS2 listens on. Fixed, not a preference: the image's
 /// `server.xml` declares one connector, on 8080, with the context path at the
 /// root.
@@ -449,6 +460,11 @@ pub fn render_dhis2(spec: &Dhis2Spec) -> String {
             ("DB_VOLUME", DHIS2_DB_VOLUME),
             ("DUMP_MOUNT", &dump_mount),
             ("DB_HEALTH_TEST", &db_health_test(spec.seed.is_some())),
+            ("START_VAR", crate::components::DHIS2_DB_START_ENV_VAR),
+            (
+                "DB_START_PERIOD",
+                &format!("{}s", db_start_period(spec.seed_bytes)),
+            ),
             ("DUMP_DEPENDS", &dump_depends),
             ("DUMP_SERVICE", &dump_service),
             ("DUMP_VOLUME_LINE", &dump_volume_line),
