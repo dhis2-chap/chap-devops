@@ -271,6 +271,9 @@ pub enum RevisionProblem {
     /// chap-core has configured models of it of other versions only, so a
     /// backtest of the version it registered with has nothing to run.
     OtherVersionOnly,
+    /// A model of this deployment registered a `git_revision` that is not
+    /// the commit its `sha-` image tag names.
+    NotThePin { revision: String, image_tag: String },
 }
 
 /// One model with a [`RevisionProblem`].
@@ -336,6 +339,35 @@ pub fn revision_warnings(
         })
         .collect()
 }
+/// The models of this deployment that registered a `git_revision` that is
+/// not the commit of their pin, as `chap-admin` checks after an install. Only
+/// a `sha-` image tag names a commit, so another tag is not checked.
+pub fn pin_warnings<'a>(
+    models: impl IntoIterator<Item = &'a crate::project::EnabledModel>,
+    registered: &[RegisteredService],
+) -> Vec<RevisionWarning> {
+    models
+        .into_iter()
+        .filter_map(|model| {
+            let prefix = model.image_tag.strip_prefix("sha-")?;
+            let service = registered.iter().find(|s| s.id == model.service_id)?;
+            let revision = service.git_revision.clone().flatten()?;
+            if revision.starts_with(prefix) || prefix.starts_with(revision.as_str()) {
+                return None;
+            }
+            Some(RevisionWarning {
+                id: model.service_id.clone(),
+                version: service.version.clone(),
+                problem: RevisionProblem::NotThePin {
+                    revision,
+                    image_tag: model.image_tag.clone(),
+                },
+                managed: true,
+            })
+        })
+        .collect()
+}
+
 /// Every model this project enables, as `(service id, host port)`, in the
 /// order `models.yaml` records them.
 pub fn enabled_models(project: &Project) -> Vec<(String, Option<u16>)> {

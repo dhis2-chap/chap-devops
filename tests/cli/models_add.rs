@@ -823,3 +823,33 @@ fn models_add_reads_an_image_on_another_registry_through_its_token_challenge() {
         "{seen:?}"
     );
 }
+
+/// A service id that is live in chap-core and that no model of this
+/// deployment has is refused before anything is resolved, as `chap-admin`
+/// refuses it.
+#[test]
+fn models_add_refuses_a_service_id_that_another_model_has_in_chap_core() {
+    let sandbox = Sandbox::new();
+    let chap_core = chap_core_server();
+    sandbox
+        .init(&["--models", "none", "--api-port", &chap_core.to_string()])
+        .assert()
+        .success();
+    let port = Hub::new().start();
+    sandbox
+        .online(port)
+        .args(["models", "add", REPO_URL, "--service-id", HOST_RUN_MODEL])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(format!(
+            "chap-core already has a model registered as `{}` at http://{}:8000, and it is not \
+             a model of this deployment; stop that model, or pass `--service-id <other>`",
+            HOST_RUN_MODEL, HOST_RUN_MODEL
+        )));
+    assert!(
+        !sandbox
+            .project()
+            .join(".chap-devops/models-manual.yaml")
+            .exists()
+    );
+}

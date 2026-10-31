@@ -492,3 +492,45 @@ fn a_model_file_that_does_not_parse_is_left_out_and_named() {
     );
     assert!(line.ends_with("run `chap-devops self update`"), "{line}");
 }
+
+/// An entry whose id or service_id does not match its file is left out, as
+/// `chap-admin` refuses it; the other models stay.
+#[test]
+fn a_model_file_with_another_identity_is_left_out_and_named() {
+    let embedded = registry();
+    let index_yaml = serde_yaml_ng::to_string(&embedded.index).expect("the index serializes");
+    let mut files: Vec<(String, String)> = embedded
+        .index
+        .models
+        .iter()
+        .zip(&embedded.models)
+        .map(|(rel, model)| {
+            (
+                rel.clone(),
+                serde_yaml_ng::to_string(model).expect("a model serializes"),
+            )
+        })
+        .collect();
+    let (renamed, _) = files[0].clone();
+    files[0].0 = "models/not_its_name.yaml".to_string();
+    let mut index: crate::registry::RegistryIndex =
+        serde_yaml_ng::from_str(&index_yaml).expect("the index parses");
+    index.models[0] = "models/not_its_name.yaml".to_string();
+    let index_yaml = serde_yaml_ng::to_string(&index).expect("the index serializes");
+
+    let r = Registry::parse(
+        DEFAULT_REGISTRY_URL,
+        Provenance::Network,
+        &index_yaml,
+        &files,
+    )
+    .expect("one bad file does not fail the registry");
+    assert_eq!(r.models.len(), embedded.models.len() - 1);
+    assert_eq!(r.skipped.len(), 1, "{renamed}");
+    let line = &r.skipped[0].line;
+    assert!(
+        line.starts_with("left out models/not_its_name.yaml of the marketplace registry: its id"),
+        "{line}"
+    );
+    assert!(line.ends_with("report it to the marketplace"), "{line}");
+}

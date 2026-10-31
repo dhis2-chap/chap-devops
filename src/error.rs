@@ -39,6 +39,17 @@ pub enum ChapError {
     YankedVersion { id: String, version: String },
 
     #[error(
+        "version {version} of `{id}` has the image tag {image_tag}, which is not `sha-` and the \
+         start of its commit, so the image can change after the review; pick another version \
+         with `--version`"
+    )]
+    UnpinnedImage {
+        id: String,
+        version: String,
+        image_tag: String,
+    },
+
+    #[error(
         "the stable version {version} of `{id}` is {status}, not verified; pass \
          `--version {version}` to enable it anyway"
     )]

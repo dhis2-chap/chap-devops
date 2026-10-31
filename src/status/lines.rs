@@ -295,7 +295,7 @@ pub fn external_registration_hints(rows: &[ModelStatus]) -> Vec<String> {
 /// The warning for a model registered from outside whose template chap-core
 /// refuses.
 pub fn revision_line(warning: &crate::status::RevisionWarning) -> String {
-    match warning.problem {
+    match &warning.problem {
         crate::status::RevisionProblem::NoRevision if warning.managed => format!(
             "{}: it reports no git revision, so chap-core stores no model template for it and \
              `chap-devops models configs sync` cannot configure it; {}",
@@ -316,6 +316,15 @@ pub fn revision_line(warning: &crate::status::RevisionWarning) -> String {
             "{}: chap-core has configured models of it of other versions only, not of {}; \
              run `chap-devops models configs sync {}`",
             warning.id, warning.version, warning.id
+        ),
+        crate::status::RevisionProblem::NotThePin {
+            revision,
+            image_tag,
+        } => format!(
+            "{}: it registered git revision {revision}, which is not the commit of its image tag \
+             {image_tag}; `chap-devops up` starts the pinned image, and if this line stays, report \
+             it to the marketplace",
+            warning.id
         ),
     }
 }
@@ -388,7 +397,14 @@ pub fn hints(
                 row.id, row.id
             )),
             ModelState::Unreachable => Some(unreachable_hint(row, elsewhere)),
-            ModelState::NotConfigured if revisions.iter().any(|w| w.id == row.id) => None,
+            ModelState::NotConfigured
+                if revisions.iter().any(|w| {
+                    w.id == row.id
+                        && !matches!(w.problem, crate::status::RevisionProblem::NotThePin { .. })
+                }) =>
+            {
+                None
+            }
             ModelState::NotConfigured => Some(format!(
                 "{}: chap-core has no configured model for it, so nothing can run it; run `chap-devops \
                  models configs sync`",

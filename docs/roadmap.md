@@ -27,20 +27,6 @@ and the loops are in the template files, and the Rust code only gives the
 values. The golden files in `tests/fixtures/` make sure that the output does
 not change.
 
-### The checks of chap-admin
-
-`chap-devops` installs, updates and removes models as `chap-admin` does, but
-it checks less. The plan:
-
-- Check that the `image_tag` of a version is `sha-<prefix>` of its
-  `commit`.
-- Check that the `id` of a marketplace entry matches its file name, and that
-  its `service_id` is the id with `-` for `_`.
-- After a model registers, compare its service id and its `git_revision`
-  with the pin, and warn when they differ.
-- Before `chap-devops models add` registers an image, refuse a template name that
-  is already live in chap-core and that this deployment does not own.
-
 ### A confirmation for an image outside the marketplace
 
 `chap-admin install --image` needs `--accept-risk` each time, because nobody

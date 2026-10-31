@@ -21,7 +21,7 @@ pub use lines::{
 pub use models::{
     MODEL_HEALTH_PATH, ModelState, ModelStatus, RegisteredService, RevisionProblem,
     RevisionWarning, enabled_models, link_strays, mark_unconfigured, mark_unreachable, missing_ids,
-    model_rows, proxied_health_path, reach, revision_warnings, sends_revision,
+    model_rows, pin_warnings, proxied_health_path, reach, revision_warnings, sends_revision,
     standalone_model_rows,
 };
 pub use probe::{
@@ -455,6 +455,7 @@ pub fn status(
             configured.as_deref().unwrap_or(&[]),
             sends,
         );
+        revisions.extend(pin_warnings(project.state.models.values(), &registered));
         rows
     } else {
         // Nothing registers anywhere, so each model is asked itself, on the

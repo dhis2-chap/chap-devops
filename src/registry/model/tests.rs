@@ -209,3 +209,54 @@ fn configurations_keep_their_json_shape() {
     assert_eq!(cfg["n_lags"], serde_json::json!([3, 3]));
     assert_eq!(cfg["region_seasonal"], serde_json::json!(false));
 }
+
+/// A marketplace version runs only from a `sha-` tag that starts its commit,
+/// as `chap-admin` requires; a model the deployment defines itself is not
+/// held to it.
+#[test]
+fn resolve_refuses_an_image_tag_that_is_not_the_commit() {
+    let mut m = model("auto_arima_chapkit");
+    let stable = m.channels.stable.clone();
+    let at = m
+        .versions
+        .iter()
+        .position(|v| v.version == stable)
+        .expect("the stable version is listed");
+    let commit = m.versions[at].commit.clone();
+    assert!(m.versions[at].is_pinned());
+
+    for tag in [
+        "latest".to_string(),
+        format!("sha-{}", &commit[..6]),
+        "sha-0000000".to_string(),
+    ] {
+        m.versions[at].image_tag = tag.clone();
+        let err = m
+            .resolve(&VersionSelector::Channel(Channel::Stable))
+            .expect_err("an unpinned tag errors");
+        assert!(
+            matches!(
+                err.downcast_ref::<crate::error::ChapError>(),
+                Some(crate::error::ChapError::UnpinnedImage { image_tag, .. }) if *image_tag == tag
+            ),
+            "{err}"
+        );
+    }
+
+    m.manual = true;
+    assert!(
+        m.resolve(&VersionSelector::Channel(Channel::Stable))
+            .is_ok()
+    );
+}
+
+/// The `id` is the name of the file, and the `service_id` is the `id` with
+/// `-` for `_`.
+#[test]
+fn the_identity_of_an_entry_matches_its_file() {
+    let mut m = model("auto_arima_chapkit");
+    assert!(m.identity_matches("models/auto_arima_chapkit.yaml"));
+    assert!(!m.identity_matches("models/other_model.yaml"));
+    m.service_id = "auto_arima_chapkit".to_string();
+    assert!(!m.identity_matches("models/auto_arima_chapkit.yaml"));
+}

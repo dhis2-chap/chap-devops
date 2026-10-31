@@ -164,6 +164,7 @@ pub(crate) fn add_in(ctx: &Ctx, project: &mut Project, args: &ModelsAddArgs) -> 
     let names = manual::names(&request)?;
     let mut registry = crate::registry::load(&ctx.registry)?;
     check_free(project, &registry, &names)?;
+    check_not_live(ctx, project, &names.service_id)?;
 
     let resolved = manual::resolve(&request, &endpoints)?;
 
@@ -478,6 +479,39 @@ fn free_id(ctx: &Ctx, project: &Project, source: &str) -> Result<String> {
 /// does not control: an id it already lists is a model to enable, not one to
 /// add, and a service name it holds would make two overlays fight over one
 /// compose service.
+/// Refuse a service id that is live in chap-core and that no model of this
+/// deployment has, as `chap-admin` does: the new model would register in its
+/// place. When chap-core does not answer, the model is added without the check.
+fn check_not_live(ctx: &Ctx, project: &Project, service_id: &str) -> Result<()> {
+    if ctx.registry.offline
+        || !project.state.components.has_chap_core_api()
+        || project
+            .state
+            .models
+            .values()
+            .any(|model| model.service_id == service_id)
+    {
+        return Ok(());
+    }
+    let token = crate::api::token_for(Some(&project.dir));
+    let api = crate::api::Api::new(&project.api_url(), token, std::time::Duration::from_secs(3));
+    let Ok(services) = crate::configs::sync::registered_services(&api) else {
+        ctx.out.verbose(&format!(
+            "chap-core at {} did not answer, so chap-devops did not check its registered models",
+            api.base()
+        ));
+        return Ok(());
+    };
+    match services.iter().find(|service| service.id == service_id) {
+        Some(service) => Err(anyhow::anyhow!(
+            "chap-core already has a model registered as `{service_id}` at {}, and it is not a \
+             model of this deployment; stop that model, or pass `--service-id <other>`",
+            service.url
+        )),
+        None => Ok(()),
+    }
+}
+
 fn check_free(project: &Project, marketplace: &Registry, names: &Names) -> Result<()> {
     let id = &names.id;
     if let Some(model) = marketplace.models.iter().find(|m| m.id == *id) {

@@ -155,6 +155,15 @@ impl Registry {
                 .map(|(_, body)| body)
                 .ok_or_else(|| anyhow::anyhow!("registry lists {path} but it is missing"))?;
             match serde_yaml_ng::from_str::<Model>(body) {
+                Ok(model) if !model.identity_matches(path) => skipped.push(Skipped {
+                    path: path.clone(),
+                    line: format!(
+                        "left out {path} of the marketplace registry: its id is {} and its \
+                         service_id is {}, which do not match the file name; report it to the \
+                         marketplace",
+                        model.id, model.service_id
+                    ),
+                }),
                 Ok(model) => models.push(model),
                 Err(e) => skipped.push(Skipped {
                     path: path.clone(),

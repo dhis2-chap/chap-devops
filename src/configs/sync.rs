@@ -314,7 +314,7 @@ pub fn configure(
 }
 
 /// The services chap-core has registered.
-fn registered_services(api: &Api) -> Result<Vec<crate::status::RegisteredService>> {
+pub(crate) fn registered_services(api: &Api) -> Result<Vec<crate::status::RegisteredService>> {
     let answer = api.send("GET", crate::status::SERVICES_PATH, None)?;
     if !answer.is_success() {
         return Err(api.status_error(crate::status::SERVICES_PATH, &answer));

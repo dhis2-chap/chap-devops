@@ -217,6 +217,17 @@ pub struct Version {
     pub notes: Option<String>,
 }
 
+impl Version {
+    /// Whether the image tag is `sha-` and at least 7 characters that start
+    /// the commit, as `chap-admin` requires. Another tag, such as `latest`,
+    /// can move to other code after the version was reviewed.
+    pub fn is_pinned(&self) -> bool {
+        self.image_tag
+            .strip_prefix("sha-")
+            .is_some_and(|prefix| prefix.len() >= 7 && self.commit.starts_with(prefix))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum VersionStatus {
@@ -323,7 +334,25 @@ impl Model {
             }
             .into());
         }
+        if !self.manual && !found.is_pinned() {
+            return Err(crate::error::ChapError::UnpinnedImage {
+                id: self.id.clone(),
+                version: wanted,
+                image_tag: found.image_tag.clone(),
+            }
+            .into());
+        }
         Ok(found)
+    }
+
+    /// Whether the entry is the one its file names: the `id` is the name of
+    /// the file, and the `service_id` is the `id` with `-` for `_`, as
+    /// `chap-admin` requires.
+    pub fn identity_matches(&self, path: &str) -> bool {
+        let stem = std::path::Path::new(path)
+            .file_stem()
+            .and_then(|stem| stem.to_str());
+        stem == Some(self.id.as_str()) && self.service_id == self.id.replace('_', "-")
     }
 
     /// Fully qualified image reference for a version.

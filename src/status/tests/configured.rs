@@ -194,3 +194,51 @@ fn an_unmanaged_model_with_configured_models_of_another_version_only_is_named() 
     assert!(revision_warnings(&rows, &services, &new, true).is_empty());
     assert!(revision_warnings(&rows, &services, &[], true).is_empty());
 }
+
+/// A model of this deployment that registered from another commit than its
+/// `sha-` pin is named; a matching or a shorter revision, a model with no
+/// revision and a tag that names no commit are not.
+#[test]
+fn a_revision_that_is_not_the_pin_is_named() {
+    let model = |service_id: &str, image_tag: &str| crate::project::EnabledModel {
+        service_id: service_id.to_string(),
+        image: "ghcr.io/chap-models/x".to_string(),
+        image_tag: image_tag.to_string(),
+        version: "1.0.0".to_string(),
+        channel: None,
+        host_port: None,
+        bind: None,
+        data_dir: "/app/data".to_string(),
+        user: "chapkit:chapkit".to_string(),
+        user_from: Default::default(),
+        platform: None,
+        compose_file: format!("compose.{service_id}.yml"),
+        reads_port: false,
+    };
+    let with = |id: &str, revision: Option<&str>| RegisteredService {
+        git_revision: Some(revision.map(str::to_string)),
+        ..registered(id, 5)
+    };
+    let models = [
+        model("wrong", "sha-1111111"),
+        model("right", "sha-2222222"),
+        model("short", "sha-3333333aa"),
+        model("none", "sha-4444444"),
+        model("moving", "latest"),
+    ];
+    let registered = [
+        with("wrong", Some("9999999abcdef")),
+        with("right", Some("2222222abcdef")),
+        with("short", Some("3333333")),
+        with("none", None),
+        with("moving", Some("5555555")),
+    ];
+    let warnings = pin_warnings(&models, &registered);
+    assert_eq!(warnings.len(), 1, "{warnings:?}");
+    assert_eq!(
+        revision_line(&warnings[0]),
+        "wrong: it registered git revision 9999999abcdef, which is not the commit of its image \
+         tag sha-1111111; `chap-devops up` starts the pinned image, and if this line stays, \
+         report it to the marketplace"
+    );
+}

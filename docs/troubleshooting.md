@@ -1643,6 +1643,50 @@ takes only a verified version on that channel.
 - To run this version now, enable it with the `--version` in the message.
   The model is then pinned, and `chap-devops update` does not move it.
 
+## `version VERSION of ID has the image tag TAG, which is not sha- and the start of its commit`
+
+```text
+error: version 1.0.2 of `chapkit_ewars_model` has the image tag latest, which is not `sha-` and the start of its commit, so the image can change after the review; pick another version with `--version`
+```
+
+The marketplace entry pins the version to a tag that can move to other code.
+chap-devops follows `chap-admin` and runs a marketplace version only from a
+`sha-` tag of at least 7 characters that start its `commit`. A model added with
+`chap-devops models add` is not checked.
+
+- To run the model, enable another version with `--version`.
+- Report the entry to the marketplace.
+
+## `left out models/FILE of the marketplace registry: its id is ID and its service_id is SERVICE`
+
+The `id` of a marketplace entry must be the name of its file, and its
+`service_id` must be the `id` with `-` in place of `_`. chap-devops follows
+`chap-admin` and leaves out an entry that does not match. The other models
+stay. Report the entry to the marketplace.
+
+## `it registered git revision REVISION, which is not the commit of its image tag`
+
+`chap-devops status` compares the `git_revision` that a model of this
+deployment registered with the commit of its `sha-` image tag, as `chap-admin`
+does after an install. If they differ, the running image may not be the
+pinned one.
+
+1. Run `chap-devops up`. It starts the pinned image.
+2. If the line stays, the image of that tag was built from another commit.
+   Report it to the marketplace.
+
+## `chap-core already has a model registered as SERVICE at URL, and it is not a model of this deployment`
+
+`chap-devops models add` asks chap-core for its registered models before it
+adds one. A model that registers under the same id would take the place of
+the other one. When chap-core does not answer, the model is added without
+this check.
+
+- If the other model must go, stop it, then run `chap-devops models add`
+  again.
+- If both must run, pass another `--service-id`. The service must register
+  under that id.
+
 ## `the deployment in DIR still has containers in compose project`
 
 ```text
