@@ -20,12 +20,12 @@ dumps do. The plan:
 
 ### Templates for the compose files
 
-The large compose files are templates in `src/compose/templates/`, but the
-optional parts are built in Rust: the seed one-shot, the port lines, the
-mounts. The plan is to use minijinja (Jinja2 for Rust) so that the conditions
-and the loops are in the template files, and the Rust code only gives the
-values. The golden files in `tests/fixtures/` make sure that the output does
-not change.
+`compose.dhis2.yml` is a minijinja template: its conditions are in the
+template file, and the Rust code only gives the values. The other compose
+files still get their optional parts from Rust: the port lines of OCS and S3,
+and the init container and the mounts of a model overlay. They change to
+minijinja next. The golden files in `tests/fixtures/` make sure that the
+output does not change.
 
 ### A confirmation for an image outside the marketplace
 

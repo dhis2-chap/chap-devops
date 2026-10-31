@@ -301,6 +301,20 @@ pub fn render_umbrella(files: &[String], project_name: Option<&str>) -> String {
 }
 
 /// Replace every `@KEY@` token in `template` with its value.
+/// Render a compose template with minijinja. A block tag on its own line
+/// leaves no trace, nothing is escaped, and a name the context does not have
+/// is an error. The templates are part of the binary, so an error is a bug.
+pub(crate) fn render_template(name: &str, source: &str, ctx: minijinja::Value) -> String {
+    let mut env = minijinja::Environment::new();
+    env.set_trim_blocks(true);
+    env.set_lstrip_blocks(true);
+    env.set_keep_trailing_newline(true);
+    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
+    env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
+    env.render_named_str(name, source, ctx)
+        .unwrap_or_else(|e| panic!("the template {name} does not render: {e:#}"))
+}
+
 pub(crate) fn fill(template: &str, vars: &[(&str, &str)]) -> String {
     let mut out = template.to_string();
     for (key, value) in vars {

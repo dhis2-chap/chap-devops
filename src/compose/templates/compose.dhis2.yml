@@ -2,15 +2,25 @@
 # dhis2: DHIS2, the district health information system (https://dhis2.org)
 services:
   dhis2:
-@LABELS@    restart: unless-stopped
-    image: @IMAGE@:${@TAG_VAR@:-@IMAGE_TAG@}
+{{ labels }}    restart: unless-stopped
+    image: {{ image }}:${ {{- tag_var }}:-{{ image_tag }}}
     init: true
-@PORT_LINES@    environment:
+    expose:
+      - "{{ container_port }}"
+{% if host_port is not none %}
+    ports:
+      - "{{ host_port }}:{{ container_port }}"
+{% endif %}
+{% if host_gateway %}
+    extra_hosts:
+      - "{{ host_gateway }}:host-gateway"
+{% endif %}
+    environment:
       # JAVA_TOOL_OPTIONS, not JAVA_OPTS: it is the JVM's own variable and works
       # for both image variants, while the distroless one ignores JAVA_OPTS and
       # then sizes the heap at about a quarter of the machine's memory.
       JAVA_TOOL_OPTIONS: ${DHIS2_JAVA_TOOL_OPTIONS:--Xms2g -Xmx4g -XX:+UseG1GC}
-      # The five values `@CONFIG_PATH@` substitutes into its ${...} placeholders.
+      # The five values `{{ config_path }}` substitutes into its ${...} placeholders.
       DHIS2_DB_HOST: ${DHIS2_DB_HOST:-dhis2-db}
       DHIS2_DB_NAME: ${DHIS2_DB_NAME:-dhis}
       DHIS2_DB_USER: ${DHIS2_DB_USER:-dhis}
@@ -21,18 +31,18 @@ services:
     volumes:
       # dhis.conf is mandatory: DHIS2 throws on startup without it, and there is
       # no environment-only mode.
-      - ./@CONFIG_PATH@:/opt/dhis2/dhis.conf:ro
+      - ./{{ config_path }}:/opt/dhis2/dhis.conf:ro
       # /opt/dhis2 holds the installed apps and the file store, so it has to
       # outlive a recreate. The volume covers the directory the line above mounts
       # into; docker orders mounts by destination depth, so the volume goes down
       # first and the file lands on top of it.
       - type: volume
-        source: @HOME_VOLUME@
+        source: {{ home_volume }}
         target: /opt/dhis2
     healthcheck:
       # /api/ping is the one route that answers unauthenticated. `curl` is left
       # to PATH, which finds it wherever the image variant keeps it.
-      test: ["CMD", "curl", "-fsS", "http://localhost:@CONTAINER_PORT@/api/ping"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:{{ container_port }}/api/ping"]
       interval: 15s
       timeout: 10s
       # A cold boot is around 40s native and 8 to 15 minutes under emulation.
@@ -45,10 +55,10 @@ services:
         condition: service_completed_successfully
 
   dhis2-db:
-@LABELS@    restart: unless-stopped
+{{ labels }}    restart: unless-stopped
     # PostGIS rather than plain postgres, and not as an optimisation: DHIS2's own
     # startup check throws without the postgis, pg_trgm and btree_gin extensions.
-    image: @DB_IMAGE@
+    image: {{ db_image }}
     platform: linux/amd64
     environment:
       POSTGRES_DB: ${DHIS2_DB_NAME:-dhis}
@@ -58,19 +68,240 @@ services:
       # Over TCP on purpose. While the entrypoint runs the init scripts the
       # server listens on the unix socket alone, so a socket probe would report a
       # half-restored database as ready.
-@DB_HEALTH_TEST@
+{% if seed %}
+      # On a seeded deployment, also the mark of a complete restore: without
+      # it the restore stopped, and the database is incomplete.
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB} &&
+          psql -U $${POSTGRES_USER} -d $${POSTGRES_DB} -tAc
+          "SELECT shobj_description(oid, 'pg_database') FROM pg_database
+          WHERE datname = current_database()" | grep -qx '{{ seed_mark }}'
+{% else %}
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+{% endif %}
       interval: 10s
       timeout: 5s
       # Generous, because on a seeded deployment the first start is the restore.
-      start_period: ${@START_VAR@:-@DB_START_PERIOD@}
+      start_period: ${ {{- start_var }}:-{{ db_start_period }}}
       retries: 30
     expose:
       - "5432"
     volumes:
       - type: volume
-        source: @DB_VOLUME@
+        source: {{ db_volume }}
         target: /var/lib/postgresql/data
-@DUMP_MOUNT@@DUMP_DEPENDS@@DUMP_SERVICE@
+{#
+  The seed is four blocks that travel together: the one-shot that prepares the
+  dump, the volume it writes into, the mount of that volume at
+  /docker-entrypoint-initdb.d/, and the wait on the one-shot. Without a seed
+  none of them is rendered, and DHIS2 migrates an empty database on the first
+  start.
+#}
+{% if seed %}
+      # Where the postgres entrypoint looks for init scripts: the restore is
+      # its own, on a data directory it has just created, and happens once.
+      # Docker copies the image's postgis script into this volume as the
+      # container is created, so that still runs, ahead of the dump.
+      - type: volume
+        source: {{ dump_volume }}
+        target: /docker-entrypoint-initdb.d/
+    depends_on:
+      dhis2-dump:
+        condition: service_completed_successfully
+
+  dhis2-dump:
+    # One-shot: fetches the seed dump, writes the scripts that load it into a
+    # fresh database, and exits. dhis2-db mounts the same volume at
+    # /docker-entrypoint-initdb.d/, so the restore is the stock postgres
+    # entrypoint's - which runs it once, on a data directory it has just created,
+    # and never again.
+{{ labels }}    image: {{ dump_image }}
+    restart: "no"
+    working_dir: /opt/dump
+    environment:
+      DHIS2_DB_DUMP_URL: ${DHIS2_DB_DUMP_URL:-{{ seed_url }}}
+      {{ tag_var }}: ${ {{- tag_var }}:-{{ image_tag }}}
+{% if seed_password is not none %}
+      DHIS2_SEED_PASSWORD: ${DHIS2_SEED_PASSWORD:-{{ seed_password }}}
+{% endif %}
+    volumes:
+      - type: volume
+        source: {{ dump_volume }}
+        target: /opt/dump
+{% if seed_source %}
+      - {{ seed_source }}:{{ seed_mount }}:ro
+{% endif %}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+{#
+  A real DHIS2 database has values that match the number pattern of analytics
+  but do not fit in double precision, such as a number of two thousand digits.
+  Deleted rows too: the outlier query of analytics reads datavalue without the
+  deleted filter.
+#}
+        # Data values that analytics reads as numbers but that do not fit in a
+        # double precision stop every analytics run. The restore lists them in
+        # the log of dhis2-db, then empties them.
+        cat > {{ clean_script }} <<'EOF'
+        SELECT to_regclass('public.datavalue') IS NOT NULL AS chap_devops_has_datavalue \gset
+        \if :chap_devops_has_datavalue
+        CREATE TEMP TABLE chap_devops_unreadable AS
+          SELECT dv.dataelementid, dv.periodid, dv.sourceid, dv.categoryoptioncomboid, dv.attributeoptioncomboid
+          FROM datavalue dv
+          WHERE dv.value ~ '^-?[0-9]+(\.[0-9]+)?$$'
+            AND length(split_part(ltrim(dv.value, '-'), '.', 1)) > 300
+            AND abs(dv.value::numeric) > 1.7976931348623157e308;
+        \echo 'chap-devops: data values that analytics cannot read as a number, emptied:'
+        SELECT de.uid AS dataelement, de.name, pe.startdate AS period, ou.uid AS orgunit,
+               left(dv.value, 12) AS value_starts, length(dv.value) AS length
+          FROM chap_devops_unreadable u
+          JOIN datavalue dv USING (dataelementid, periodid, sourceid, categoryoptioncomboid, attributeoptioncomboid)
+          JOIN dataelement de ON de.dataelementid = dv.dataelementid
+          JOIN period pe ON pe.periodid = dv.periodid
+          JOIN organisationunit ou ON ou.organisationunitid = dv.sourceid;
+        UPDATE datavalue dv SET value = NULL
+          FROM chap_devops_unreadable u
+          WHERE dv.dataelementid = u.dataelementid AND dv.periodid = u.periodid
+            AND dv.sourceid = u.sourceid AND dv.categoryoptioncomboid = u.categoryoptioncomboid
+            AND dv.attributeoptioncomboid = u.attributeoptioncomboid;
+        \endif
+        EOF
+{#
+  PostgreSQL makes the bcrypt hash itself, with pgcrypto: one hash for all the
+  users, as a hash for each user takes minutes on a large dump. The DHIS2 dumps
+  carry gen_random_uuid and other functions of pgcrypto in public without the
+  extension, so CREATE EXTENSION pgcrypto in public fails: the script installs
+  it in a schema of its own and removes that schema after the update.
+#}
+{% if seed_password is not none %}
+        # Every DHIS2 user gets the password in DHIS2_SEED_PASSWORD, and every
+        # account is turned on, with no two-factor login and no expiry date. The
+        # postgres entrypoint runs this file after the dump, because the files
+        # run in name order.
+        password=$$(printf '%s' "$${DHIS2_SEED_PASSWORD}" | sed "s/'/''/g")
+        cat > {{ password_script }} <<EOF
+        SELECT NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto') AS chap_devops_new_pgcrypto \gset
+        \if :chap_devops_new_pgcrypto
+        CREATE SCHEMA chap_devops_pgcrypto;
+        CREATE EXTENSION pgcrypto SCHEMA chap_devops_pgcrypto;
+        \endif
+        SELECT extnamespace::regnamespace AS chap_devops_pgcrypto_schema FROM pg_extension WHERE extname = 'pgcrypto' \gset
+        UPDATE userinfo SET password = h.hash, disabled = false
+          FROM (SELECT :chap_devops_pgcrypto_schema.crypt('$$password', :chap_devops_pgcrypto_schema.gen_salt('bf', 10)) AS hash) AS h;
+        SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'userinfo' AND column_name = 'twofactortype') AS chap_devops_twofactor \gset
+        \if :chap_devops_twofactor
+        UPDATE userinfo SET twofactortype = 'NOT_ENABLED', secret = NULL;
+        \endif
+        SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'userinfo' AND column_name = 'accountexpiry') AS chap_devops_expiry \gset
+        \if :chap_devops_expiry
+        UPDATE userinfo SET accountexpiry = NULL;
+        \endif
+        \if :chap_devops_new_pgcrypto
+        DROP SCHEMA chap_devops_pgcrypto CASCADE;
+        \endif
+        EOF
+        echo "wrote {{ password_script }}: the restore gives every user one password, with no two-factor login"
+{% else %}
+        rm -f {{ password_script }}
+{% endif %}
+        # The last init script marks the database as restored. The health check
+        # asks for the mark, so a restore that stopped half way stays unhealthy
+        # after docker starts the database again and postgres skips the init.
+        printf '%s\n' \
+          "SELECT current_database() AS chap_devops_db \\gset" \
+          "COMMENT ON DATABASE :\"chap_devops_db\" IS '{{ seed_mark }}';" > {{ mark_script }}
+        # The rewrite and the restore are one pass: dump.sh, which the postgres
+        # entrypoint runs in name order, streams the dump through sed into psql.
+        # The dump is read once, and with the gzip and sed of the database
+        # image, which are faster than those of busybox. seed.dump.gz does not
+        # end in .sql.gz, so the entrypoint does not load it by itself.
+        #
+        # Published dumps are `pg_dump --clean` WITHOUT `--if-exists`, so they
+        # open on DROP and ALTER statements that assume the schema is already
+        # there, and the restore runs under `psql -v ON_ERROR_STOP=1`: the first
+        # missing object aborts it. Retrofitting --if-exists makes that opening
+        # block a no-op on an empty database. The substitutions are idempotent,
+        # and each one is anchored to the start of a line, so COPY data rows are
+        # left alone. DROP EXTENSION and DROP SCHEMA go entirely: the postgis
+        # image owns those objects, and the dump recreates what it needs with
+        # CREATE EXTENSION IF NOT EXISTS.
+        # A dump from a newer pg_dump (17.6 and later, 16.10 and later) opens
+        # with \restrict and closes with \unrestrict, which the psql of this
+        # image does not know, and a dump from PostgreSQL 17 sets
+        # transaction_timeout, which PostgreSQL 16 does not know. All three go.
+        # The owners and the grants name the roles of the source server, which
+        # do not exist here: they go too, as with pg_dump --no-owner
+        # --no-privileges, and every object belongs to the database user.
+        cat > {{ rewrite_script }} <<'EOF'
+        /^\\restrict /d
+        /^\\unrestrict /d
+        /^SET transaction_timeout /d
+        /^ALTER [^;]* OWNER TO /d
+        /^(GRANT|REVOKE) /d
+        /^ALTER DEFAULT PRIVILEGES /d
+        s/^ALTER TABLE (IF EXISTS )?(ONLY )?/ALTER TABLE IF EXISTS \2/
+        s/^DROP (TABLE|INDEX|SEQUENCE|FUNCTION|VIEW|MATERIALIZED VIEW|TYPE|DOMAIN|AGGREGATE|TRIGGER) (IF EXISTS )?/DROP \1 IF EXISTS /
+        /^DROP EXTENSION /d
+        /^DROP SCHEMA /d
+        s/^CREATE SCHEMA (IF NOT EXISTS )?/CREATE SCHEMA IF NOT EXISTS /
+        EOF
+        # The entrypoint sources this file with `set -Eeo pipefail`, so a
+        # truncated dump stops the restore, and the mark guard reports it.
+        cat > {{ restore_script }} <<'EOF'
+        echo "chap-devops: restoring {{ seed_file }}"
+        gunzip -c /docker-entrypoint-initdb.d/{{ seed_file }} \
+          | sed -E -f /docker-entrypoint-initdb.d/{{ rewrite_script }} \
+          | psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --no-password --no-psqlrc --dbname "$$POSTGRES_DB"
+        EOF
+        # A dump an earlier chap-devops prepared would be loaded a second time.
+        rm -f dump.sql.gz out.part
+        if [ -f {{ seed_file }} ]; then
+          echo "{{ seed_file }} is already there"
+          exit 0
+        fi
+        rm -f raw.part
+        # A value that names a file is the one mounted above, which is copied in
+        # place of the download. The move at the end means that a download that
+        # stopped is never kept as the seed.
+        if [ -f "$${DHIS2_DB_DUMP_URL}" ]; then
+          echo "copying $${DHIS2_DB_DUMP_URL}"
+          cp "$${DHIS2_DB_DUMP_URL}" raw.part
+        else
+          echo "downloading $${DHIS2_DB_DUMP_URL}"
+          wget -O raw.part "$${DHIS2_DB_DUMP_URL}"
+        fi
+{#
+  Only for a URL: `chap-devops init` reads a local dump itself, much faster than
+  busybox gunzip, which needs minutes to reach the Flyway table of a large dump.
+#}
+{% if seed_is_url %}
+        # DHIS2 runs a database of its own minor version or older, and chap-devops
+        # supports {{ oldest }} and newer. The newest Flyway migration says which
+        # version the dump is. The check comes before the slow rewrite. A local
+        # dump was checked by `chap-devops init` already, so only a URL gets it.
+        dump_minor=$$(gunzip -c raw.part 2>/dev/null | grep -m1 -A5000 '^COPY public\.flyway_schema_history ' | awk -F'\t' 'NR == 1 {next} $$0 == "\\." {exit} $$2 ~ /^[0-9]/ {print $$2}' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -d. -f1,2)
+        if [ -n "$$dump_minor" ]; then
+          dump_n=$$(echo "$$dump_minor" | awk -F. '{print $$1 * 1000 + $$2}')
+          tag_n=$$(echo "$${ {{- tag_var }}}" | awk -F. '/^[0-9]+\.[0-9]+/ {print $$1 * 1000 + $$2}')
+          echo "the dump is DHIS2 $$dump_minor (its newest Flyway migration)"
+          if [ "$$dump_n" -lt {{ oldest_n }} ]; then
+            echo "error: the dump is from DHIS2 $$dump_minor, and chap-devops supports DHIS2 {{ oldest }} and newer; upgrade the database in DHIS2 first"
+            exit 1
+          fi
+          if [ -n "$$tag_n" ] && [ "$$tag_n" -lt "$$dump_n" ]; then
+            echo "error: DHIS2 $${ {{- tag_var }}} is older than the dump (DHIS2 $$dump_minor), and DHIS2 does not run a newer database; run chap-devops components enable dhis2 --tag $$dump_minor, then chap-devops up"
+            exit 1
+          fi
+        fi
+{% endif %}
+        mv raw.part {{ seed_file }}
+        echo "wrote {{ seed_file }} ($$(wc -c < {{ seed_file }}) bytes)"
+{% endif %}
+
   dhis2-prep:
     # One-shot: runs after the restore and before DHIS2 boots, on every start.
     # Two things, neither of them visible from the outside.
@@ -83,7 +314,7 @@ services:
     #      analytics forever.
     # ON_ERROR_STOP=0 so a database DHIS2 has not migrated yet, which has no
     # jobconfiguration table, is a no-op rather than a failure.
-@LABELS@    image: @DB_IMAGE@
+{{ labels }}    image: {{ db_image }}
     platform: linux/amd64
     restart: "no"
     environment:
@@ -104,5 +335,8 @@ services:
         condition: service_healthy
 
 volumes:
-  @DB_VOLUME@: {}
-@DUMP_VOLUME_LINE@  @HOME_VOLUME@: {}
+  {{ db_volume }}: {}
+{% if seed %}
+  {{ dump_volume }}: {}
+{% endif %}
+  {{ home_volume }}: {}
