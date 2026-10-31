@@ -225,8 +225,16 @@ pub const UNMANAGED_NO_REVISION_WAY_OUT: &str =
     "set `GIT_REVISION` where it runs, then start it again";
 
 /// The words of chap-core's 409 for a template whose service reports no
-/// revision: `... its source now reports revision None`.
-pub const NO_REVISION_REFUSAL: &str = "reports revision None";
+/// revision: `... its source now reports revision None` up to v2.5.1, and
+/// `... its source reports no git revision` after it.
+const NO_REVISION_REFUSALS: [&str; 2] = ["reports revision None", "reports no git revision"];
+
+/// Whether `error` holds chap-core's refusal of a service with no revision.
+pub fn is_no_revision_refusal(error: &str) -> bool {
+    NO_REVISION_REFUSALS
+        .iter()
+        .any(|words| error.contains(words))
+}
 
 /// Whether a failed step for `service` failed because it reports no git
 /// revision: its registration says so, or chap-core's refusal does.
@@ -236,7 +244,7 @@ pub fn is_no_revision(
     sends_revision: bool,
     error: &str,
 ) -> bool {
-    service.reports_no_revision(sends_revision) || error.contains(NO_REVISION_REFUSAL)
+    service.reports_no_revision(sends_revision) || is_no_revision_refusal(error)
 }
 
 /// One model and what the step did for it.

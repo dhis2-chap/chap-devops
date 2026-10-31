@@ -243,6 +243,25 @@ fn a_registration_without_the_revision_key_is_a_model_that_reports_none() {
 }
 
 /// The way out of a model without a revision depends on where it runs.
+/// The refusal is read in the words of each chap-core: a sync that misses it
+/// tells the reader to run again, which cannot help.
+#[test]
+fn the_refusal_of_a_model_without_a_revision_is_known_in_both_wordings() {
+    for refusal in [
+        "Model template 'm' version '0.1.0' is stored from revision None, but its source now \
+         reports revision None",
+        "Model template 'm' version '1.0.3': its source reports no git revision, so chap-core \
+         cannot check which source it runs.",
+    ] {
+        assert!(is_no_revision_refusal(refusal), "{refusal}");
+        assert!(is_no_revision(&service(None), false, refusal), "{refusal}");
+    }
+    assert!(!is_no_revision_refusal(
+        "Model template 'm' version '0.1.0' is stored from revision abc, but its source now \
+         reports revision def"
+    ));
+}
+
 #[test]
 fn a_model_without_a_revision_gets_the_way_out_of_where_it_runs() {
     let outcome = |id: &str, managed: bool| ModelOutcome {

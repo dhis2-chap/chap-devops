@@ -236,7 +236,7 @@ pub fn template_of_service(
                  this again when `chap-devops status` shows it registered"
             ));
         }
-        409 if answer.detail().contains(sync::NO_REVISION_REFUSAL) => {
+        409 if sync::is_no_revision_refusal(&answer.detail()) => {
             return Err(format!(
                 "chap-core refuses the template of {model}: {}; {}",
                 answer.detail(),

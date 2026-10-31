@@ -589,7 +589,8 @@ docker build --platform linux/amd64 --build-arg GIT_REVISION=$(git rev-parse HEA
 
 `GIT_REVISION` gives the image the commit it was built from. chap-core needs
 it to store the model template. Without it, `chap-devops models configs sync` stops
-with `answered HTTP 409 Conflict` and `is stored from revision None`. Then:
+with `answered HTTP 409 Conflict` and `is stored from revision None` or
+`its source reports no git revision`. Then:
 
 ```sh
 chap-devops init mychap --models none
