@@ -89,7 +89,7 @@ always point at the newest release:
 | Platform | Download | Notes |
 | --- | --- | --- |
 | Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
+| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, unsigned |
 | Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
 
 <details>
@@ -98,8 +98,8 @@ always point at the newest release:
 | Platform | Download | Notes |
 | --- | --- | --- |
 | Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
-| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
+| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | unsigned |
+| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | unsigned |
 | Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
 
 </details>
@@ -109,8 +109,9 @@ An archive holds one directory, `chap-devops-<version>-<target>/`, with the bina
 no version, so the links above keep working after the next release, and
 `SHA256SUMS` in the release covers every one of them.
 
-The macOS binaries are signed with an Apple Developer ID certificate and
-notarized, so Gatekeeper does not block them. The Windows binaries are
+The macOS binaries are unsigned. macOS runs them from the install script and
+from `chap-devops self update`. If a browser downloaded the archive, run
+`xattr -d com.apple.quarantine chap-devops` on the binary first. The Windows binaries are
 unsigned and published untested; on Windows, run the Linux binary inside WSL 2
 with Docker Desktop's WSL integration (see the install chapter).
 

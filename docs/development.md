@@ -286,13 +286,14 @@ from the committed file, which is the same check `cargo test` makes, then runs
 
 ### Prerequisites
 
-The macOS archives are signed with an Apple Developer ID certificate and
-notarized, which needs six repository secrets. `scripts/github-secrets.sh`
-sets them, reading each value from 1Password and piping it into `gh secret set`
-on stdin, so no secret is written to disk or shown in a process list. All six
-are read before any of them is uploaded, and a read that fails or comes back
-empty aborts the run before it has set anything: a half-replaced set of signing
-secrets fails the next tagged build with a mix of old and new values.
+The macOS archives are unsigned: the dhis2-chap organisation has no Apple
+Developer ID. The workflow signs them with a Developer ID certificate and
+notarizes them when six repository secrets are set, and the release notes
+then say so. `scripts/github-secrets.sh` sets them, reading each value from
+1Password and piping it into `gh secret set` on stdin, so no secret is written
+to disk or shown in a process list. All six are read before any of them is
+uploaded, and a read that fails or comes back empty aborts the run before it
+has set anything.
 
 ```sh
 OP_VAULT="Private" OP_ITEM="Apple Developer ID" scripts/github-secrets.sh
@@ -300,15 +301,11 @@ OP_VAULT="Private" OP_ITEM="Apple Developer ID" scripts/github-secrets.sh
 
 The six are `APPLE_CERTIFICATE` (base64 of the exported `.p12`),
 `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`,
-`APPLE_PASSWORD` (an app-specific password) and `APPLE_TEAM_ID`. They are the
-same six the `winterop-com/maneki` desktop build uses. `--scope org` sets them
-on the organisation with `--visibility selected` instead of on this repository
-alone; `--dry-run` shows what would be set.
+`APPLE_PASSWORD` (an app-specific password) and `APPLE_TEAM_ID`.
+`--scope org` sets them on the organisation with `--visibility selected`
+instead of on this repository alone; `--dry-run` shows what would be set.
 
-Without the secrets a branch push or a dispatch run still succeeds with
-unsigned macOS binaries, so a fork can exercise the build. A tag run fails
-instead: a release is never published unsigned under notes that say it is
-signed. The publish job also refuses a tag that does not match the version in
+The publish job also refuses a tag that does not match the version in
 `Cargo.toml`, and publishes a tag with a suffix (`v1.0.0-rc.1`) as a
 pre-release that never becomes `releases/latest`.
 
@@ -391,9 +388,9 @@ pushes straight away.
 The tag starts `release.yml`, which attaches eight files to the release:
 
 - `chap-devops-universal-apple-darwin.tar.gz`, both macOS slices in one binary,
-  signed and notarized;
+  unsigned unless the Apple secrets are set;
 - `chap-devops-aarch64-apple-darwin.tar.gz` and `chap-devops-x86_64-apple-darwin.tar.gz`,
-  likewise signed and notarized;
+  likewise;
 - `chap-devops-x86_64-unknown-linux-musl.tar.gz` and
   `chap-devops-aarch64-unknown-linux-musl.tar.gz`, static;
 - `chap-devops-x86_64-pc-windows-msvc.zip` and `chap-devops-aarch64-pc-windows-msvc.zip`,
@@ -466,8 +463,7 @@ the notes need the history and the tags.
 
 Every push to `main` publishes the same seven archives as a GitHub
 pre-release under the single moving tag `dev`, named `dev (rolling build of
-main)`. It is the same build the tag path produces, signed and notarized the
-same way; what differs is which release it lands on and what the binary says
+main)`. It is the same build the tag path produces; what differs is which release it lands on and what the binary says
 about itself.
 
 - `CHAP_DEVOPS_BUILD_CHANNEL` is set at the workflow level to `stable` for a

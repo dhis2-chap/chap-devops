@@ -10,10 +10,10 @@ run-name: release ${{ github.ref_type == 'tag' && github.ref_name || 'dev (main)
 # `main`: same build, same signing and notarization, different release. The
 # two publish jobs are guarded so that neither can run for the other's event.
 #
-# macOS archives are signed with a Developer ID Application certificate and
-# notarized by Apple when these repository (or organisation) secrets are set.
-# Without them a branch or dispatch build still succeeds with an UNSIGNED
-# binary, and a tag run fails rather than publish one:
+# The macOS archives are unsigned: the dhis2-chap organisation has no Apple
+# Developer ID. When these repository (or organisation) secrets are set, the
+# same build signs them with a Developer ID Application certificate and
+# notarizes them, with no other change:
 #
 #   APPLE_CERTIFICATE            base64 of the exported Developer ID
 #                                Application certificate (.p12)
@@ -23,7 +23,8 @@ run-name: release ${{ github.ref_type == 'tag' && github.ref_name || 'dev (main)
 #   APPLE_PASSWORD               an app-specific password (appleid.apple.com)
 #   APPLE_TEAM_ID                the 10-character Team ID
 #
-# `scripts/github-secrets.sh` sets all six from 1Password.
+# `scripts/github-secrets.sh` sets all six from 1Password. The release notes
+# say which of the two a release is.
 #
 # Windows binaries are not signed: that needs an Authenticode certificate,
 # which is a separate purchase, so SmartScreen may warn on first run. The
@@ -121,17 +122,6 @@ jobs:
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
-
-      # A release is signed and notarized or it is not published: a tag run
-      # without the Apple secrets would otherwise ship an unsigned binary
-      # under release notes that say it is signed. Branch and dispatch runs
-      # still build unsigned.
-      - name: Refuse an unsigned macOS release
-        if: runner.os == 'macOS' && env.HAS_APPLE != 'true' && startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          echo "::error::the Apple signing secrets are not set, and a tagged release is never published unsigned; set them with scripts/github-secrets.sh and push the tag again"
-          exit 1
 
       # Signing happens between the build and the packaging so the archive
       # contains the signed binary.
@@ -237,17 +227,6 @@ jobs:
     env:
       HAS_APPLE: ${{ secrets.APPLE_CERTIFICATE != '' }}
     steps:
-      # A release is signed and notarized or it is not published: a tag run
-      # without the Apple secrets would otherwise ship an unsigned binary
-      # under release notes that say it is signed. Branch and dispatch runs
-      # still build unsigned.
-      - name: Refuse an unsigned macOS release
-        if: env.HAS_APPLE != 'true' && startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          echo "::error::the Apple signing secrets are not set, and a tagged release is never published unsigned; set them with scripts/github-secrets.sh and push the tag again"
-          exit 1
-
       # Checked out for the README and LICENSE that go into the archive.
       - uses: actions/checkout@v7
 
@@ -376,6 +355,8 @@ jobs:
       # tag is pushed: `scripts/release-notes.sh v0.2.4` on a checkout prints
       # exactly what the release will say.
       - name: Write the release notes
+        env:
+          MACOS_SIGNED: ${{ secrets.APPLE_CERTIFICATE != '' }}
         run: |
           set -euo pipefail
           scripts/release-notes.sh "$GITHUB_REF_NAME" > notes.md

@@ -170,8 +170,9 @@ steps and its "It worked when" lines in the same commit.
 - Commits are signed through the 1Password SSH agent; "failed to write commit
   object" means 1Password is locked.
 - `scripts/release.sh X.Y.Z --push` bumps, verifies, tags and pushes; the tag
-  starts the release workflow (seven archives, signed and notarized macOS
-  universal binary, `SHA256SUMS`). Every push to main also publishes the `dev`
+  starts the release workflow (seven archives, an unsigned macOS universal
+  binary, `SHA256SUMS`; it signs and notarizes macOS only when the Apple
+  secrets are set). Every push to main also publishes the `dev`
   pre-release. Release notes are generated from the commit types by
   `scripts/release-notes.sh`, so commit subjects are the changelog.
 

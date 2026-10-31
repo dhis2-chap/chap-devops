@@ -16,8 +16,14 @@
 # Commit type. This repository pushes to `main` rather than merging pull
 # requests, so GitHub's own generated notes have nothing to list and are turned
 # off in the workflow.
+#
+# MACOS_SIGNED=true says that the macOS archives are signed and notarized; the
+# release workflow sets it when the Apple secrets are there. Without it, the
+# notes say that they are unsigned.
 
 set -euo pipefail
+
+MACOS_SIGNED="${MACOS_SIGNED:-false}"
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
@@ -205,9 +211,11 @@ changelog() {
 # The archives, in one sentence rather than a table: GitHub already lists every
 # asset below the notes, with its size.
 platforms() {
+  local macos="is unsigned"
+  [ "$MACOS_SIGNED" = true ] && macos="is signed and notarized"
   cat <<TEXT
 The Linux archives are static musl and run on any distribution, the macOS
-archive is universal and is signed and notarized, and the Windows archives are
+archive is universal and ${macos}, and the Windows archives are
 unsigned. Every archive holds the binary, \`README.md\`, \`LICENSE\` and shell
 completions under \`completions/\`.
 TEXT
@@ -221,6 +229,9 @@ verify() {
 curl -fsSLO ${base}/SHA256SUMS
 shasum -a 256 -c SHA256SUMS --ignore-missing
 \`\`\`
+TEXT
+  if [ "$MACOS_SIGNED" = true ]; then
+    cat <<TEXT
 
 On macOS, check the signature of the extracted binary:
 
@@ -228,6 +239,14 @@ On macOS, check the signature of the extracted binary:
 codesign -dv --verbose=4 chap-devops
 \`\`\`
 TEXT
+  else
+    cat <<TEXT
+
+macOS runs the binary from the install script and from \`chap-devops self
+update\`. If a browser downloaded the archive, macOS blocks it; run
+\`xattr -d com.apple.quarantine chap-devops\` on the extracted binary.
+TEXT
+  fi
 }
 
 notes_for_tag() {

@@ -158,9 +158,8 @@ pub fn channel() -> Channel {
 /// The target whose archive `target` should install.
 ///
 /// macOS is the one place where a build does not take its own triple: the
-/// universal archive carries both slices, it is the one that is signed and
-/// notarized the same way, and it is what the install script and the download
-/// table point at, so a single-architecture Mac build still updates to it.
+/// universal archive carries both slices, and it is what the install script and
+/// the download table point at, so a single-architecture Mac build still updates to it.
 pub fn asset_target(target: &str) -> &str {
     if target.ends_with("-apple-darwin") {
         "universal-apple-darwin"

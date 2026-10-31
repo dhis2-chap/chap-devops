@@ -113,7 +113,7 @@ and it never changes once published. It is what the one-liner installs, what
 `chap-devops self update` follows, and what the download links point at.
 
 **dev** is the rolling build of `main`, republished under the single moving
-tag `dev` on every push. It is the same seven archives, built and signed the
+tag `dev` on every push. It is the same seven archives, built the
 same way, from a commit that has passed CI and nothing more: no release notes
 worth the name, no promise that anything in it stays. It reports the version
 of the last tag, so `chap-devops --version` says `chap-devops 0.100.1` on a dev build as
@@ -169,7 +169,7 @@ newest release:
 | Platform | Download | Notes |
 | --- | --- | --- |
 | Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
+| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, unsigned |
 | Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
 
 <details>
@@ -178,8 +178,8 @@ newest release:
 | Platform | Download | Notes |
 | --- | --- | --- |
 | Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
-| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
+| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | unsigned |
+| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | unsigned |
 | Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
 
 </details>
@@ -247,27 +247,21 @@ have no `shasum`. The `sha256sum` of BusyBox (Alpine, small containers) has no
 grep ' chap-devops-x86_64-unknown-linux-musl.tar.gz$' SHA256SUMS | sha256sum -c -
 ```
 
-The macOS binaries are signed with an Apple Developer ID certificate and
-notarized by Apple, so Gatekeeper lets them run: no right-click to open, no
-`xattr -d com.apple.quarantine`. To see who signed one:
+The macOS binaries are unsigned: the dhis2-chap organisation has no Apple
+Developer ID. macOS blocks an unsigned binary only when the file has the
+quarantine mark, which a browser sets on a download. The install script,
+`curl` and `chap-devops self update` do not set it, so a binary installed in
+those ways runs.
+
+If a browser downloaded the archive, macOS says that it cannot check the
+binary for malicious software. Remove the mark from the extracted binary,
+then run it:
 
 ```sh
-codesign -dv --verbose=4 /usr/local/bin/chap-devops
+xattr -d com.apple.quarantine chap-devops
 ```
 
-The `Authority=Developer ID Application: ...` line names the signer. To see
-that Apple notarized it:
-
-```sh
-spctl -a -vvv -t install /usr/local/bin/chap-devops
-```
-
-It prints `accepted` and `source=Notarized Developer ID`.
-
-Apple serves the notarization ticket online rather than it being stapled to
-the file, because a bare executable has nowhere to carry a ticket. The first
-run on a machine therefore wants to reach Apple once; after that the verdict
-is cached.
+`SHA256SUMS` is then the check that the file is the one the release built.
 
 The native Windows binaries are untested and not signed, which would need an
 Authenticode certificate. SmartScreen may warn the first time `chap-devops.exe` runs;

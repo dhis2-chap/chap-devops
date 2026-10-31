@@ -17,11 +17,8 @@
 #   --scope org    sets them once for the dhis2-chap organisation with
 #                  `--visibility selected --repos chap-devops`, so the same values
 #                  can later be shared with another repository by adding it to
-#                  that list instead of uploading the certificate again. The
-#                  same six secrets already exist as repository secrets on
-#                  winterop-com/maneki; promoting them to the organisation is
-#                  the tidier end state, but it needs admin rights on the
-#                  organisation and it does not remove maneki's own copies.
+#                  that list instead of uploading the certificate again. It
+#                  needs admin rights on the organisation.
 #
 # Either way the workflow reads them as plain `secrets.APPLE_*`: a repository
 # secret shadows an organisation secret of the same name, so setting both is
