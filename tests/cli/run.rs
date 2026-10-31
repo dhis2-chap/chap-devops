@@ -153,10 +153,10 @@ fn a_group_labels_its_containers_with_the_run_kind_and_its_name() {
     assert!(project.contains("\ngroup: trial\n"), "{project}");
     let overlay = read(&dir.join("compose.chapkit-ewars-model.yml"));
     for line in [
-        "      com.winterop.chap-devops.role: model\n",
-        "      com.winterop.chap-devops.model: \"chapkit_ewars_model\"\n",
-        "      com.winterop.chap-devops.kind: run\n",
-        "      com.winterop.chap-devops.group: \"trial\"\n",
+        "      io.github.dhis2-chap.chap-devops.role: model\n",
+        "      io.github.dhis2-chap.chap-devops.model: \"chapkit_ewars_model\"\n",
+        "      io.github.dhis2-chap.chap-devops.kind: run\n",
+        "      io.github.dhis2-chap.chap-devops.group: \"trial\"\n",
     ] {
         // Once on the model and once on its init container.
         assert_eq!(overlay.matches(line).count(), 2, "{line}{overlay}");
@@ -189,11 +189,11 @@ fn run_inside_a_deployment_uses_it_and_refuses_a_group() {
     // A deployment of the caller's own is not a group, and its labels say so.
     let overlay = read(&dir.join("compose.auto-arima-chapkit.yml"));
     assert!(
-        overlay.contains("com.winterop.chap-devops.kind: init\n"),
+        overlay.contains("io.github.dhis2-chap.chap-devops.kind: init\n"),
         "{overlay}"
     );
     assert!(
-        !overlay.contains("com.winterop.chap-devops.group"),
+        !overlay.contains("io.github.dhis2-chap.chap-devops.group"),
         "{overlay}"
     );
     assert!(!read(&dir.join(".chap-devops").join("project.yaml")).contains("group:"));

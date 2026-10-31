@@ -690,22 +690,22 @@ not json
 #[test]
 fn a_label_list_keeps_commas_inside_values() {
     let labels = super::labels::parse_label_list(
-        "com.docker.compose.project=demo-ab12cd,com.docker.compose.project.config_files=/d/compose.yml,/d/compose.chap-devops.yml,com.winterop.chap-devops.role=chap-core",
+        "com.docker.compose.project=demo-ab12cd,com.docker.compose.project.config_files=/d/compose.yml,/d/compose.chap-devops.yml,io.github.dhis2-chap.chap-devops.role=chap-core",
     );
     assert_eq!(labels["com.docker.compose.project"], "demo-ab12cd");
     assert_eq!(
         labels["com.docker.compose.project.config_files"],
         "/d/compose.yml,/d/compose.chap-devops.yml"
     );
-    assert_eq!(labels["com.winterop.chap-devops.role"], "chap-core");
+    assert_eq!(labels["io.github.dhis2-chap.chap-devops.role"], "chap-core");
 }
 
 #[test]
 fn docker_desktop_port_labels_are_keys_of_their_own() {
     let labels = super::labels::parse_label_list(
-        "com.docker.compose.project.config_files=/d/compose.yml,/d/compose.chap-devops.yml,com.winterop.chap-devops.role=model,desktop.docker.io/ports.scheme=v2,desktop.docker.io/ports/8000/tcp=127.0.0.1:5001",
+        "com.docker.compose.project.config_files=/d/compose.yml,/d/compose.chap-devops.yml,io.github.dhis2-chap.chap-devops.role=model,desktop.docker.io/ports.scheme=v2,desktop.docker.io/ports/8000/tcp=127.0.0.1:5001",
     );
-    assert_eq!(labels["com.winterop.chap-devops.role"], "model");
+    assert_eq!(labels["io.github.dhis2-chap.chap-devops.role"], "model");
     assert_eq!(labels["desktop.docker.io/ports.scheme"], "v2");
     assert_eq!(labels["desktop.docker.io/ports/8000/tcp"], "127.0.0.1:5001");
     assert_eq!(
@@ -716,13 +716,16 @@ fn docker_desktop_port_labels_are_keys_of_their_own() {
 
 #[test]
 fn labeled_containers_say_their_health() {
-    let text = r#"{"ID":"abc","Names":"demo-chap-1","State":"running","Status":"Up 5 minutes (healthy)","Labels":"com.winterop.chap-devops.role=chap-core"}
-{"ID":"def","Names":"demo-m-1","State":"exited","Status":"Exited (1) 2 minutes ago","Labels":"com.winterop.chap-devops.role=model,com.winterop.chap-devops.model=m"}"#;
+    let text = r#"{"ID":"abc","Names":"demo-chap-1","State":"running","Status":"Up 5 minutes (healthy)","Labels":"io.github.dhis2-chap.chap-devops.role=chap-core"}
+{"ID":"def","Names":"demo-m-1","State":"exited","Status":"Exited (1) 2 minutes ago","Labels":"io.github.dhis2-chap.chap-devops.role=model,io.github.dhis2-chap.chap-devops.model=m"}"#;
     let rows = super::labels::parse_labeled(text);
     assert_eq!(rows.len(), 2);
     assert_eq!(rows[0].health(), Some("healthy"));
     assert_eq!(rows[1].health(), None);
-    assert_eq!(rows[1].label("com.winterop.chap-devops.model"), Some("m"));
+    assert_eq!(
+        rows[1].label("io.github.dhis2-chap.chap-devops.model"),
+        Some("m")
+    );
 }
 
 #[test]

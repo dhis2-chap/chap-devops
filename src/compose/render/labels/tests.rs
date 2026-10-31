@@ -58,12 +58,12 @@ fn components() -> Components {
 fn the_block_names_the_kind_from_the_group() {
     assert_eq!(
         labels_block(ROLE_OCS, None, None),
-        "    labels:\n      com.winterop.chap-devops.role: ocs\n      com.winterop.chap-devops.kind: init\n"
+        "    labels:\n      io.github.dhis2-chap.chap-devops.role: ocs\n      io.github.dhis2-chap.chap-devops.kind: init\n"
     );
     assert_eq!(
         labels_block(ROLE_MODEL, Some("m"), Some("123")),
-        "    labels:\n      com.winterop.chap-devops.role: model\n      com.winterop.chap-devops.model: \"m\"\n      \
-         com.winterop.chap-devops.kind: run\n      com.winterop.chap-devops.group: \"123\"\n"
+        "    labels:\n      io.github.dhis2-chap.chap-devops.role: model\n      io.github.dhis2-chap.chap-devops.model: \"m\"\n      \
+         io.github.dhis2-chap.chap-devops.kind: run\n      io.github.dhis2-chap.chap-devops.group: \"123\"\n"
     );
 }
 

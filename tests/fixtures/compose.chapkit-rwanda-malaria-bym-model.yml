@@ -3,9 +3,9 @@
 services:
   chapkit-rwanda-malaria-bym-model:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_rwanda_malaria_bym_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_rwanda_malaria_bym_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     restart: unless-stopped
     image: ghcr.io/chap-models/chapkit_rwanda_malaria_bym_model:${CHAPKIT_RWANDA_MALARIA_BYM_MODEL_IMAGE_TAG:-sha-1ee5ea1}
     platform: linux/amd64
@@ -38,9 +38,9 @@ services:
 
   chapkit-rwanda-malaria-bym-model-init:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_rwanda_malaria_bym_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_rwanda_malaria_bym_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     image: busybox:1.38
     command: ["sh", "-c", "chown -R 1000:1000 /work/data"]
     user: "0:0"

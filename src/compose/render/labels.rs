@@ -1,7 +1,7 @@
 //! The labels every container chap-devops starts carries.
 //!
 //! They are what lets a tool find every chap-devops container on a machine with one
-//! `docker ps --filter label=com.winterop.chap-devops.role`, whatever deployment or
+//! `docker ps --filter label=io.github.dhis2-chap.chap-devops.role`, whatever deployment or
 //! `chap-devops run` group it belongs to, and tell what each one is without parsing
 //! compose project names. Nothing in them depends on the chap-devops version or the
 //! time: a changed label makes compose recreate the container, so an upgrade

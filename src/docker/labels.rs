@@ -5,14 +5,14 @@ use super::docker_capture;
 use std::collections::BTreeMap;
 
 /// What the container is: `chap-core`, `model`, `ocs`, `s3` or `dhis2`.
-pub const ROLE_LABEL: &str = "com.winterop.chap-devops.role";
+pub const ROLE_LABEL: &str = "io.github.dhis2-chap.chap-devops.role";
 /// The marketplace id of a model service, and of its init container.
-pub const MODEL_LABEL: &str = "com.winterop.chap-devops.model";
+pub const MODEL_LABEL: &str = "io.github.dhis2-chap.chap-devops.model";
 /// `run` for a `chap-devops run` group, `init` for a deployment of its own, and
 /// `cli` for the one-shot container `chap-devops chap` runs.
-pub const KIND_LABEL: &str = "com.winterop.chap-devops.kind";
+pub const KIND_LABEL: &str = "io.github.dhis2-chap.chap-devops.kind";
 /// The group of a `chap-devops run` deployment.
-pub const GROUP_LABEL: &str = "com.winterop.chap-devops.group";
+pub const GROUP_LABEL: &str = "io.github.dhis2-chap.chap-devops.group";
 
 /// Compose's own labels, which say which deployment and service it is.
 pub const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";

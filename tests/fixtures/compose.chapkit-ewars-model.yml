@@ -3,9 +3,9 @@
 services:
   chapkit-ewars-model:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_ewars_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_ewars_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     restart: unless-stopped
     image: ghcr.io/chap-models/chapkit_ewars_model:${CHAPKIT_EWARS_MODEL_IMAGE_TAG:-sha-964eea8}
     platform: linux/amd64
@@ -38,9 +38,9 @@ services:
 
   chapkit-ewars-model-init:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_ewars_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_ewars_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     image: busybox:1.38
     command: ["sh", "-c", "chown -R 1000:1000 /app/data"]
     user: "0:0"

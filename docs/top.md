@@ -44,7 +44,7 @@ asked from a thread of its own, so a slow daemon never holds up a key.
 
 Every container chap-devops starts carries labels that say what it is (see
 [Container labels](./concepts.md#container-labels)), so one
-`docker ps -a --filter label=com.winterop.chap-devops.role` finds them all, on any
+`docker ps -a --filter label=io.github.dhis2-chap.chap-devops.role` finds them all, on any
 deployment, wherever its directory is. Compose's own labels say which
 deployment and which service each one is, and the directory compose ran in;
 from that directory `chap-devops top` reads the deployment's state for the URLs. A

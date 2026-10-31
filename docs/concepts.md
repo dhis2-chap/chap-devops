@@ -206,24 +206,24 @@ it does for any compose project.
 
 ## Container labels
 
-Every container `chap-devops` starts carries labels under `com.winterop.chap-devops`, so a
+Every container `chap-devops` starts carries labels under `io.github.dhis2-chap.chap-devops`, so a
 tool can find them all on a machine without knowing where any deployment
 lives:
 
 ```sh
-docker ps --filter label=com.winterop.chap-devops.role
+docker ps --filter label=io.github.dhis2-chap.chap-devops.role
 ```
 
 lists every chap-devops container, of every deployment and every `chap-devops run` group,
 and `chap-devops top` finds its containers the same way. The one-shot containers of
-`chap-devops chap` and `chap-devops chapkit` have no role label; `label=com.winterop.chap-devops.kind` finds it too.
+`chap-devops chap` and `chap-devops chapkit` have no role label; `label=io.github.dhis2-chap.chap-devops.kind` finds it too.
 
 | Label | Value | On |
 | --- | --- | --- |
-| `com.winterop.chap-devops.role` | `chap-core`, `model`, `ocs`, `s3` or `dhis2` | Every container except the ones of `chap-devops chap` and `chap-devops chapkit`. `chap-core` covers chap, the worker, Valkey and PostgreSQL; `dhis2` covers its database and one-shots; `s3` its bucket one-shot. |
-| `com.winterop.chap-devops.model` | The marketplace id, such as `chapkit_simple_multistep_model` | A model service and its `-init` container. |
-| `com.winterop.chap-devops.kind` | `run` for a [`chap-devops run` group](./run.md#where-it-runs-groups), `init` for a deployment `chap-devops init` wrote, `cli` for the one-shot containers of `chap-devops chap` and `chap-devops chapkit` | Every container. |
-| `com.winterop.chap-devops.group` | The group name | Every container of a `chap-devops run` group, and nothing else. |
+| `io.github.dhis2-chap.chap-devops.role` | `chap-core`, `model`, `ocs`, `s3` or `dhis2` | Every container except the ones of `chap-devops chap` and `chap-devops chapkit`. `chap-core` covers chap, the worker, Valkey and PostgreSQL; `dhis2` covers its database and one-shots; `s3` its bucket one-shot. |
+| `io.github.dhis2-chap.chap-devops.model` | The marketplace id, such as `chapkit_simple_multistep_model` | A model service and its `-init` container. |
+| `io.github.dhis2-chap.chap-devops.kind` | `run` for a [`chap-devops run` group](./run.md#where-it-runs-groups), `init` for a deployment `chap-devops init` wrote, `cli` for the one-shot containers of `chap-devops chap` and `chap-devops chapkit` | Every container. |
+| `io.github.dhis2-chap.chap-devops.group` | The group name | Every container of a `chap-devops run` group, and nothing else. |
 
 The model and component files carry the labels themselves. chap-core's
 services get theirs from `compose.chap-devops.yml`, since `compose.yml` is upstream's

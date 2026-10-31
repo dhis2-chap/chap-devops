@@ -372,9 +372,9 @@ Every container that chap-devops starts carries labels:
 
 | Label | Value |
 | --- | --- |
-| `com.winterop.chap-devops.role` | `chap-core`, `model`, `ocs`, `s3` or `dhis2` |
-| `com.winterop.chap-devops.model` | the marketplace id of a model |
-| `com.winterop.chap-devops.kind` | `init` for a deployment, `run` for a `chap-devops run` group, `cli` for the one-shot container of `chap-devops chap` and `chap-devops chapkit` |
+| `io.github.dhis2-chap.chap-devops.role` | `chap-core`, `model`, `ocs`, `s3` or `dhis2` |
+| `io.github.dhis2-chap.chap-devops.model` | the marketplace id of a model |
+| `io.github.dhis2-chap.chap-devops.kind` | `init` for a deployment, `run` for a `chap-devops run` group, `cli` for the one-shot container of `chap-devops chap` and `chap-devops chapkit` |
 
 `chap-devops top` uses them to show every deployment on the machine as one live
 tree: each service with its state, CPU, memory and URL. `l` shows a log, `s`

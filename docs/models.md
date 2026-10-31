@@ -1739,9 +1739,9 @@ and nothing else by way of explanation: what it does is below.
 services:
   chapkit-simple-multistep-model:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_simple_multistep_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_simple_multistep_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     restart: unless-stopped
     image: ghcr.io/chap-models/chapkit_simple_multistep_model:${CHAPKIT_SIMPLE_MULTISTEP_MODEL_IMAGE_TAG:-sha-10b2bc7}
     platform: linux/amd64
@@ -1774,9 +1774,9 @@ services:
 
   chapkit-simple-multistep-model-init:
     labels:
-      com.winterop.chap-devops.role: model
-      com.winterop.chap-devops.model: "chapkit_simple_multistep_model"
-      com.winterop.chap-devops.kind: init
+      io.github.dhis2-chap.chap-devops.role: model
+      io.github.dhis2-chap.chap-devops.model: "chapkit_simple_multistep_model"
+      io.github.dhis2-chap.chap-devops.kind: init
     image: busybox:1.38
     command: ["sh", "-c", "chown -R 1001:1001 /app/data"]
     user: "0:0"
@@ -1795,7 +1795,7 @@ volumes:
 The overlay does seven things.
 
 - **Labels both containers** with their role, the marketplace id and the
-  deployment's kind, so `docker ps --filter label=com.winterop.chap-devops.model`
+  deployment's kind, so `docker ps --filter label=io.github.dhis2-chap.chap-devops.model`
   finds every model on the machine. See
   [Container labels](./concepts.md#container-labels).
 - **Pins the image.** `image: <repo>:${<ID>_IMAGE_TAG:-sha-<commit>}`, where the

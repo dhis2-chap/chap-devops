@@ -132,9 +132,9 @@ each on its own host port.
 Groups keep models apart. Each one is a compose project of its own, so its
 containers, volumes and network carry its name, and stopping a group touches
 nothing else. `.chap-devops/project.yaml` records the group as `group: <name>`, and
-every container in it carries the labels `com.winterop.chap-devops.kind: run` and
-`com.winterop.chap-devops.group: <name>`, so
-`docker ps --filter label=com.winterop.chap-devops.group=trial` lists one group's
+every container in it carries the labels `io.github.dhis2-chap.chap-devops.kind: run` and
+`io.github.dhis2-chap.chap-devops.group: <name>`, so
+`docker ps --filter label=io.github.dhis2-chap.chap-devops.group=trial` lists one group's
 containers ([Container labels](./concepts.md#container-labels)):
 
 ```sh

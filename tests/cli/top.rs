@@ -17,7 +17,7 @@ fn labelled_docker(dir: &std::path::Path) -> (TempDir, PathBuf) {
     let labels = |service: &str, role: &str| {
         format!(
             "com.docker.compose.project=demo-ab12cd,com.docker.compose.service={service},\
-             com.docker.compose.project.working_dir={},com.winterop.chap-devops.role={role}",
+             com.docker.compose.project.working_dir={},io.github.dhis2-chap.chap-devops.role={role}",
             dir.display()
         )
     };
@@ -34,7 +34,7 @@ fn labelled_docker(dir: &std::path::Path) -> (TempDir, PathBuf) {
     let script = format!(
         "#!/bin/sh\n\
          case \"$*\" in\n\
-         *'ps -a --filter label=com.winterop.chap-devops.role'*) printf '{ps}'; exit 0;;\n\
+         *'ps -a --filter label=io.github.dhis2-chap.chap-devops.role'*) printf '{ps}'; exit 0;;\n\
          *'stats --no-stream'*) printf '{stats}'; exit 0;;\n\
          esac\n\
          exit 0\n"

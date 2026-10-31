@@ -23,13 +23,13 @@ fn container(project: &str, service: &str, role: &str, state: &str, status: &str
             format!("/deploy/{project}"),
         ),
         (
-            "com.winterop.chap-devops.role".to_string(),
+            "io.github.dhis2-chap.chap-devops.role".to_string(),
             role.to_string(),
         ),
     ]);
     if role == "model" {
         labels.insert(
-            "com.winterop.chap-devops.model".to_string(),
+            "io.github.dhis2-chap.chap-devops.model".to_string(),
             service.replace('-', "_"),
         );
     }

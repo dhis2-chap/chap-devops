@@ -107,7 +107,7 @@ docker run --rm -i [-t] --init --platform linux/amd64
   -v <data>/chap:<data>/chap
   -e HOME=/tmp -e CHAP_RUNS_DIR=<data>/chap/runs ...
   [--network <deployment>_default]
-  --label com.winterop.chap-devops.kind=cli
+  --label io.github.dhis2-chap.chap-devops.kind=cli
   ghcr.io/dhis2-chap/chap-worker:v2.5.0 chap eval ...
 ```
 
