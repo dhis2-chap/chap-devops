@@ -44,6 +44,7 @@ fn container(project: &str, service: &str, role: &str, state: &str, status: &str
 
 fn model(service: &str, port: Option<u16>) -> EnabledModel {
     EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: service.to_string(),
         image: format!("ghcr.io/chap-models/{service}"),

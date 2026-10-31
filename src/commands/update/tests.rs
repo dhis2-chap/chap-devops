@@ -384,6 +384,7 @@ fn row(id: &str) -> ModelUpdate {
     ModelUpdate::unchanged(
         id,
         &crate::project::EnabledModel {
+            previous: None,
             reads_port: false,
             service_id: id.to_string(),
             image: format!("ghcr.io/chap-models/{id}"),
@@ -1170,4 +1171,46 @@ fn a_failed_release_lookup_says_where_the_pin_goes() {
     // A tag that is already the pin needs no lookup at all.
     assert!(!needs_release_lookup("latest", false, Some("latest")));
     assert!(needs_release_lookup("v2.4.0", false, Some("latest")));
+}
+
+/// A moved pin keeps the one before it; a second move before `up` keeps the
+/// first one, and a model from `models add` or a pin that did not move gets
+/// none.
+#[test]
+fn a_moved_pin_keeps_the_one_before_it() {
+    let model = || crate::project::EnabledModel {
+        previous: None,
+        reads_port: false,
+        service_id: "m".to_string(),
+        image: "ghcr.io/chap-models/m".into(),
+        image_tag: "sha-1111111".into(),
+        version: "1.0.0".into(),
+        channel: Some(Channel::Stable),
+        host_port: None,
+        bind: None,
+        data_dir: "/work/data".into(),
+        user: "chapkit:chapkit".into(),
+        user_from: Default::default(),
+        platform: None,
+        compose_file: "compose.m.yml".into(),
+    };
+
+    let mut entry = model();
+    record_previous(&mut entry, "sha-2222222", false);
+    let previous = entry.previous.clone().expect("a previous pin");
+    assert_eq!(
+        (previous.version.as_str(), previous.image_tag.as_str()),
+        ("1.0.0", "sha-1111111")
+    );
+    entry.version = "1.1.0".into();
+    entry.image_tag = "sha-2222222".into();
+    record_previous(&mut entry, "sha-3333333", false);
+    assert_eq!(entry.previous, Some(previous));
+
+    let mut manual = model();
+    record_previous(&mut manual, "sha-2222222", true);
+    assert_eq!(manual.previous, None);
+    let mut same = model();
+    record_previous(&mut same, "sha-1111111", false);
+    assert_eq!(same.previous, None);
 }

@@ -201,6 +201,7 @@ fn an_unmanaged_model_with_configured_models_of_another_version_only_is_named() 
 #[test]
 fn a_revision_that_is_not_the_pin_is_named() {
     let model = |service_id: &str, image_tag: &str| crate::project::EnabledModel {
+        previous: None,
         service_id: service_id.to_string(),
         image: "ghcr.io/chap-models/x".to_string(),
         image_tag: image_tag.to_string(),

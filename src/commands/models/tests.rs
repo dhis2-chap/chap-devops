@@ -14,6 +14,7 @@ fn enabled() -> EnabledModel {
 
 fn enabled_on(host_port: Option<u16>) -> EnabledModel {
     EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
@@ -365,6 +366,7 @@ fn info_shows_the_project_entry_when_the_model_is_enabled() {
 #[test]
 fn info_says_where_the_user_came_from() {
     let entry = EnabledModel {
+        previous: None,
         user: "root".into(),
         user_from: crate::compose::UserSource::ImageConfig,
         ..enabled()

@@ -90,6 +90,7 @@ fn from_enabled_replays_the_recorded_state() {
     let r = registry();
     let m = r.get("chapkit_ewars_model").unwrap();
     let enabled = EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
@@ -109,6 +110,7 @@ fn from_enabled_replays_the_recorded_state() {
 
     // A model that publishes nothing replays as such.
     let internal = EnabledModel {
+        previous: None,
         host_port: None,
         ..enabled.clone()
     };

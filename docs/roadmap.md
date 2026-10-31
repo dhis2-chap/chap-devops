@@ -33,13 +33,6 @@ not change.
 reviewed the image. `chap-devops models add` asks for no confirmation. Whether it
 should, and how (a flag, or a question at a terminal), is still open.
 
-### Undo of a failed update, for the container too
-
-When a configure step fails, `chap-devops` retires the template version it
-stored, so chap-core is as it was. `chap-admin` also stops the new container
-and starts the previous image again. `chap-devops` leaves the new container
-running.
-
 ### chap-devops for chap-admin users
 
 A page that maps each `chap-admin` command and flag to the `chap-devops`

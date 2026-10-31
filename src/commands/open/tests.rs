@@ -10,6 +10,7 @@ fn a_model_opens_its_docs_on_its_port_or_through_chap_core() {
         state: Default::default(),
     };
     let mut model = crate::project::EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: String::new(),

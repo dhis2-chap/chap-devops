@@ -58,6 +58,7 @@ fn first_free_walks_upwards() {
 
 fn enabled(service_id: &str, port: Option<u16>) -> EnabledModel {
     EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: service_id.to_string(),
         image: "ghcr.io/chap-models/x".into(),

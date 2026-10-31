@@ -4,6 +4,7 @@ use crate::registry::Channel;
 
 fn model(port: Option<u16>) -> EnabledModel {
     EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),

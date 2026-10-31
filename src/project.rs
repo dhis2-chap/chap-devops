@@ -352,6 +352,23 @@ pub struct EnabledModel {
     pub platform: Option<String>,
     /// Overlay file name, relative to the project directory.
     pub compose_file: String,
+    /// The pin before `chap-devops update` moved it. It stays until chap-core
+    /// has configured the new version, and `chap-devops up` goes back to it
+    /// when chap-core refuses the new version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub previous: Option<PreviousPin>,
+}
+
+/// The parts of an [`EnabledModel`] that `chap-devops update` changes.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PreviousPin {
+    pub version: String,
+    pub image_tag: String,
+    pub user: String,
+    #[serde(default)]
+    pub user_from: UserSource,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reads_port: bool,
 }
 
 /// A project directory plus its parsed state.

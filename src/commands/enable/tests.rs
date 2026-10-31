@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 
 fn project_with_ewars(host_port: Option<u16>) -> Project {
     let model = EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),

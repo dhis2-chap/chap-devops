@@ -21,6 +21,7 @@ fn a_manual_models_source_is_what_models_add_takes() {
 
 fn enabled(port: Option<u16>) -> EnabledModel {
     EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
@@ -227,6 +228,7 @@ fn save_then_load_round_trips_both_files() {
 fn the_resolved_user_round_trips() {
     let dir = tempfile::tempdir().unwrap();
     let entry = EnabledModel {
+        previous: None,
         user: "root".into(),
         user_from: UserSource::ImageConfig,
         ..enabled(None)

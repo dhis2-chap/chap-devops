@@ -303,11 +303,13 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
                 manual.commit = Some(commit.clone());
             }
         }
+        let manual = project.state.manual.contains_key(&change.id);
         let entry = project
             .state
             .models
             .get_mut(&change.id)
             .expect("plan only lists enabled models");
+        record_previous(entry, &change.new_tag, manual);
         entry.version = change.new_version.clone();
         entry.image_tag = change.new_tag.clone();
         entry.user = change.new_user.clone();
@@ -363,6 +365,23 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
             lines.warning(warning.as_str());
         }
     })
+}
+
+/// Keep the pin that worked last, for `chap-devops up` to go back to when
+/// chap-core refuses the new version. An earlier update that was never
+/// configured keeps the pin from before it. A model from `models add` also
+/// has its pin in `models-manual.yaml`, so it gets no previous pin.
+fn record_previous(entry: &mut crate::project::EnabledModel, new_tag: &str, manual: bool) {
+    if manual || entry.previous.is_some() || entry.image_tag == new_tag {
+        return;
+    }
+    entry.previous = Some(crate::project::PreviousPin {
+        version: entry.version.clone(),
+        image_tag: entry.image_tag.clone(),
+        user: entry.user.clone(),
+        user_from: entry.user_from,
+        reads_port: entry.reads_port,
+    });
 }
 
 /// Print one of the command's own sections, unless a parser is reading.

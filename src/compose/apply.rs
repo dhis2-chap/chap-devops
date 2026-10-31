@@ -479,6 +479,7 @@ pub(crate) fn plan_with(
                     Some(&user),
                 );
                 EnabledModel {
+                    previous: None,
                     reads_port,
                     service_id: model.service_id.clone(),
                     image: model.source.image.clone(),

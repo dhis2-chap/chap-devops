@@ -418,6 +418,25 @@ If the line says `retiring the template version it stored failed too`, the
 configured models made so far are still live. Run the `chap-devops api DELETE`
 command in the line, then run `chap-devops models configs sync ID`.
 
+## `chap-core refused ID VERSION, so chap-devops started VERSION again`
+
+```text
+warning: chap-core refused chapkit_ewars_model 1.1.0, so chap-devops started 1.0.3 again; `chap-devops update` moves it again
+```
+
+`chap-devops update` moved the pin of the model, and `chap-devops up --wait`
+started the new version. chap-core then refused to configure it, and
+chap-devops retired the template version, as the line above it says. As
+`chap-admin update` does, chap-devops put the pin back to the version before
+the update and started that container again.
+
+`chap-devops update` records the previous pin in `.chap-devops/models.yaml`
+(`previous:`). The record goes when chap-core has configured the new version.
+A model added with `chap-devops models add` gets no record.
+
+1. Read `chap-devops logs chap` for the reason.
+2. When the cause is fixed, run `chap-devops update` again.
+
 ## `chap-core has no configured model NAME for`
 
 ```text

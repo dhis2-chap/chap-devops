@@ -138,6 +138,7 @@ fn state_with_ewars(registry: &Registry, host_port: Option<u16>) -> ProjectState
     state.models.insert(
         model.id.clone(),
         crate::project::EnabledModel {
+            previous: None,
             reads_port: false,
             service_id: model.service_id.clone(),
             image: model.source.image.clone(),

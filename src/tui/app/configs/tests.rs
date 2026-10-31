@@ -19,6 +19,7 @@ fn state(registry: &Registry, chap_core: bool) -> ProjectState {
     state.models.insert(
         model.id.clone(),
         EnabledModel {
+            previous: None,
             reads_port: false,
             service_id: model.service_id.clone(),
             image: model.source.image.clone(),

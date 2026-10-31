@@ -93,6 +93,7 @@ fn a_models_user_is_checked_against_the_image_it_pins() {
 #[test]
 fn the_user_checks_cover_every_enabled_model() {
     let entry = crate::project::EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
@@ -456,6 +457,7 @@ fn an_env_tag_override_is_the_reference_checked() {
     );
 
     let model = crate::project::EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "m".into(),
         image: "ghcr.io/chap-models/m".into(),

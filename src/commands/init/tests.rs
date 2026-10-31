@@ -508,6 +508,7 @@ fn the_compose_file_of_a_dropped_component_is_removed() {
 #[test]
 fn a_model_is_kept_by_either_of_its_two_names() {
     let model = crate::project::EnabledModel {
+        previous: None,
         service_id: "chapkit-ewars-model".to_string(),
         ..model_record()
     };
@@ -540,6 +541,7 @@ fn a_model_is_kept_by_either_of_its_two_names() {
 /// An enabled-model record with nothing in it that these tests care about.
 fn model_record() -> crate::project::EnabledModel {
     crate::project::EnabledModel {
+        previous: None,
         reads_port: false,
         service_id: "x".to_string(),
         image: "ghcr.io/chap-models/x".into(),

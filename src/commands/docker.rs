@@ -9,6 +9,7 @@
 mod args;
 mod down;
 mod preflight;
+mod previous;
 mod removal;
 mod report;
 pub(crate) mod wait;
@@ -154,7 +155,7 @@ pub fn run(ctx: &Ctx, cmd: &DockerCmd) -> Result<()> {
         // An attached `up` has just streamed the logs and been interrupted;
         // there is nothing left running to summarise.
         DockerCmd::Up(args) if args.attach => Ok(()),
-        DockerCmd::Up(args) => finish_up(ctx, &project, &before, args.wait, args.timeout),
+        DockerCmd::Up(args) => finish_up(ctx, &mut project, &before, args.wait, args.timeout),
         _ => report_what_changed(ctx, &mut project, cmd, &before, &volumes),
     }
 }
@@ -167,7 +168,7 @@ pub fn run(ctx: &Ctx, cmd: &DockerCmd) -> Result<()> {
 /// what never answered; a person sees the lines first.
 fn finish_up(
     ctx: &Ctx,
-    project: &Project,
+    project: &mut Project,
     before: &[docker::Container],
     wait: bool,
     timeout: u64,
@@ -187,6 +188,11 @@ fn finish_up(
     if let (Some(readiness), Some(configured)) = (readiness.as_mut(), &configured) {
         wait::mark_configured(readiness, &configured.models);
     }
+    let restored = configured
+        .as_ref()
+        .map(|configured| previous::settle(ctx, project, configured))
+        .unwrap_or_default();
+    let project = &*project;
     let build = |lines: &mut Report| {
         up_lines(
             before,
@@ -202,6 +208,9 @@ fn finish_up(
             ready_lines(readiness, lines);
         }
         super::configs::sync::fold(&configured, false, lines);
+        for line in &restored {
+            lines.warning(line.as_str());
+        }
     };
     match &readiness {
         Some(readiness) if !readiness.ready => {
