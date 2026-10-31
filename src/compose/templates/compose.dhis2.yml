@@ -84,6 +84,7 @@ services:
     # ON_ERROR_STOP=0 so a database DHIS2 has not migrated yet, which has no
     # jobconfiguration table, is a no-op rather than a failure.
 @LABELS@    image: @DB_IMAGE@
+    platform: linux/amd64
     restart: "no"
     environment:
       PGHOST: ${DHIS2_DB_HOST:-dhis2-db}

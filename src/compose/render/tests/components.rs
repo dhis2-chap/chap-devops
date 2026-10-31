@@ -459,15 +459,20 @@ fn dhis2_publishes_a_port_only_when_one_was_asked_for() {
 /// The container port never moves: 8080 is the one connector the image's
 /// `server.xml` declares, and the context path is the root.
 #[test]
-fn dhis2_pins_only_the_database_platform_and_pulls_the_tag_env_can_move() {
+fn dhis2_pins_only_the_database_image_platform_and_pulls_the_tag_env_can_move() {
     let text = render_dhis2(&dhis2_spec());
     let doc = parse(&text);
-    // The PostGIS image is amd64-only; the others are multi-arch.
-    assert_eq!(
-        service(&doc, "dhis2-db")["platform"].as_str(),
-        Some("linux/amd64")
-    );
-    for name in ["dhis2", "dhis2-dump", "dhis2-prep"] {
+    // The PostGIS image is amd64-only, in every service that runs it; the
+    // others are multi-arch. An arm64 host fails its pull without the pin.
+    for name in ["dhis2-db", "dhis2-prep"] {
+        assert_eq!(service(&doc, name)["image"].as_str(), Some(DHIS2_DB_IMAGE));
+        assert_eq!(
+            service(&doc, name)["platform"].as_str(),
+            Some("linux/amd64"),
+            "{name} does not pin the platform"
+        );
+    }
+    for name in ["dhis2", "dhis2-dump"] {
         assert!(
             service(&doc, name).get("platform").is_none(),
             "{name} pins a platform"

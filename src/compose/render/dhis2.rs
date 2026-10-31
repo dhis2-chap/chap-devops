@@ -363,8 +363,9 @@ pub const DHIS2_DEFAULT_SEED_URL: &str =
 ///
 /// The host port is published only when the component records one, as with
 /// `ocs`: an instance behind a reverse proxy is `expose`d on the compose network
-/// and nowhere else. `dhis2-db` is the one service with a `platform:` line:
-/// `dhis2/core` and `alpine` are multi-arch, the PostGIS image is not.
+/// and nowhere else. `dhis2-db` and `dhis2-prep` run the PostGIS image, which is
+/// not multi-arch, so they have a `platform:` line; `dhis2/core` and `alpine`
+/// are multi-arch.
 pub fn render_dhis2(spec: &Dhis2Spec) -> String {
     let labels = labels_block(ROLE_DHIS2, None, spec.group.as_deref());
     let mut port_lines = format!("    expose:\n      - \"{DHIS2_CONTAINER_PORT}\"\n");

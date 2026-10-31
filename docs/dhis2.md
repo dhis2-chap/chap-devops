@@ -37,7 +37,7 @@ for the deployments that want one alongside.
 | `dhis2` | DHIS2 itself, from `dhis2/core`, published on 8780 by default. Multi-arch since 2.39.1-rc, so nothing pins a platform for it. |
 | `dhis2-db` | Its PostgreSQL, from `postgis/postgis:16-3.5`. The image is amd64-only, so the service pins `linux/amd64`. `expose`d on 5432 and never published. |
 | `dhis2-dump` | A one-shot that prepares the [seed dump](#the-seed) and exits. Not rendered at all for a deployment that starts empty. |
-| `dhis2-prep` | A one-shot that runs on every start, after the database is healthy and before DHIS2 boots. |
+| `dhis2-prep` | A one-shot that runs on every start, after the database is healthy and before DHIS2 boots. It uses the `dhis2-db` image, so it also pins `linux/amd64`. |
 
 | Volume | What it holds |
 | --- | --- |
