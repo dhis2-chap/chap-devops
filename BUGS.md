@@ -7,35 +7,19 @@ bug that is fixed leaves the file.
 
 ## Modeling App
 
-### Import is blocked by default: "Outbreak indicator is required"
+### A new model on a copied evaluation clears the data mapping
 
-- Seen: Modeling App 7.3.0, DHIS2 2.42.6 with the Laos demo database,
-  chap-core v2.5.0, 2026-10-19.
-- On **Import** of a prediction, **Use alert outputs** is on by default. The
-  form then needs an **Outbreak indicator**, and **Clear and import** does
-  nothing until one is picked; the message is under the box, below the fold.
-- The Laos demo database has a fitting element, `CHAP Dengue Cases (Any) -
-  Weekly Outbreak Alert`, but the box does not suggest it, while each quantile
-  box suggests its own `CHAP ... Quantile ...` element.
-- Fix: suggest the outbreak alert element as the quantile elements are
-  suggested, or default the switch to off when the setup has no alert policy
-  (the setup in this test had none).
-
-### Times are off by the UTC offset (CLIM-1475)
-
-- Seen: Modeling App 7.3.0 with chap-core v2.5.0, at 22:10 CEST (UTC+2).
-- A prediction run started at 22:10 shows **Created 19.10.2026, 20:10** and
-  **Last run about 2 hours ago**.
-- chap-core returns `created` as `2026-10-19T20:10:43.203219`: UTC, with no
-  time zone. The app reads it as local time.
-- Fix: chap-core sends the offset (`...Z`), or the app reads a timestamp with
-  no zone as UTC.
-
-### The optional endemic threshold has no element in the demo database
-
-- Seen: same as above.
-- The import form has **Endemic threshold (optional)**; the Laos demo database
-  has no element for it. Not a blocker, but the demo cannot show the feature.
+- Seen: Modeling App 7.3.2, DHIS2 2.42.7.1, chap-core `master` (2.6.0.dev0,
+  `sha256:ccbfaada86a0`), 2026-10-31.
+- On a copy from **Create new based on...**, **Select model** with
+  `Simple Multistep Model (chapkit) [Monthly selfhistory]` shows
+  `0/1 data items mapped` and `Please map all model covariates to valid data
+  items`. **Start import** then starts no job.
+- The copy came from `[Monthly climate]`, which has the same target, so the
+  mapping of `Disease cases` could stay. The message also names covariates, and
+  this model has none: the item it needs is the target.
+- Fix: keep the mapping of each input that the new model also has, and name the
+  target in the message.
 
 ## DHIS2 demo database (Laos, 2.42)
 
@@ -49,23 +33,16 @@ bug that is fixed leaves the file.
 
 ## chap-core
 
-### A dataset that the baselines ran on cannot be deleted (CLIM-1447)
+### A Helm chart release is the latest release of the repository
 
-- Seen: chap-core `master` before v2.5.0, and v2.5.0.
-- `DELETE /v1/crud/datasets/{id}` answers HTTP 500 (`ForeignKeyViolation ...
-  "backtest_dataset_id_fkey"`) after a backtest, because the built-in
-  baselines wrote backtests on the dataset. Every backtest listing hides
-  them, so a client cannot find them to delete them first. The only way is
-  through the `result` of the `run_baseline` jobs, which chap-devops uses.
-
-### The refusal of a template without a revision contradicts itself (CLIM-1473)
-
-- `stored from revision None, but its source now reports revision None`.
-
-### `GET /v1/jobs/{id}` gives the status only (CLIM-1474)
-
-- It answers `"SUCCESS"`, while `GET /v1/jobs` gives the whole job, with its
-  start time and result.
+- Seen: `chap-1.2.0`, published 2026-10-29, with `helm/chart-releaser-action`
+  v1.7.0 in `.github/workflows/release-chart.yaml`.
+- `GET /repos/dhis2-chap/chap-core/releases/latest` answers `chap-1.2.0`, and
+  the Releases page marks it as Latest in place of v2.5.1. Its one asset is
+  `chap-1.2.0.tgz`. No image has this tag, so a client that follows the latest
+  release gets `ghcr.io/dhis2-chap/chap-core:chap-1.2.0: not found`.
+- chap-devops now reads the release list and takes the highest `vX.Y.Z`.
+- Fix: set `mark_as_latest: false` on the chart-releaser step.
 
 ## Open Climate Service (`main`)
 
@@ -74,8 +51,21 @@ bug that is fixed leaves the file.
 - `POST /ingestions` answered 500 (`RasterioIOError: Read failed`,
   `TIFFFillTile ... got 0 bytes`) once; the same request passed 4 seconds
   later.
+- Seen again 2026-10-30, `sha256:9f454cbca239`: 1 run of 15 answered 500 with
+  `'/vsicurl/https://data.chc.ucsb.edu/.../chirps-v3.0.rnl.2024.01.03.cog' not
+  recognized as being in a supported file format`.
 
 ## chap-models
+
+### `chapkit_simple_multistep_model` forecasts negative case counts
+
+- Seen: v0.1.4 (`sha-82dbe6a`), `[Monthly climate]`, a prediction for
+  202501 to 202503 on the Laos demo database, 2026-10-31.
+- After **Import**, DHIS2 holds negative values: `Quantile Low` down to -27.67
+  (52 values) and `Quantile Mid Low` down to -13.12 (37 values). The chart of
+  01 Vientiane Capital goes down to -7.60.
+- Fix: the model clips its quantiles at 0, or chap-core does when it stores
+  them.
 
 - IMPA-TECH-SARIMA fails in chap itself (`NoPredictionsError`).
 - rwanda_random_forest fails at train when served with `mlproject run`.
