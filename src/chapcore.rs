@@ -32,6 +32,9 @@ pub const MOVING_TAGS: &[&str] = &["dev", "master", LATEST_TAG];
 /// How many releases `chap-devops update --list-tags` lists.
 pub const LIST_LIMIT: usize = 10;
 
+/// How many releases are read to find the newest version.
+const LATEST_WINDOW: usize = 30;
+
 /// `User-Agent` sent with every request, matching the registry fetch.
 const USER_AGENT: &str = concat!("chap-devops/", env!("CARGO_PKG_VERSION"));
 
@@ -45,15 +48,9 @@ pub fn raw_base() -> String {
     crate::github::base("CHAP_DEVOPS_GITHUB_RAW", DEFAULT_RAW)
 }
 
-/// Release endpoint for the newest final release; prereleases and drafts are
-/// excluded by GitHub itself, which is exactly what the `latest` image tag
-/// follows. Unauthenticated requests are allowed, at 60 an hour per address;
-/// [`crate::github`] sends a token where this run has one.
-pub fn latest_release_url() -> String {
-    format!("{}/repos/{REPO}/releases/{LATEST_TAG}", api_base())
-}
-
-/// The newest `limit` releases, newest first.
+/// The newest `limit` releases, newest first. Unauthenticated requests are
+/// allowed, at 60 an hour per address; [`crate::github`] sends a token where
+/// this run has one.
 pub fn releases_url(limit: usize) -> String {
     format!("{}/repos/{REPO}/releases?per_page={limit}", api_base())
 }
@@ -77,10 +74,14 @@ pub fn compose_url(tag: &str) -> String {
 }
 
 /// The tag of the newest chap-core release, e.g. `v2.3.1`.
+///
+/// Read from the release list and not from `releases/latest`: the repository
+/// also publishes its Helm chart as releases named `chap-X.Y.Z`, GitHub can
+/// mark one of those as the latest, and no image has that tag.
 pub fn latest_release(timeout: Duration) -> Result<String> {
-    let url = latest_release_url();
+    let url = releases_url(LATEST_WINDOW);
     let body = crate::github::get_ok(&url, timeout)?;
-    parse_release(&body).map_err(|e| anyhow::anyhow!("reading the release list at {url}: {e}"))
+    parse_latest(&body).map_err(|e| anyhow::anyhow!("reading the release list at {url}: {e}"))
 }
 
 /// One chap-core release: the tag it names and the day it was published.
@@ -176,22 +177,13 @@ pub fn fetch_compose(tag: &str, timeout: Duration) -> Result<String> {
     Ok(body)
 }
 
-/// `tag_name` of a GitHub release payload.
-///
-/// Every other field of the (large) response is ignored: the tag is what names
-/// both the images and the compose file.
-pub fn parse_release(body: &str) -> Result<String> {
-    #[derive(Debug, Default, Deserialize)]
-    struct Release {
-        #[serde(default)]
-        tag_name: String,
-    }
-    let release: Release =
-        serde_json::from_str(body).map_err(|e| anyhow::anyhow!("invalid release JSON: {e}"))?;
-    if release.tag_name.trim().is_empty() {
-        return Err(anyhow::anyhow!("the release carries no tag_name"));
-    }
-    Ok(release.tag_name.trim().to_string())
+/// The highest version in a release-list payload.
+pub fn parse_latest(body: &str) -> Result<String> {
+    parse_releases(body)?
+        .into_iter()
+        .max_by_key(|release| release_version(&release.tag))
+        .map(|release| release.tag)
+        .ok_or_else(|| anyhow::anyhow!("the release list has no version tag"))
 }
 
 /// The releases of a release-list payload, newest first.

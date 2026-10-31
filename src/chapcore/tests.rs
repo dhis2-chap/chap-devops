@@ -1,36 +1,5 @@
 use super::*;
 
-/// The shape of the release payload, trimmed to the fields that exist in
-/// the real one plus a few we ignore.
-const RELEASE: &str = r#"{
-      "url": "https://api.github.com/repos/dhis2-chap/chap-core/releases/123",
-      "tag_name": "v2.3.1",
-      "name": "v2.3.1",
-      "draft": false,
-      "prerelease": false,
-      "published_at": "2026-09-21T10:00:25Z",
-      "assets": []
-    }"#;
-
-#[test]
-fn the_release_payload_yields_its_tag() {
-    assert_eq!(parse_release(RELEASE).unwrap(), "v2.3.1");
-    assert_eq!(
-        parse_release(r#"{"tag_name":" v1.0.0 "}"#).unwrap(),
-        "v1.0.0"
-    );
-}
-
-#[test]
-fn a_release_without_a_tag_is_an_error() {
-    // The rate-limit body parses as JSON but carries no tag.
-    let err =
-        parse_release(r#"{"message":"API rate limit exceeded"}"#).expect_err("no tag_name to read");
-    assert!(err.to_string().contains("tag_name"));
-    assert!(parse_release(r#"{"tag_name":""}"#).is_err());
-    assert!(parse_release("<html>nope</html>").is_err());
-}
-
 #[test]
 fn the_urls_name_the_repository_and_the_tag() {
     assert_eq!(
@@ -38,8 +7,8 @@ fn the_urls_name_the_repository_and_the_tag() {
         "https://raw.githubusercontent.com/dhis2-chap/chap-core/v2.3.1/compose.ghcr.yml"
     );
     assert!(compose_url("master").ends_with("/master/compose.ghcr.yml"));
-    assert!(latest_release_url().contains(REPO));
-    assert!(latest_release_url().starts_with(crate::github::DEFAULT_API));
+    assert!(releases_url(1).contains(REPO));
+    assert!(releases_url(1).starts_with(crate::github::DEFAULT_API));
     assert_eq!(
         release_url("v2.3.1"),
         "https://api.github.com/repos/dhis2-chap/chap-core/releases/tags/v2.3.1"
@@ -152,7 +121,7 @@ fn an_unreachable_host_is_an_error_not_a_hang() {
 
 #[test]
 fn a_status_code_becomes_a_typed_http_error() {
-    let url = latest_release_url();
+    let url = releases_url(1);
     let err = map_error(&url, ureq::Error::StatusCode(403));
     match err.downcast_ref::<ChapError>() {
         Some(ChapError::Http { url: at, status }) => {
@@ -248,4 +217,31 @@ fn the_hosts_follow_the_test_hooks() {
     assert_eq!(base_of(None, DEFAULT_RAW), DEFAULT_RAW);
     assert_eq!(base_of(Some(String::new()), DEFAULT_RAW), DEFAULT_RAW);
     assert_eq!(base_of(Some("  ".into()), DEFAULT_RAW), DEFAULT_RAW);
+}
+
+/// A Helm chart release can be GitHub's latest, and no image has its tag.
+#[test]
+fn the_newest_release_is_the_highest_version_and_never_a_chart() {
+    let list = r#"[
+      {"tag_name":"chap-1.2.0","published_at":"2026-10-29T14:39:27Z","draft":false,"prerelease":false},
+      {"tag_name":"v2.4.1","published_at":"2026-10-21T10:00:25Z","draft":false,"prerelease":false},
+      {"tag_name":"v2.6.0-rc.1","published_at":"2026-10-20T10:00:25Z","draft":false,"prerelease":true},
+      {"tag_name":"v2.5.1","published_at":"2026-10-19T22:38:17Z","draft":false,"prerelease":false}
+    ]"#;
+    assert_eq!(parse_latest(list).unwrap(), "v2.5.1");
+}
+
+#[test]
+fn a_release_list_without_a_version_is_an_error() {
+    let only_a_chart = r#"[{"tag_name":"chap-1.2.0","published_at":"2026-10-29T14:39:27Z","draft":false,"prerelease":false}]"#;
+    assert!(
+        parse_latest(only_a_chart)
+            .unwrap_err()
+            .to_string()
+            .contains("no version tag")
+    );
+    assert!(parse_latest("[]").is_err());
+    // The rate-limit body parses as JSON but is not a list.
+    assert!(parse_latest(r#"{"message":"API rate limit exceeded"}"#).is_err());
+    assert!(parse_latest("<html>nope</html>").is_err());
 }

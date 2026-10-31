@@ -63,7 +63,8 @@ pub(crate) struct Hub {
     /// Its `WorkingDir`, which is what the data directory is derived from.
     pub(crate) working_dir: String,
     /// chap-core's releases, newest first, as `(tag, published_at)`. They
-    /// answer `releases/latest`, `releases`, `releases/tags/<tag>` and the
+    /// answer `releases/latest` (the first one, as GitHub can mark a Helm chart
+    /// release as the latest), `releases`, `releases/tags/<tag>` and the
     /// `compose.ghcr.yml` every one of them publishes.
     pub(crate) releases: Vec<(String, String)>,
     /// The commit the served marketplace entry pins, which is what the

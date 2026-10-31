@@ -230,6 +230,27 @@ fn pin_chap_core_fails_when_the_release_lookup_fails() {
     assert_eq!(state(&dir)["chap_image_tag"], "latest");
 }
 
+/// GitHub can mark a Helm chart release as the latest, and no image has its tag.
+#[cfg(unix)]
+#[test]
+fn a_helm_chart_release_is_not_the_newest_chap_core_release() {
+    let sandbox = Sandbox::new();
+    let dir = sandbox.project();
+    sandbox
+        .init(&["--models", "none", "--chap-tag", "latest"])
+        .assert()
+        .success();
+    let mut hub = Hub::new();
+    hub.releases
+        .insert(0, ("chap-1.2.0".into(), "2026-10-29T14:39:27Z".into()));
+    let port = hub.start();
+    let (_temp, bin, _) = quiet_docker();
+    online_update(&sandbox, port, &bin, &["--pin-chap-core"])
+        .assert()
+        .success();
+    assert_eq!(state(&dir)["chap_image_tag"], "v2.3.1");
+}
+
 /// `--chap-tag latest` moves the pin even when the newest release cannot be
 /// looked up, so the warning says that, and not that the pin stays.
 #[cfg(unix)]
