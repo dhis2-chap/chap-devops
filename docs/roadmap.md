@@ -86,12 +86,6 @@ and a takeover.
 The marketplace now calls itself Chap Hub in its `registry.yaml`. The help,
 the messages and the docs change to that name when the Chap team confirms it.
 
-### A stable CLI test
-
-The CLI test
-`models_test_runs_chapkit_test_in_the_container_and_cleans_up_after_it`
-failed once in a full run and passed again alone, so it is not stable.
-
 ## Not planned
 
 ### Native Windows

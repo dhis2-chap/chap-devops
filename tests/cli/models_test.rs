@@ -339,6 +339,16 @@ fn models_test_needs_an_id_or_all_and_the_model_has_to_be_enabled() {
     .stderr(predicates::str::contains("cannot be used with"));
 }
 
+/// The rows with each duration as `<t>`: a run takes whole seconds of real
+/// time, so a busy machine prints `1s` where an idle one prints `0s`.
+#[cfg(unix)]
+fn rows_without_time(text: &str) -> String {
+    regex::Regex::new(r"(pass|skip|fail) +[0-9]+s +")
+        .expect("a valid pattern")
+        .replace_all(text, "$1 <t> ")
+        .into_owned()
+}
+
 /// A `docker` on PATH that answers the three questions the model level asks.
 ///
 /// The model level is `docker compose exec` and nothing else, so there is no
@@ -411,21 +421,19 @@ Result: ALL TESTS PASSED
         .get_output()
         .stdout
         .clone();
-    let text = String::from_utf8(out).expect("the rows are text");
+    let text = rows_without_time(&String::from_utf8(out).expect("the rows are text"));
 
     assert!(
         text.starts_with("testing 3 models (model level; add --backtest"),
         "{text}"
     );
     assert!(
-        text.contains("chapkit-ewars-model                 pass    0s   1 training, 1 prediction"),
+        text.contains("chapkit-ewars-model                 pass <t> 1 training, 1 prediction"),
         "{text}"
     );
     // The two that are not up say so, and say the way out.
     assert!(
-        text.contains(
-            "auto-arima-chapkit                  skip    0s   its container is not running"
-        ),
+        text.contains("auto-arima-chapkit                  skip <t> its container is not running"),
         "{text}"
     );
     assert!(text.contains("run `chap-devops up`"), "{text}");
@@ -588,9 +596,9 @@ Result: ALL TESTS PASSED
     .get_output()
     .stdout
     .clone();
-    let text = String::from_utf8(out).expect("the rows are text");
+    let text = rows_without_time(&String::from_utf8(out).expect("the rows are text"));
     assert!(
-        text.contains("pass    0s   4 trainings, 4 predictions"),
+        text.contains("pass <t> 4 trainings, 4 predictions"),
         "{text}"
     );
     assert!(
