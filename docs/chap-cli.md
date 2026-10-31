@@ -50,14 +50,15 @@ the nearest existing directory above the path, at the same path. chap does not
 make a directory that does not exist, so make the output directory first.
 
 Before the run, chap-devops writes on stderr which directories chap can see. After
-the run, it names the files that are new or changed, and the next command:
+the run, it names the files that are new or changed. With `-v`, it also gives
+the next command as a hint:
 
 ```text
 running `chap eval` in ghcr.io/dhis2-chap/chap-worker:v2.3.1
 files: chap reads and writes in /home/me/work
 ...
 chap finished; it wrote r.nc
-`chap-devops chap plot-backtest r.nc --output-file r.html` plots it
+hint: `chap-devops chap plot-backtest r.nc --output-file r.html` plots it
 ```
 
 In a deployment, run `chap-devops chap` in a subdirectory, for example `eval/`, so
@@ -65,8 +66,9 @@ that chap's files do not mix with the compose files. chap-devops finds the
 deployment from a subdirectory too. When you run it in the deployment
 directory itself, chap-devops writes a line that says so.
 
-chap's own output is not changed. chap-devops writes its lines on stderr, and
-`--json` does not apply to this command. A run that only asks for help
+chap's own output is not changed. chap-devops writes its lines on stderr, with
+the levels of [Status and output](./status.md#levels), and `--json` does not
+apply to this command. A run that only asks for help
 (`chap-devops chap`, `--help`, `--version`) gets only the first line.
 
 ## Which image

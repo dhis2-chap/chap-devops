@@ -165,7 +165,7 @@ pub(super) fn wait_for(image: &str, network: Option<&str>, url: &str, timeout: D
 
 /// Stop what the run started. Best-effort: a model that does not stop is a
 /// warning, because the run itself is done.
-pub(super) fn stop(ctx: &Ctx, started: &Started) {
+pub(super) fn stop(ctx: &Ctx, started: &Started, lines: &mut output::Report) {
     match started {
         Started::Service {
             project,
@@ -175,22 +175,28 @@ pub(super) fn stop(ctx: &Ctx, started: &Started) {
             let args = ["stop", &model.service].map(str::to_string);
             match docker::compose_output_with(project, files, &args) {
                 Ok((0, _, _)) => {
-                    output::notice(&format!("stopped {}, as --stop asked", model.service))
+                    lines.info(format!("stopped {}, as --stop asked", model.service));
                 }
-                _ => output::warn(&format!(
-                    "{} did not stop; `chap-devops -C {} down` stops it",
-                    model.service,
-                    project.dir.display()
-                )),
+                _ => {
+                    lines.warning(format!(
+                        "{} did not stop; `chap-devops -C {} down` stops it",
+                        model.service,
+                        project.dir.display()
+                    ));
+                }
             }
         }
         Started::Group { dir, model } => {
             match crate::commands::run::stop_in(ctx, dir, &model.id, false) {
-                Ok(_) => output::notice(&format!("stopped {}, as --stop asked", model.id)),
-                Err(err) => output::warn(&format!(
-                    "{} did not stop: {err:#}; `chap-devops stop {}` stops it",
-                    model.id, model.id
-                )),
+                Ok(_) => {
+                    lines.info(format!("stopped {}, as --stop asked", model.id));
+                }
+                Err(err) => {
+                    lines.warning(format!(
+                        "{} did not stop: {err:#}; `chap-devops stop {}` stops it",
+                        model.id, model.id
+                    ));
+                }
             }
         }
     }

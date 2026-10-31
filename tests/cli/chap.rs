@@ -142,6 +142,7 @@ fn a_model_from_a_repository_runs_in_the_worker_image() {
         &work,
         &bin,
         &[
+            "-v",
             "chap",
             "eval",
             "--model-name",
@@ -153,8 +154,9 @@ fn a_model_from_a_repository_runs_in_the_worker_image() {
     .env("WRITE", "r.nc")
     .assert()
     .success()
+    .stderr(predicates::str::contains("chap finished; it wrote r.nc"))
     .stderr(predicates::str::contains(
-        "`chap-devops chap plot-backtest r.nc --output-file r.html` plots it",
+        "hint: `chap-devops chap plot-backtest r.nc --output-file r.html` plots it",
     ));
     let args = chap_run(&log);
     assert!(args.contains(&"ghcr.io/dhis2-chap/chap-worker:v2.2.0".to_string()));

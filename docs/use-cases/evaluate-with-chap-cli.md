@@ -126,7 +126,6 @@ Then chap writes its own log lines. At the end, chap-devops writes:
 
 ```text
 chap finished; it wrote minimalist_r.nc
-`chap-devops chap plot-backtest minimalist_r.nc --output-file minimalist_r.html` plots it
 ```
 
 It worked when you see `chap finished; it wrote minimalist_r.nc`.
@@ -182,7 +181,6 @@ files: chap reads and writes in /home/me/chap-eval
 model: auto_arima_chapkit at http://auto-arima-chapkit:8000 answers
 ...
 chap finished; it wrote auto_arima.nc
-`chap-devops chap plot-backtest auto_arima.nc --output-file auto_arima.html` plots it
 auto_arima_chapkit keeps running for the next run; `chap-devops stop auto_arima_chapkit` stops it, and `--stop` stops it after a run
 ```
 

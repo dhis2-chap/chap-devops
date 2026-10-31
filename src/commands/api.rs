@@ -47,7 +47,7 @@ pub fn run(ctx: &Ctx, args: &ApiArgs) -> Result<()> {
 
     let answer = api.send_json(&method, &path, body.as_deref())?;
     print_body(ctx, &answer, args.raw)?;
-    report(ctx, &api, &answer);
+    report(ctx, &api, &answer)?;
     if !answer.is_success() {
         std::process::exit(EXIT_HTTP_ERROR);
     }
@@ -134,24 +134,24 @@ fn write_text(out: &mut impl Write, text: &str) -> Result<()> {
 ///
 /// stdout belongs to the answer, so everything here is stderr: the status line
 /// of a request that failed, the status of one that succeeded with no body at
-/// all, and the one hint that is worth giving - a 401 is about the token and
-/// nothing else.
-fn report(ctx: &Ctx, api: &Api, answer: &Answer) {
-    if !answer.is_success() {
-        eprintln!("{}", answer.status_line());
-        if let Some(hint) = hint(api, answer) {
-            crate::output::notice(&hint);
-        }
-        return;
-    }
-    if answer.body.is_empty() {
+/// all, and the one next step that is worth giving - a 401 is about the token
+/// and nothing else.
+fn report(ctx: &Ctx, api: &Api, answer: &Answer) -> Result<()> {
+    if answer.is_success() && answer.body.is_empty() {
         ctx.out.verbose("the response has no body");
-        eprintln!("{}", answer.status_line());
     }
+    ctx.out.report_stderr(|lines| {
+        if !answer.is_success() || answer.body.is_empty() {
+            lines.info(answer.status_line());
+        }
+        if let Some(step) = next_step(api, answer) {
+            lines.info(step);
+        }
+    })
 }
 
 /// The next step for a status code that has one.
-fn hint(api: &Api, answer: &Answer) -> Option<String> {
+fn next_step(api: &Api, answer: &Answer) -> Option<String> {
     match answer.status {
         401 if api.has_token() => Some(
             "chap-core did not accept the API token; `chap-devops auth show --reveal` prints the one \

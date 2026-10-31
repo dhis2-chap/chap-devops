@@ -18,13 +18,6 @@ dumps do. The plan:
 - A `chap-devops doctor` check that compares the limits with the memory that docker
   can give.
 
-### Levels for the output of every command
-
-Most commands print their closing lines with a level (info, warning, hint),
-as [Status and output](./status.md#levels) describes. `chap-devops api` and
-`chap-devops chap` still print their closing lines on stderr with no level. They
-change to the levels next.
-
 ### Templates for the compose files
 
 The large compose files are templates in `src/compose/templates/`, but the

@@ -366,6 +366,11 @@ above it, not first.
 Errors are not a level. A command that fails prints the error on stderr and
 exits with a code that is not 0.
 
+Two commands use stdout for something else: `chap-devops api` for the response
+body, and `chap-devops chap` for the output of chap. They print every line on
+stderr, with the same levels. Under `--json`, `chap-devops api` prints the
+lines on stderr as `{"messages": [...]}`.
+
 A short example. Without `-v`, `chap-devops models expose` prints two lines:
 
 ```text

@@ -1,5 +1,6 @@
 use crate::common::*;
 use predicates::prelude::PredicateBooleanExt;
+use serde_json::Value as Json;
 use std::path::PathBuf;
 
 /// A project whose API port is the one the stand-in chap-core listens on.
@@ -421,6 +422,21 @@ fn api_exits_one_on_an_http_error_and_two_when_chap_core_is_not_there() {
     assert_eq!(
         String::from_utf8_lossy(&out.stderr).trim(),
         "HTTP 404 Not Found"
+    );
+
+    // Under --json stdout is still the body, and stderr has the lines with
+    // their levels.
+    let assert = chap_in(&sandbox, &dir, &["--json", "api", "GET", "/v1/jobs/nope"])
+        .assert()
+        .failure()
+        .code(1);
+    let out = assert.get_output();
+    let body: Json = serde_json::from_slice(&out.stdout).expect("the body is JSON");
+    assert!(body.to_string().contains("Job 'nope' not found"), "{body}");
+    let lines: Json = serde_json::from_slice(&out.stderr).expect("the lines are JSON");
+    assert_eq!(
+        lines,
+        serde_json::json!({"messages": [{"level": "info", "text": "HTTP 404 Not Found"}]})
     );
 
     // Nothing listening at all is a different exit code, with the sentence

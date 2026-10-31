@@ -217,30 +217,40 @@ pub fn run(ctx: &Ctx, args: &ChapArgs) -> Result<()> {
     let code = docker::run_plain(&plan::docker_args(&spec))?;
     let written = before.written(&Snapshot::take(&roots, &outputs));
 
-    let result = finish(code, help, &written, &cwd, &reference);
-    match (&started, args.stop) {
-        (Some(started), true) => start::stop(ctx, started),
-        (Some(_), false) => output::notice(&keeps_running(&model, &place)),
-        (None, true) => {
-            if let Some(model) = &model {
-                output::notice(&format!(
+    let mut result = Ok(());
+    ctx.out.report_stderr(|lines| {
+        result = finish(code, help, &written, &cwd, &reference, lines);
+        match (&started, &model, args.stop) {
+            (Some(started), _, true) => start::stop(ctx, started, lines),
+            (Some(_), Some(model), false) => {
+                lines.info(keeps_running(model, &place));
+            }
+            (None, Some(model), true) => {
+                lines.info(format!(
                     "{} ran before this run, so --stop left it running",
                     model.id
                 ));
             }
+            _ => {}
         }
-        (None, false) => {}
-    }
+    })?;
     result
 }
 
 /// The run's own result: the closing line, or the error that names chap's
 /// exit status.
-fn finish(code: i32, help: bool, written: &[PathBuf], cwd: &Path, reference: &str) -> Result<()> {
+fn finish(
+    code: i32,
+    help: bool,
+    written: &[PathBuf],
+    cwd: &Path,
+    reference: &str,
+    lines: &mut output::Report,
+) -> Result<()> {
     match code {
         0 => {
             if !help {
-                report(written, cwd);
+                report(written, cwd, lines);
             }
             Ok(())
         }
@@ -255,7 +265,7 @@ fn finish(code: i32, help: bool, written: &[PathBuf], cwd: &Path, reference: &st
         .into()),
         _ => {
             if !written.is_empty() {
-                report(written, cwd);
+                report(written, cwd, lines);
             }
             Err(ChapError::Exited {
                 command: "chap",
@@ -375,10 +385,7 @@ fn set_model_name(args: &mut [String], url: &str) {
 }
 
 /// The closing note for a model this run started and left running.
-fn keeps_running(model: &Option<Model>, place: &Place) -> String {
-    let Some(model) = model else {
-        return String::new();
-    };
+fn keeps_running(model: &Model, place: &Place) -> String {
     match &place.deployment {
         Some(project) => format!(
             "{} keeps running for the next run; `chap-devops -C {} down` stops it, and `--stop` \
@@ -623,16 +630,16 @@ fn announce(what: &Announce) {
     }
 }
 
-/// The closing line: what the run wrote, and what to do with it.
-fn report(written: &[PathBuf], cwd: &Path) {
+/// The closing lines: what the run wrote, and what to do with it.
+fn report(written: &[PathBuf], cwd: &Path, lines: &mut output::Report) {
     if written.is_empty() {
-        output::notice(&format!(
+        lines.info(format!(
             "chap finished; it wrote no file in {}",
             cwd.display()
         ));
         return;
     }
-    output::notice(&format!(
+    lines.info(format!(
         "chap finished; it wrote {}",
         files::describe(written, cwd, WRITTEN_LIMIT)
     ));
@@ -642,7 +649,7 @@ fn report(written: &[PathBuf], cwd: &Path) {
     if let Some(nc) = evaluation {
         let name = nc.strip_prefix(cwd).unwrap_or(nc).to_string_lossy();
         let html = Path::new(name.as_ref()).with_extension("html");
-        output::notice(&format!(
+        lines.hint(format!(
             "`chap-devops chap plot-backtest {name} --output-file {}` plots it",
             html.display()
         ));

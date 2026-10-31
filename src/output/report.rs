@@ -167,6 +167,29 @@ impl Out {
         self.report_with(value, Some(true), build)
     }
 
+    /// Print the closing lines of a command whose stdout carries something
+    /// else: a response body, or the output of a program it ran. Every line
+    /// goes to stderr, with its level. Under `--json` the lines go to stderr as
+    /// `{"messages": [...]}`. A report with no lines prints nothing.
+    pub fn report_stderr(&self, build: impl FnOnce(&mut Report)) -> Result<()> {
+        let mut report = Report::default();
+        build(&mut report);
+        let mut w = std::io::stderr().lock();
+        if report.messages().is_empty() {
+            return Ok(());
+        }
+        if self.json {
+            let value = serde_json::json!({ "messages": report.messages() });
+            writeln!(w, "{value}")?;
+            return Ok(());
+        }
+        for (_, line) in report.lines(self.shows_hints(), self.color) {
+            write!(w, "{line}")?;
+        }
+        w.flush()?;
+        Ok(())
+    }
+
     fn report_with<T: Serialize>(
         &self,
         value: &T,

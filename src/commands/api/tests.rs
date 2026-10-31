@@ -95,14 +95,14 @@ fn a_401_says_which_half_of_the_token_is_missing() {
         body: br#"{"detail":"Missing or invalid API token"}"#.to_vec(),
     };
     assert!(
-        hint(&with, &answer(401))
+        next_step(&with, &answer(401))
             .unwrap()
             .contains("did not accept")
     );
     assert!(
-        hint(&without, &answer(401))
+        next_step(&without, &answer(401))
             .unwrap()
             .contains("none was sent")
     );
-    assert_eq!(hint(&with, &answer(404)), None);
+    assert_eq!(next_step(&with, &answer(404)), None);
 }

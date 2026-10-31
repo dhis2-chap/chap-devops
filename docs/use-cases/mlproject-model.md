@@ -83,7 +83,6 @@ chap-devops chap eval --model-name http://host.docker.internal:5001 \
 ```text
 model: http://host.docker.internal:5001 answers
 chap finished; it wrote rain-model.nc
-`chap-devops chap plot-backtest rain-model.nc --output-file rain-model.html` plots it
 ```
 
 It worked when the line says `chap finished; it wrote rain-model.nc`. The
