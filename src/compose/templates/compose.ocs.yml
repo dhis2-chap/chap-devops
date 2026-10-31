@@ -2,18 +2,43 @@
 # ocs: Open Climate Service (https://github.com/dhis2/open-climate-service)
 services:
   ocs:
-@LABELS@    restart: unless-stopped
-    image: @IMAGE@:${@TAG_VAR@:-@IMAGE_TAG@}
+{{ labels }}    restart: unless-stopped
+    image: {{ image }}:${ {{- tag_var }}:-{{ image_tag }}}
     init: true
-@PORT_LINES@    environment:
-      PORT: "@CONTAINER_PORT@"
+    expose:
+      - "{{ container_port }}"
+{% if host_port is not none %}
+    ports:
+      - "{{ host_port }}:{{ container_port }}"
+{% endif %}
+    environment:
+      PORT: "{{ container_port }}"
       CLIMATE_SERVICE_CONFIG: /app/climate-service.yaml
-      @BASE_URL_VAR@: ${@BASE_URL_VAR@:-@BASE_URL@}
-@DATA_SOURCE_LINES@@S3_LINES@    volumes:
-      - ./@CONFIG_PATH@:/app/climate-service.yaml:ro
-@PLUGINS_LINE@      - type: volume
-        source: @VOLUME@
+      {{ base_url_var }}: ${ {{- base_url_var }}:-{{ base_url }}}
+      # Dataset credentials, empty unless .env sets them; see docs/components.md.
+{% for var in data_source_vars %}
+      {{ var }}: ${ {{- var }}:-}
+{% endfor %}
+{# No value: compose passes the variable from .env when it is set there, and
+   leaves it out of the container when it is not. #}
+{% for var in compute_vars %}
+      {{ var }}:
+{% endfor %}
+{% if s3 %}
+      # Forward-looking: OCS does not read these yet.
+      S3_ENDPOINT: http://s3:{{ s3_port }}
+      {{ s3_access_key_var }}: ${ {{- s3_access_key_var }}:-}
+      {{ s3_secret_key_var }}: ${ {{- s3_secret_key_var }}:-}
+      S3_BUCKET: {{ s3_bucket }}
+{% endif %}
+    volumes:
+      - ./{{ config_path }}:/app/climate-service.yaml:ro
+{% if plugins %}
+      - ./{{ plugins_path }}:{{ plugins_target }}:ro
+{% endif %}
+      - type: volume
+        source: {{ volume }}
         target: /app/data
 
 volumes:
-  @VOLUME@: {}
+  {{ volume }}: {}

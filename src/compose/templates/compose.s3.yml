@@ -2,19 +2,25 @@
 # s3: RustFS, an S3-compatible object store (https://github.com/rustfs/rustfs)
 services:
   s3:
-@LABELS@    restart: unless-stopped
-    image: @IMAGE@:${@TAG_VAR@:-@IMAGE_TAG@}
+{{ labels }}    restart: unless-stopped
+    image: {{ image }}:${ {{- tag_var }}:-{{ image_tag }}}
     init: true
     environment:
-      RUSTFS_ACCESS_KEY: ${@ACCESS_KEY_VAR@:-}
-      RUSTFS_SECRET_KEY: ${@SECRET_KEY_VAR@:-}
+      RUSTFS_ACCESS_KEY: ${ {{- access_key_var }}:-}
+      RUSTFS_SECRET_KEY: ${ {{- secret_key_var }}:-}
       RUSTFS_VOLUMES: /data
-@PORT_LINES@    volumes:
+    expose:
+      - "{{ container_port }}"
+{% if host_port is not none %}
+    ports:
+      - "{{ host_port }}:{{ container_port }}"
+{% endif %}
+    volumes:
       - type: volume
-        source: @VOLUME@
+        source: {{ volume }}
         target: /data
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:@CONTAINER_PORT@/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:{{ container_port }}/health"]
       interval: 30s
       timeout: 5s
       start_period: 10s
@@ -22,21 +28,21 @@ services:
 
   s3-init:
     # One-shot: creates the bucket, then exits. $$ is a literal $ for compose.
-@LABELS@    image: @IMAGE@:${@TAG_VAR@:-@IMAGE_TAG@}
+{{ labels }}    image: {{ image }}:${ {{- tag_var }}:-{{ image_tag }}}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >-
         curl -sSf --retry 10 --retry-delay 2 --retry-all-errors
-        --aws-sigv4 "aws:amz:@REGION@:s3"
-        -u "$${@ACCESS_KEY_VAR@}:$${@SECRET_KEY_VAR@}"
-        -X PUT "http://s3:@CONTAINER_PORT@/@BUCKET@"
+        --aws-sigv4 "aws:amz:{{ region }}:s3"
+        -u "$${ {{- access_key_var }}}:$${ {{- secret_key_var }}}"
+        -X PUT "http://s3:{{ container_port }}/{{ bucket }}"
     environment:
-      @ACCESS_KEY_VAR@: ${@ACCESS_KEY_VAR@:-}
-      @SECRET_KEY_VAR@: ${@SECRET_KEY_VAR@:-}
+      {{ access_key_var }}: ${ {{- access_key_var }}:-}
+      {{ secret_key_var }}: ${ {{- secret_key_var }}:-}
     depends_on:
       s3:
         condition: service_healthy
     restart: "no"
 
 volumes:
-  @VOLUME@: {}
+  {{ volume }}: {}

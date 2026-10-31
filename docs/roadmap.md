@@ -20,11 +20,10 @@ dumps do. The plan:
 
 ### Templates for the compose files
 
-`compose.dhis2.yml` is a minijinja template: its conditions are in the
-template file, and the Rust code only gives the values. The other compose
-files still get their optional parts from Rust: the port lines of OCS and S3,
-and the init container and the mounts of a model overlay. They change to
-minijinja next. The golden files in `tests/fixtures/` make sure that the
+`compose.dhis2.yml`, `compose.ocs.yml` and `compose.s3.yml` are minijinja
+templates: their conditions are in the template files, and the Rust code only
+gives the values. A model overlay still gets its optional parts from Rust: the
+init container and the mounts. It changes to minijinja next. The golden files in `tests/fixtures/` make sure that the
 output does not change.
 
 ### A confirmation for an image outside the marketplace

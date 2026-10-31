@@ -2,7 +2,7 @@
 //! instance config.
 
 use super::labels::{ROLE_OCS, ROLE_S3, labels_block};
-use super::{fill, normalize_newlines};
+use super::{fill, normalize_newlines, render_template};
 use crate::components::{
     OCS_BASE_URL_ENV_VAR, OCS_COMPUTE_ENV_VARS, OCS_CONFIG_FILE, OCS_CONTAINER_PORT,
     OCS_DATA_SOURCE_ENV_VARS, OCS_DIR, OCS_IMAGE, OCS_PLUGINS_DIR, OCS_PLUGINS_TARGET,
@@ -56,89 +56,52 @@ pub const OCS_EXAMPLE_MARKER: &str =
 /// sets none of them nothing, and means the operator only ever has to put a
 /// credential in `.env` rather than in `.env` and then in `.chap-devops/` as well.
 pub fn render_ocs(spec: &OcsSpec) -> String {
-    let s3_lines = if spec.s3 {
-        format!(
-            "      # Forward-looking: OCS does not read these yet.\n\
-             \x20     S3_ENDPOINT: http://s3:{S3_CONTAINER_PORT}\n\
-             \x20     {S3_ACCESS_KEY_ENV_VAR}: ${{{S3_ACCESS_KEY_ENV_VAR}:-}}\n\
-             \x20     {S3_SECRET_KEY_ENV_VAR}: ${{{S3_SECRET_KEY_ENV_VAR}:-}}\n\
-             \x20     S3_BUCKET: {S3_BUCKET}\n"
-        )
-    } else {
-        String::new()
-    };
-    let mut data_source_lines = String::from(
-        "      # Dataset credentials, empty unless .env sets them; see docs/components.md.\n",
-    );
-    for var in OCS_DATA_SOURCE_ENV_VARS {
-        data_source_lines.push_str(&format!("      {var}: ${{{var}:-}}\n"));
-    }
-    // No value: compose passes the variable from `.env` when it is set
-    // there, and leaves it out of the container when it is not.
-    for var in OCS_COMPUTE_ENV_VARS {
-        data_source_lines.push_str(&format!("      {var}:\n"));
-    }
-    let mut port_lines = format!("    expose:\n      - \"{OCS_CONTAINER_PORT}\"\n");
-    if let Some(port) = spec.host_port {
-        port_lines.push_str(&format!(
-            "    ports:\n      - \"{port}:{OCS_CONTAINER_PORT}\"\n"
-        ));
-    }
-    let plugins_line = if spec.plugins {
-        format!("      - ./{OCS_DIR}/{OCS_PLUGINS_DIR}:{OCS_PLUGINS_TARGET}:ro\n")
-    } else {
-        String::new()
-    };
-    fill(
+    render_template(
+        "compose.ocs.yml",
         &OCS_TEMPLATE,
-        &[
-            (
-                "LABELS",
-                &labels_block(ROLE_OCS, None, spec.group.as_deref()),
-            ),
-            ("IMAGE", OCS_IMAGE),
-            ("TAG_VAR", OCS_TAG_ENV_VAR),
-            ("IMAGE_TAG", &spec.image_tag),
-            ("PORT_LINES", &port_lines),
-            ("CONTAINER_PORT", &OCS_CONTAINER_PORT.to_string()),
-            ("BASE_URL_VAR", OCS_BASE_URL_ENV_VAR),
-            ("BASE_URL", spec.base_url.as_deref().unwrap_or_default()),
-            ("DATA_SOURCE_LINES", &data_source_lines),
-            ("S3_LINES", &s3_lines),
-            ("CONFIG_PATH", &format!("{OCS_DIR}/{OCS_CONFIG_FILE}")),
-            ("PLUGINS_LINE", &plugins_line),
-            ("VOLUME", OCS_VOLUME),
-        ],
+        minijinja::context! {
+            labels => labels_block(ROLE_OCS, None, spec.group.as_deref()),
+            image => OCS_IMAGE,
+            tag_var => OCS_TAG_ENV_VAR,
+            image_tag => &spec.image_tag,
+            container_port => OCS_CONTAINER_PORT,
+            host_port => spec.host_port,
+            base_url_var => OCS_BASE_URL_ENV_VAR,
+            base_url => spec.base_url.as_deref().unwrap_or_default(),
+            data_source_vars => OCS_DATA_SOURCE_ENV_VARS,
+            compute_vars => OCS_COMPUTE_ENV_VARS,
+            s3 => spec.s3,
+            s3_port => S3_CONTAINER_PORT,
+            s3_access_key_var => S3_ACCESS_KEY_ENV_VAR,
+            s3_secret_key_var => S3_SECRET_KEY_ENV_VAR,
+            s3_bucket => S3_BUCKET,
+            config_path => format!("{OCS_DIR}/{OCS_CONFIG_FILE}"),
+            plugins => spec.plugins,
+            plugins_path => format!("{OCS_DIR}/{OCS_PLUGINS_DIR}"),
+            plugins_target => OCS_PLUGINS_TARGET,
+            volume => OCS_VOLUME,
+        },
     )
 }
 
 /// Render `compose.s3.yml`: the `s3` component.
 pub fn render_s3(spec: &S3Spec) -> String {
-    let port_lines = match spec.host_port {
-        None => format!("    expose:\n      - \"{S3_CONTAINER_PORT}\"\n"),
-        Some(port) => format!(
-            "    expose:\n      - \"{S3_CONTAINER_PORT}\"\n\
-             \x20   ports:\n      - \"{port}:{S3_CONTAINER_PORT}\"\n"
-        ),
-    };
-    fill(
+    render_template(
+        "compose.s3.yml",
         &S3_TEMPLATE,
-        &[
-            (
-                "LABELS",
-                &labels_block(ROLE_S3, None, spec.group.as_deref()),
-            ),
-            ("IMAGE", S3_IMAGE),
-            ("TAG_VAR", S3_TAG_ENV_VAR),
-            ("IMAGE_TAG", &spec.image_tag),
-            ("PORT_LINES", &port_lines),
-            ("CONTAINER_PORT", &S3_CONTAINER_PORT.to_string()),
-            ("ACCESS_KEY_VAR", S3_ACCESS_KEY_ENV_VAR),
-            ("SECRET_KEY_VAR", S3_SECRET_KEY_ENV_VAR),
-            ("BUCKET", S3_BUCKET),
-            ("REGION", S3_REGION),
-            ("VOLUME", S3_VOLUME),
-        ],
+        minijinja::context! {
+            labels => labels_block(ROLE_S3, None, spec.group.as_deref()),
+            image => S3_IMAGE,
+            tag_var => S3_TAG_ENV_VAR,
+            image_tag => &spec.image_tag,
+            container_port => S3_CONTAINER_PORT,
+            host_port => spec.host_port,
+            access_key_var => S3_ACCESS_KEY_ENV_VAR,
+            secret_key_var => S3_SECRET_KEY_ENV_VAR,
+            bucket => S3_BUCKET,
+            region => S3_REGION,
+            volume => S3_VOLUME,
+        },
     )
 }
 
