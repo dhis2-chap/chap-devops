@@ -43,7 +43,7 @@ must keep the versions in step, and you must connect the parts.
 - **Linux and macOS.** On Windows, use WSL with the Linux binary.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops doctor
 ```
 
@@ -480,8 +480,8 @@ See the **Modeling App** deck.
 
 ## Where to read more
 
-- The book: **https://winterop-com.github.io/chap-devops/**
-- The code: **https://github.com/winterop-com/chap-devops**
+- The book: **https://dhis2-chap.github.io/chap-devops/**
+- The code: **https://github.com/dhis2-chap/chap-devops**
 - For an AI assistant: the "For AI assistants" chapter tells it how to set up
   chap-devops for you, command by command.
 

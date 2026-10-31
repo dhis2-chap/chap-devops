@@ -6,8 +6,8 @@ Chap forecasts cases of climate-sensitive diseases such as dengue and malaria fr
 
 If you are helping someone use chap-devops, start with the page for AI assistants. It explains Chap in plain words, asks one question to find the right option, and gives for each option the exact commands and how to tell that it worked.
 
-- [For AI assistants](https://winterop-com.github.io/chap-devops/ai.html): start here
-- [Your first forecast in the Modeling App](https://winterop-com.github.io/chap-devops/modeling-app.html): an evaluation and a forecast, step by step with screenshots
-- [Use cases](https://winterop-com.github.io/chap-devops/use-cases.html): one page per deployment shape
-- [Troubleshooting](https://winterop-com.github.io/chap-devops/troubleshooting.html): keyed by the exact message chap-devops prints
-- [Command reference](https://winterop-com.github.io/chap-devops/reference.html): every command and flag
+- [For AI assistants](https://dhis2-chap.github.io/chap-devops/ai.html): start here
+- [Your first forecast in the Modeling App](https://dhis2-chap.github.io/chap-devops/modeling-app.html): an evaluation and a forecast, step by step with screenshots
+- [Use cases](https://dhis2-chap.github.io/chap-devops/use-cases.html): one page per deployment shape
+- [Troubleshooting](https://dhis2-chap.github.io/chap-devops/troubleshooting.html): keyed by the exact message chap-devops prints
+- [Command reference](https://dhis2-chap.github.io/chap-devops/reference.html): every command and flag

@@ -581,7 +581,7 @@ a release can be audited without downloading anything.
 ### The docs deploy
 
 Pushing the release commit to `main` also runs `docs.yml`, which rebuilds the
-book and deploys it to <https://winterop-com.github.io/chap-devops/>. There is
+book and deploys it to <https://dhis2-chap.github.io/chap-devops/>. There is
 nothing to do by hand; the version in the install commands is written out in
 `docs/install.md` and is updated there when it matters.
 
@@ -596,7 +596,7 @@ scripts/bootstrap-repo.sh          # print the commands
 scripts/bootstrap-repo.sh --yes    # run them
 ```
 
-It creates `winterop-com/chap-devops` as a public repository from this checkout,
+It creates `dhis2-chap/chap-devops` as a public repository from this checkout,
 pushes `main`, switches GitHub Pages to the Actions build source (which has to
 happen before `docs.yml` can deploy), sets the About link to the documentation
 site, and runs `scripts/github-secrets.sh`.

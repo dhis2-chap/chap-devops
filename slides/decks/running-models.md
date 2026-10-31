@@ -440,4 +440,4 @@ chap-devops --json run chapkit_simple_multistep_model
 | to stop it | `chap-devops stop ID`, or Ctrl-C with `-a` |
 | to remove it and its data | `chap-devops stop ID --purge` |
 
-The chapter: **https://winterop-com.github.io/chap-devops/run.html**
+The chapter: **https://dhis2-chap.github.io/chap-devops/run.html**

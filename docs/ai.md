@@ -129,7 +129,7 @@ downloads: expect it to take a while on a slow connection. On Docker Desktop
 the memory is set under Settings, Resources. Then:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops doctor
 ```
 

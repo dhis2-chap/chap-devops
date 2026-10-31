@@ -90,11 +90,11 @@ const ABOUT: &str = "deploy Chap (climate-informed disease forecasting) and its 
 /// the help is printed (`print_and_exit` in `main`), because clap `trim_end`s
 /// the rendered help and appends one newline of its own, so a newline added
 /// here or to `after_help` would be thrown away.
-pub const DOCS_LINE: &str = "Docs: https://winterop-com.github.io/chap-devops/";
+pub const DOCS_LINE: &str = "Docs: https://dhis2-chap.github.io/chap-devops/";
 
 /// The book itself, for the places that open it rather than print it. A test
 /// keeps it and [`DOCS_LINE`] pointing at the same place.
-pub const DOCS_URL: &str = "https://winterop-com.github.io/chap-devops/";
+pub const DOCS_URL: &str = "https://dhis2-chap.github.io/chap-devops/";
 
 /// The heading the global options are listed under, in their own block after
 /// each command's own options.

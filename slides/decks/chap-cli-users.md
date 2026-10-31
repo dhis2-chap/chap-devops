@@ -512,14 +512,14 @@ Each message is in the book's Troubleshooting chapter, with more detail.
 ## Start now
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops doctor
 chap-devops chap
 ```
 
 - The full guide, from install to a comparison of two models:
-  **https://winterop-com.github.io/chap-devops/use-cases/evaluate-with-chap-cli.html**
+  **https://dhis2-chap.github.io/chap-devops/use-cases/evaluate-with-chap-cli.html**
 - The chapter about `chap-devops chap`:
-  **https://winterop-com.github.io/chap-devops/chap-cli.html**
+  **https://dhis2-chap.github.io/chap-devops/chap-cli.html**
 - A model in the MLproject format: `chap-devops chapkit mlproject run DIR`
   serves it with no build. See the **MLproject models** deck.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create winterop-com/chap-devops on GitHub and put it in a publishable state.
+# Create dhis2-chap/chap-devops on GitHub and put it in a publishable state.
 #
 #   scripts/bootstrap-repo.sh          # print what would run, change nothing
 #   scripts/bootstrap-repo.sh --yes    # actually run it
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-ORG="${ORG:-winterop-com}"
+ORG="${ORG:-dhis2-chap}"
 REPO_NAME="${REPO_NAME:-chap-devops}"
 REPO="${REPO:-${ORG}/${REPO_NAME}}"
 BRANCH="${BRANCH:-main}"

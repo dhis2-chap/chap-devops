@@ -572,9 +572,9 @@ warn  memory   5.0 GB available to docker
 ## Start now
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops init mychap --with dhis2 --models chapkit_simple_multistep_model
 cd mychap && chap-devops up && chap-devops dhis2 connect
 ```
 
-The DHIS2 chapter: **https://winterop-com.github.io/chap-devops/dhis2.html**
+The DHIS2 chapter: **https://dhis2-chap.github.io/chap-devops/dhis2.html**

@@ -43,7 +43,7 @@ example data takes less than a minute.
 ## Step 1: Install chap-devops
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops --version
 ```
 

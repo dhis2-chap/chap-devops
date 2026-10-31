@@ -5,14 +5,14 @@
 On macOS and Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 ```
 
 Or, to get the binary and nothing else - into this directory as `./chap-devops`, no
 `PATH` advice, no completion scripts, nothing written anywhere outside it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh -s -- --here
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh -s -- --here
 ```
 
 If the script printed `... is not on your PATH`, add the `export PATH=...`
@@ -71,7 +71,7 @@ nothing outside the current directory.
 | `--help` | | Print the options |
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh |
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh |
   CHAP_DEVOPS_INSTALL_DIR="$HOME/bin" CHAP_DEVOPS_VERSION=v0.100.0 sh
 ```
 
@@ -84,7 +84,7 @@ error: v0.2.1 has no chap-devops-universal-apple-darwin.tar.gz, so chap-devops c
 ```
 
 Use `v0.100.0` or newer. Without `--version`, the error ends in `download a
-build from https://github.com/winterop-com/chap-devops/releases`.
+build from https://github.com/dhis2-chap/chap-devops/releases`.
 `--here` and `--dir` together are an error; use one of them.
 
 Without `--version` the newest release is looked up through the GitHub API, and
@@ -139,11 +139,11 @@ Picking one with the installer:
 
 ```sh
 # the newest stable release
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 # the rolling build of main
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh -s -- --version dev
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh -s -- --version dev
 # one named release
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh -s -- --version v0.100.0
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh -s -- --version v0.100.0
 ```
 
 and with an installed `chap-devops`:
@@ -168,19 +168,19 @@ newest release:
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
-| Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
+| Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
+| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
+| Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
 
 <details>
 <summary>Other platforms</summary>
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
-| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
-| Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
+| Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
+| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
+| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
+| Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
 
 </details>
 
@@ -205,7 +205,7 @@ runs on any Mac.
 On macOS:
 
 ```sh
-curl -fsSLO https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz
+curl -fsSLO https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz
 tar -xzf chap-devops-universal-apple-darwin.tar.gz
 sudo install -m 0755 chap-devops-*-universal-apple-darwin/chap-devops /usr/local/bin/chap-devops
 ```
@@ -213,7 +213,7 @@ sudo install -m 0755 chap-devops-*-universal-apple-darwin/chap-devops /usr/local
 On a Linux server:
 
 ```sh
-curl -fsSLO https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz
+curl -fsSLO https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz
 tar -xzf chap-devops-x86_64-unknown-linux-musl.tar.gz
 sudo install -m 0755 chap-devops-*-x86_64-unknown-linux-musl/chap-devops /usr/local/bin/chap-devops
 ```
@@ -229,7 +229,7 @@ Every release carries a `SHA256SUMS` file covering every archive:
 Download it into the directory that has the archive, then check:
 
 ```sh
-curl -fsSLO https://github.com/winterop-com/chap-devops/releases/latest/download/SHA256SUMS
+curl -fsSLO https://github.com/dhis2-chap/chap-devops/releases/latest/download/SHA256SUMS
 shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 

@@ -1,12 +1,12 @@
 # chap-devops
 
-[![ci](https://github.com/winterop-com/chap-devops/actions/workflows/ci.yml/badge.svg)](https://github.com/winterop-com/chap-devops/actions/workflows/ci.yml)
-[![release](https://img.shields.io/github/v/release/winterop-com/chap-devops)](https://github.com/winterop-com/chap-devops/releases/latest)
+[![ci](https://github.com/dhis2-chap/chap-devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dhis2-chap/chap-devops/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/dhis2-chap/chap-devops)](https://github.com/dhis2-chap/chap-devops/releases/latest)
 [![license](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
-[![docs](https://img.shields.io/badge/docs-winterop--com.github.io%2Fchap--devops-informational)](https://winterop-com.github.io/chap-devops/)
+[![docs](https://img.shields.io/badge/docs-dhis2--chap.github.io%2Fchap--devops-informational)](https://dhis2-chap.github.io/chap-devops/)
 
 > **AI agents and LLMs helping someone use chap-devops: read
-> [winterop-com.github.io/chap-devops/ai.html](https://winterop-com.github.io/chap-devops/ai.html)
+> [dhis2-chap.github.io/chap-devops/ai.html](https://dhis2-chap.github.io/chap-devops/ai.html)
 > ([`docs/ai.md`](docs/ai.md)) first.**
 
 [Chap](https://chap.dhis2.org) forecasts
@@ -35,32 +35,32 @@ option the exact commands and how to tell that it worked. The pages below are
 the detail behind each option.
 
 To learn Chap by clicking through it, start with
-[Chap with a local DHIS2 and the Modeling App](https://winterop-com.github.io/chap-devops/use-cases/chap-with-local-dhis2.html)
+[Chap with a local DHIS2 and the Modeling App](https://dhis2-chap.github.io/chap-devops/use-cases/chap-with-local-dhis2.html)
 and then
-[Your first forecast in the Modeling App](https://winterop-com.github.io/chap-devops/modeling-app.html):
+[Your first forecast in the Modeling App](https://dhis2-chap.github.io/chap-devops/modeling-app.html):
 an evaluation and a three-month dengue forecast on demo data from Laos.
 
-- [Chap with forecasting models](https://winterop-com.github.io/chap-devops/use-cases/chap-with-models.html): chap-core and the forecasting models it runs. The default.
-- [Chap with climate data from OCS](https://winterop-com.github.io/chap-devops/use-cases/chap-with-ocs.html): chap-core with Open Climate Service beside it for climate data.
-- [Chap with a local DHIS2 and the Modeling App](https://winterop-com.github.io/chap-devops/use-cases/chap-with-local-dhis2.html): chap-core, models and a demo DHIS2, connected for the Modeling App.
-- [Chap for a DHIS2 that runs elsewhere](https://winterop-com.github.io/chap-devops/use-cases/chap-for-external-dhis2.html): chap-core on a server, used by a DHIS2 that runs elsewhere.
-- [An OCS server on its own](https://winterop-com.github.io/chap-devops/use-cases/ocs-alone.html): Open Climate Service and its object store, no Chap.
-- [A DHIS2 on its own](https://winterop-com.github.io/chap-devops/use-cases/dhis2-alone.html): A DHIS2 and its database, nothing else; 2.41, 2.42, 2.43 or the next one.
-- [A chapkit model service on its own](https://winterop-com.github.io/chap-devops/use-cases/model-alone.html): One chapkit model service answering on its own port, no chap-core.
-- [Several model services side by side](https://winterop-com.github.io/chap-devops/use-cases/models-alone.html): Several model services, each on its own port, no chap-core.
-- [Any number of model services, no folder](https://winterop-com.github.io/chap-devops/use-cases/models-with-run.html): one `chap-devops run` per model, each on its own port.
-- [Your model from its checkout, with Chap](https://winterop-com.github.io/chap-devops/use-cases/model-on-host.html): chap-devops runs chap-core; you run your model with `uv run` and it registers.
-- [chap-core from its checkout, with the models](https://winterop-com.github.io/chap-devops/use-cases/chap-core-on-host.html): you run chap-core; chap-devops runs the models and registers them with it.
-- [chap-core built from its checkout](https://winterop-com.github.io/chap-devops/use-cases/chap-core-from-checkout.html): chap-devops builds chap-core from your clone and runs it with everything else.
-- [A DHIS2 you run yourself, with Chap from chap-devops](https://winterop-com.github.io/chap-devops/use-cases/dhis2-dev-with-chap.html): your DHIS2 and a chap-core from chap-devops, connected.
-- [A DHIS2 from chap-devops, with a chap-core elsewhere](https://winterop-com.github.io/chap-devops/use-cases/dhis2-with-chap-core-elsewhere.html): a DHIS2 from chap-devops and your chap-core, connected.
-- [A new model of your own](https://winterop-com.github.io/chap-devops/use-cases/new-model.html): `chap-devops models new` makes a model project in Python or R, and Docker builds it.
-- [An MLproject model as a chapkit service](https://winterop-com.github.io/chap-devops/chapkit-cli.html#migrate-an-mlproject-model): `chap-devops chapkit mlproject migrate` changes the model, and Docker builds it, with no Python or uv.
-- [A model image you built yourself](https://winterop-com.github.io/chap-devops/use-cases/local-model-image.html): `docker build` a model and run it in Chap without publishing it.
-- [Evaluating a model on your own data](https://winterop-com.github.io/chap-devops/use-cases/evaluate-with-chap-cli.html): `chap eval` on your CSV through `chap-devops chap`, with no Python or uv.
-- [Combinations](https://winterop-com.github.io/chap-devops/use-cases/combinations.html): OCS and DHIS2 without Chap, a model beside OCS, everything at once.
-- [Several deployments on one machine](https://winterop-com.github.io/chap-devops/use-cases/several-deployments.html): taking turns on the default ports, or giving each its own.
-- [Growing a deployment](https://winterop-com.github.io/chap-devops/use-cases/growing.html): Moving a deployment from one shape to another.
+- [Chap with forecasting models](https://dhis2-chap.github.io/chap-devops/use-cases/chap-with-models.html): chap-core and the forecasting models it runs. The default.
+- [Chap with climate data from OCS](https://dhis2-chap.github.io/chap-devops/use-cases/chap-with-ocs.html): chap-core with Open Climate Service beside it for climate data.
+- [Chap with a local DHIS2 and the Modeling App](https://dhis2-chap.github.io/chap-devops/use-cases/chap-with-local-dhis2.html): chap-core, models and a demo DHIS2, connected for the Modeling App.
+- [Chap for a DHIS2 that runs elsewhere](https://dhis2-chap.github.io/chap-devops/use-cases/chap-for-external-dhis2.html): chap-core on a server, used by a DHIS2 that runs elsewhere.
+- [An OCS server on its own](https://dhis2-chap.github.io/chap-devops/use-cases/ocs-alone.html): Open Climate Service and its object store, no Chap.
+- [A DHIS2 on its own](https://dhis2-chap.github.io/chap-devops/use-cases/dhis2-alone.html): A DHIS2 and its database, nothing else; 2.41, 2.42, 2.43 or the next one.
+- [A chapkit model service on its own](https://dhis2-chap.github.io/chap-devops/use-cases/model-alone.html): One chapkit model service answering on its own port, no chap-core.
+- [Several model services side by side](https://dhis2-chap.github.io/chap-devops/use-cases/models-alone.html): Several model services, each on its own port, no chap-core.
+- [Any number of model services, no folder](https://dhis2-chap.github.io/chap-devops/use-cases/models-with-run.html): one `chap-devops run` per model, each on its own port.
+- [Your model from its checkout, with Chap](https://dhis2-chap.github.io/chap-devops/use-cases/model-on-host.html): chap-devops runs chap-core; you run your model with `uv run` and it registers.
+- [chap-core from its checkout, with the models](https://dhis2-chap.github.io/chap-devops/use-cases/chap-core-on-host.html): you run chap-core; chap-devops runs the models and registers them with it.
+- [chap-core built from its checkout](https://dhis2-chap.github.io/chap-devops/use-cases/chap-core-from-checkout.html): chap-devops builds chap-core from your clone and runs it with everything else.
+- [A DHIS2 you run yourself, with Chap from chap-devops](https://dhis2-chap.github.io/chap-devops/use-cases/dhis2-dev-with-chap.html): your DHIS2 and a chap-core from chap-devops, connected.
+- [A DHIS2 from chap-devops, with a chap-core elsewhere](https://dhis2-chap.github.io/chap-devops/use-cases/dhis2-with-chap-core-elsewhere.html): a DHIS2 from chap-devops and your chap-core, connected.
+- [A new model of your own](https://dhis2-chap.github.io/chap-devops/use-cases/new-model.html): `chap-devops models new` makes a model project in Python or R, and Docker builds it.
+- [An MLproject model as a chapkit service](https://dhis2-chap.github.io/chap-devops/chapkit-cli.html#migrate-an-mlproject-model): `chap-devops chapkit mlproject migrate` changes the model, and Docker builds it, with no Python or uv.
+- [A model image you built yourself](https://dhis2-chap.github.io/chap-devops/use-cases/local-model-image.html): `docker build` a model and run it in Chap without publishing it.
+- [Evaluating a model on your own data](https://dhis2-chap.github.io/chap-devops/use-cases/evaluate-with-chap-cli.html): `chap eval` on your CSV through `chap-devops chap`, with no Python or uv.
+- [Combinations](https://dhis2-chap.github.io/chap-devops/use-cases/combinations.html): OCS and DHIS2 without Chap, a model beside OCS, everything at once.
+- [Several deployments on one machine](https://dhis2-chap.github.io/chap-devops/use-cases/several-deployments.html): taking turns on the default ports, or giving each its own.
+- [Growing a deployment](https://dhis2-chap.github.io/chap-devops/use-cases/growing.html): Moving a deployment from one shape to another.
 
 Licensed under the AGPL-3.0, like chap-core.
 
@@ -69,7 +69,7 @@ Licensed under the AGPL-3.0, like chap-core.
 On macOS and Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 ```
 
 Or `... | sh -s -- --here` for the binary alone, as `./chap-devops` in the current
@@ -88,19 +88,19 @@ always point at the newest release:
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
-| Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
+| Linux x86_64 | [`chap-devops-x86_64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-unknown-linux-musl.tar.gz) | static, any distro |
+| macOS | [`chap-devops-universal-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-universal-apple-darwin.tar.gz) | universal, signed and notarized |
+| Windows x86_64 | [`chap-devops-x86_64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-pc-windows-msvc.zip) | unsigned, untested |
 
 <details>
 <summary>Other platforms</summary>
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
-| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
-| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
-| Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/winterop-com/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
+| Linux arm64 | [`chap-devops-aarch64-unknown-linux-musl.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-unknown-linux-musl.tar.gz) | static, any distro |
+| macOS, Apple silicon | [`chap-devops-aarch64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-apple-darwin.tar.gz) | signed and notarized |
+| macOS, Intel | [`chap-devops-x86_64-apple-darwin.tar.gz`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-x86_64-apple-darwin.tar.gz) | signed and notarized |
+| Windows arm64 | [`chap-devops-aarch64-pc-windows-msvc.zip`](https://github.com/dhis2-chap/chap-devops/releases/latest/download/chap-devops-aarch64-pc-windows-msvc.zip) | unsigned, untested |
 
 </details>
 
@@ -120,7 +120,7 @@ release, `chap-devops self version` says which build this is, and `chap-devops c
 
 Or, from a checkout, `cargo install --path .` or `make install`. Requires
 Docker with Compose v2.24.4 or newer. See
-[Install](https://winterop-com.github.io/chap-devops/install.html).
+[Install](https://dhis2-chap.github.io/chap-devops/install.html).
 
 ## Quickstart
 

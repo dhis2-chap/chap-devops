@@ -9,5 +9,5 @@ src = "docs"
 build-dir = "site"
 
 [output.html]
-git-repository-url = "https://github.com/winterop-com/chap-devops"
-edit-url-template = "https://github.com/winterop-com/chap-devops/edit/main/{path}"
+git-repository-url = "https://github.com/dhis2-chap/chap-devops"
+edit-url-template = "https://github.com/dhis2-chap/chap-devops/edit/main/{path}"

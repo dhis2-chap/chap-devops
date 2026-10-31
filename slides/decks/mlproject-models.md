@@ -383,6 +383,6 @@ chap-devops chapkit mlproject run .
 ```
 
 - The guide, step by step:
-  **https://winterop-com.github.io/chap-devops/use-cases/mlproject-model.html**
+  **https://dhis2-chap.github.io/chap-devops/use-cases/mlproject-model.html**
 - The chapter about `chap-devops chapkit`:
-  **https://winterop-com.github.io/chap-devops/chapkit-cli.html**
+  **https://dhis2-chap.github.io/chap-devops/chapkit-cli.html**

@@ -1278,7 +1278,7 @@ fn the_help_lists_only_the_commands_that_can_work_here() {
     assert!(
         outside
             .trim_end()
-            .ends_with("Docs: https://winterop-com.github.io/chap-devops/"),
+            .ends_with("Docs: https://dhis2-chap.github.io/chap-devops/"),
         "{outside}"
     );
 
@@ -1309,7 +1309,7 @@ fn the_help_lists_only_the_commands_that_can_work_here() {
     assert!(
         inside
             .trim_end()
-            .ends_with("Docs: https://winterop-com.github.io/chap-devops/"),
+            .ends_with("Docs: https://dhis2-chap.github.io/chap-devops/"),
         "{inside}"
     );
 

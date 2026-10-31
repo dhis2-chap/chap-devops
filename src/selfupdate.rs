@@ -31,7 +31,7 @@ pub use release::{
 use std::time::Duration;
 
 /// The repository releases are published from.
-pub const REPO: &str = "winterop-com/chap-devops";
+pub const REPO: &str = "dhis2-chap/chap-devops";
 
 /// Release endpoint for the newest final release.
 ///

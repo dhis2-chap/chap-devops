@@ -163,7 +163,7 @@ fn the_help_says_what_chap_is() {
     assert!(help.lines().count() <= 40, "{help}");
     assert!(
         help.trim_end()
-            .ends_with("Docs: https://winterop-com.github.io/chap-devops/"),
+            .ends_with("Docs: https://dhis2-chap.github.io/chap-devops/"),
         "{help}"
     );
 }
@@ -175,7 +175,7 @@ fn the_help_says_what_chap_is() {
 #[test]
 fn the_root_help_ends_on_a_blank_line() {
     let sandbox = Sandbox::new();
-    let ends_blank = "Docs: https://winterop-com.github.io/chap-devops/\n\n";
+    let ends_blank = "Docs: https://dhis2-chap.github.io/chap-devops/\n\n";
 
     // Every way of asking the root for help, including the `help` subcommand
     // and a bare `chap-devops`, which answers with the same help on stderr.

@@ -11,10 +11,10 @@
 #
 # Two scopes, chosen with --scope:
 #
-#   --scope repo   (the default) sets the six secrets on winterop-com/chap-devops
+#   --scope repo   (the default) sets the six secrets on dhis2-chap/chap-devops
 #                  alone. Nothing else in the organisation can read them.
 #
-#   --scope org    sets them once for the winterop-com organisation with
+#   --scope org    sets them once for the dhis2-chap organisation with
 #                  `--visibility selected --repos chap-devops`, so the same values
 #                  can later be shared with another repository by adding it to
 #                  that list instead of uploading the certificate again. The
@@ -46,7 +46,7 @@
 
 set -euo pipefail
 
-ORG="${ORG:-winterop-com}"
+ORG="${ORG:-dhis2-chap}"
 REPO_NAME="${REPO_NAME:-chap-devops}"
 REPO="${REPO:-${ORG}/${REPO_NAME}}"
 

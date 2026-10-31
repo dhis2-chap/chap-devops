@@ -88,7 +88,7 @@ Start each long command first, and explain while it runs.
 ## Step 1: Install and check
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 chap-devops --version
 chap-devops doctor
 ```
@@ -410,4 +410,4 @@ Your `.nc`, `.html` and `.csv` files stay in `~/chap-workshop/out`.
 - **More about the chap CLI in chap-devops:** the deck "The chap CLI, without
   Python".
 
-The book: **https://winterop-com.github.io/chap-devops/**
+The book: **https://dhis2-chap.github.io/chap-devops/**

@@ -527,4 +527,4 @@ docker build --platform linux/amd64 --build-arg GIT_REVISION=$(git rev-parse HEA
 chap-devops run my-model:dev
 ```
 
-Models and the marketplace: **https://winterop-com.github.io/chap-devops/models.html**
+Models and the marketplace: **https://dhis2-chap.github.io/chap-devops/models.html**

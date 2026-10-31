@@ -744,7 +744,7 @@ fn the_check_state_carries_the_commit() {
 fn the_download_urls_name_the_repository_and_the_tag() {
     assert_eq!(
         download_base("v0.2.0"),
-        "https://github.com/winterop-com/chap-devops/releases/download/v0.2.0"
+        "https://github.com/dhis2-chap/chap-devops/releases/download/v0.2.0"
     );
     assert!(latest_release_url().contains(REPO));
     assert!(latest_release_url().starts_with(crate::github::DEFAULT_API));

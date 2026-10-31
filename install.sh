@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install chap-devops, which deploys Chap and its services with Docker Compose.
 #
-#   curl -fsSL https://raw.githubusercontent.com/winterop-com/chap-devops/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/dhis2-chap/chap-devops/main/install.sh | sh
 #
 # Detects the platform, downloads the release archive for it, checks it
 # against the release's SHA256SUMS, and installs the binary. POSIX sh on
@@ -30,7 +30,7 @@
 
 set -eu
 
-REPO="winterop-com/chap-devops"
+REPO="dhis2-chap/chap-devops"
 RELEASES_URL="https://github.com/${REPO}/releases"
 API_LATEST="https://api.github.com/repos/${REPO}/releases/latest"
 

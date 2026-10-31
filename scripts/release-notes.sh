@@ -55,7 +55,7 @@ case "$tag" in
     ;;
 esac
 
-repo="${GITHUB_REPOSITORY:-winterop-com/chap-devops}"
+repo="${GITHUB_REPOSITORY:-dhis2-chap/chap-devops}"
 script="https://raw.githubusercontent.com/${repo}/main/install.sh"
 base="https://github.com/${repo}/releases/download/${tag}"
 

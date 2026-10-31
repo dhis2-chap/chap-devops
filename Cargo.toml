@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.91"
 description = "Deploy Chap (climate-informed disease forecasting) and its services with Docker Compose"
 license = "AGPL-3.0-only"
-repository = "https://github.com/winterop-com/chap-devops"
+repository = "https://github.com/dhis2-chap/chap-devops"
 # Released as binaries from GitHub, never to crates.io, where the name is taken.
 publish = false
 
