@@ -693,6 +693,14 @@ pub(crate) fn chap_core_route(
             return (404, json, format!(r#"{{"detail":"Job '{id}' not found"}}"#));
         };
         return match (method, tail) {
+            // A whole job after chap-core v2.5.1, a bare string up to it. A
+            // backtest job answers the first way, every other job the second,
+            // so `models test --backtest` reads both.
+            ("GET", "") if id.starts_with("bt-") => (
+                200,
+                json,
+                format!(r#"{{"id":"{id}","type":"backtest","status":"{status}"}}"#),
+            ),
             ("GET", "") => (200, json, format!(r#""{status}""#)),
             // The log is one JSON string, which is what makes reading it a
             // question of rendering rather than of parsing.

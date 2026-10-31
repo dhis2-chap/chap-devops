@@ -395,7 +395,7 @@ fn find(ctx: &Ctx, api: &Api, given: &str) -> Result<(String, Vec<Job>)> {
     Err(jobs::no_such_job(&given, &matched))
 }
 
-/// `GET /v1/jobs/{id}`, which answers with a bare status string.
+/// The status from `GET /v1/jobs/{id}`.
 ///
 /// `None` for a 404, which is how chap-core says it has no such job.
 fn current_status(api: &Api, id: &str) -> Result<Option<String>> {
@@ -407,10 +407,7 @@ fn current_status(api: &Api, id: &str) -> Result<Option<String>> {
     if !answer.is_success() {
         return Err(api.status_error(&path, &answer));
     }
-    Ok(Some(match answer.json() {
-        Some(serde_json::Value::String(text)) => text,
-        _ => answer.text().trim().trim_matches('"').to_string(),
-    }))
+    Ok(Some(jobs::status_in(&answer.text())))
 }
 
 /// The row a finished job wrote, from `GET /v1/jobs/{id}/database_result`.

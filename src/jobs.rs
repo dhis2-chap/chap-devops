@@ -43,6 +43,22 @@ const MAX_HINT: usize = 160;
 pub const NO_JOBS: &str = "no jobs yet; a backtest or prediction started from the Modeling App \
                            or `chap-devops api` shows up here";
 
+/// The status in the body of `GET /v1/jobs/{id}`.
+///
+/// chap-core after v2.5.1 answers with the whole job, as one entry of
+/// `GET /v1/jobs`, and earlier releases with the bare status string.
+pub fn status_in(body: &str) -> String {
+    match serde_json::from_str::<serde_json::Value>(body) {
+        Ok(serde_json::Value::String(status)) => status,
+        Ok(serde_json::Value::Object(job)) => job
+            .get("status")
+            .and_then(|status| status.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        _ => body.trim().trim_matches('"').to_string(),
+    }
+}
+
 /// One entry of `GET /v1/jobs`.
 ///
 /// Every field is optional on the way in, because the list is chap-core's to

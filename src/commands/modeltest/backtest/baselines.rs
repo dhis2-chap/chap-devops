@@ -42,8 +42,8 @@ pub(super) fn of_run(list: &[Job], since: u64) -> (bool, Vec<i64>) {
 /// The backtests of the baselines on `dataset`, after the baseline jobs
 /// that started with the run have finished, or [`BASELINE_WAIT`] is over.
 /// `dataset_job` is the job that built the dataset: its start is the start
-/// of the run, on chap-core's clock. `GET /v1/jobs/{id}` gives a status
-/// only, so the start comes from the list.
+/// of the run, on chap-core's clock. Before v2.6, `GET /v1/jobs/{id}` gives
+/// a status only, so the start comes from the list.
 pub(super) fn rows(ctx: &Ctx, api: &Api, dataset: i64, dataset_job: &str) -> Vec<i64> {
     let list = || {
         api.get_json(jobs::JOBS_PATH)

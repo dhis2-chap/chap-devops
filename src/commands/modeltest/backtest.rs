@@ -440,17 +440,14 @@ fn wait(
     }
 }
 
-/// `GET /v1/jobs/{id}`, which answers with a bare status string.
+/// The status from `GET /v1/jobs/{id}`.
 fn job_status(api: &Api, job: &str) -> Result<String> {
     let path = format!("{}/{}", jobs::JOBS_PATH, crate::api::encode(job));
     let answer = api.send("GET", &path, None)?;
     if !answer.is_success() {
         return Err(api.status_error(&path, &answer));
     }
-    Ok(match answer.json() {
-        Some(serde_json::Value::String(text)) => text,
-        _ => answer.text().trim().trim_matches('"').to_string(),
-    })
+    Ok(jobs::status_in(&answer.text()))
 }
 
 /// The row a finished job wrote, from `GET /v1/jobs/{id}/database_result`.

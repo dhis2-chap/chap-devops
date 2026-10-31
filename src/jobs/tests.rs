@@ -290,3 +290,16 @@ fn the_headline_names_the_job_and_survives_missing_fields() {
     };
     assert_eq!(bare.headline(), "job x - (- -)");
 }
+
+/// chap-core after v2.5.1 answers with the whole job; a status taken from the
+/// raw text would then never read as finished.
+#[test]
+fn the_status_is_read_from_a_whole_job_and_from_a_bare_string() {
+    assert_eq!(status_in(r#""SUCCESS""#), "SUCCESS");
+    assert_eq!(
+        status_in(r#"{"id":"j","type":"dataset","status":"SUCCESS","start_time":null}"#),
+        "SUCCESS"
+    );
+    assert_eq!(status_in("SUCCESS\n"), "SUCCESS");
+    assert_eq!(status_in(r#"{"id":"j"}"#), "");
+}
