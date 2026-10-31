@@ -156,9 +156,12 @@ To compare two models, run a second evaluation on the same data:
 2. The copy has the name, provinces, model, data mapping and periods of the
    first, and its name ends in `(Copy)`.
 3. On the copy, **Select model** picks another model, for example
-   **Simple Multistep Model (chapkit) [Monthly selfhistory]**. Then choose
-   **Start import**.
-4. In **Evaluate**, **Compare**, pick the first evaluation in the left box and
+   **Simple Multistep Model (chapkit) [Monthly selfhistory]**. This clears the
+   data mapping (seen with Modeling App 7.3.2), and **Start import** does
+   nothing until it is mapped again.
+4. Choose **Configure sources**, pick `Dengue Cases (Any) - Weekly` for
+   **Disease cases**, and choose **Save**. Then choose **Start import**.
+5. In **Evaluate**, **Compare**, pick the first evaluation in the left box and
    the copy in the box beside it.
 
 The evaluation of *Monthly selfhistory* took about 20 seconds. The comparison shows the two side by side, province
@@ -200,14 +203,14 @@ first; open it, and it lists the elements of the demo database under
 **Suggested**. Pick `CHAP Dengue Cases (Any) - Weekly Quantile High` to
 `... Quantile Low`.
 
-**Use alert outputs** is on by default, and then the page also needs an
-**Outbreak indicator**: **Clear and import** does nothing until it has one,
-and the message is under the box, below the first screen. Pick
-`CHAP Dengue Cases (Any) - Weekly Outbreak Alert`; the box does not suggest it,
-so type `Outbreak` to find it. Or turn **Use alert outputs** off.
+Leave **Use alert outputs** off: it is off for a setup with no alert policy
+(seen with Modeling App 7.3.2). If you turn it on, the page also needs an
+**Outbreak indicator**: **Clear and import** does nothing until it has one.
+Pick `CHAP Dengue Cases (Any) - Weekly Outbreak Alert`; type `Outbreak` to find
+it.
 **Clear and import** asks once more before it writes, then the app goes back
-to the setup. DHIS2 2.42.6 accepted the monthly values into those elements,
-but their data set is weekly. For a monthly forecast, create monthly data
+to the setup and says *Prediction data posted successfully*. DHIS2 2.42.7
+accepted the monthly values into those elements, but their data set is weekly. For a monthly forecast, create monthly data
 elements in DHIS2's Maintenance app and pick those.
 
 ## When something goes wrong
