@@ -71,6 +71,41 @@ predictions as before.
 To go back, run `chap-devops down` in the new directory, then start the old
 deployment again with its own compose command. Both use the same database.
 
+## chap-admin commands in chap-devops
+
+Each `chap-admin` command has a `chap-devops` command that does the same in a
+deployment. `chap-devops up --wait` configures the models in chap-core, as
+`chap-admin` does after a model registers.
+
+| chap-admin | chap-devops |
+| --- | --- |
+| `chap-admin install ID` | `chap-devops models enable ID`, then `chap-devops up --wait` |
+| `chap-admin install-all` | `chap-devops init DIR --models all` for a new deployment, or `chap-devops models enable ID ...` with the ids of `chap-devops models list` |
+| `chap-admin install NAME --image IMAGE --accept-risk` | `chap-devops models add IMAGE --id NAME`, then `chap-devops up --wait` |
+| `chap-admin update ID` | `chap-devops models enable ID --channel stable`, then `chap-devops up --wait` |
+| `chap-admin update-all` | `chap-devops update`, then `chap-devops up --wait` |
+| `chap-admin uninstall ID` | `chap-devops models disable ID --retire`, then `chap-devops up`, which removes its container |
+| `chap-admin uninstall ID --delete-data` | `chap-devops models disable ID --retire --purge`, then `chap-devops up` |
+| `--platform linux/amd64` | Not needed: each model service pins `linux/amd64`. |
+| `--url`, `--token` | Not needed: the deployment knows its chap-core and its token. For a chap-core outside the deployment, use `chap-devops init --chap-core-url`. |
+| `--compose-file` | Not needed: the deployment knows its compose files. |
+
+chap-devops makes the same checks as `chap-admin`:
+
+- A marketplace version runs only from a `sha-` image tag that starts its
+  commit.
+- An entry whose `id` is not its file name, or whose `service_id` is not the
+  `id` with `-` for `_`, is left out.
+- `chap-devops status` warns when a model registered a git revision that is
+  not the commit of its pin.
+- `chap-devops models add` refuses a service id that another model has in
+  chap-core.
+- When chap-core refuses the new version of an updated model,
+  `chap-devops up --wait` starts the previous version again.
+
+One difference stays: `chap-admin install --image` asks for `--accept-risk`,
+and `chap-devops models add` does not ask.
+
 ## What it refuses
 
 - A deployment that still has containers: the two would use one database.

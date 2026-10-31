@@ -33,13 +33,6 @@ not change.
 reviewed the image. `chap-devops models add` asks for no confirmation. Whether it
 should, and how (a flag, or a question at a terminal), is still open.
 
-### chap-devops for chap-admin users
-
-A page that maps each `chap-admin` command and flag to the `chap-devops`
-command that does the same, and a scenario in `scripts/e2e.sh` that runs
-each of them against real images: install, update, uninstall, a custom image
-and a takeover.
-
 ### Chap Hub
 
 The marketplace now calls itself Chap Hub in its `registry.yaml`. The help,

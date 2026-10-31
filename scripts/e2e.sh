@@ -8,6 +8,7 @@
 #   scripts/e2e.sh --no-dhis2            # OCS and chap-core only
 #   scripts/e2e.sh --models all          # every marketplace model, not only the one
 #   scripts/e2e.sh --dhis2 2.42          # one DHIS2 version (dev: dhis2/core-dev:master)
+#   scripts/e2e.sh --chap-admin          # the chap-admin commands, and a takeover, per tag
 #
 # For each chap-core tag and DHIS2 version it creates a deployment under the
 # work directory,
@@ -30,6 +31,7 @@ MODELS="chapkit_simple_multistep_model"
 DHIS2_VERSIONS="2.41 2.42 2.43 dev"
 KEEP=0
 DHIS2=1
+ADMIN=0
 WORK=""
 WAIT_SECONDS="${WAIT_SECONDS:-1800}"
 
@@ -43,6 +45,8 @@ options:
   --dhis2 "V1 V2"  DHIS2 versions to run each tag with (default: "2.41 2.42 2.43 dev");
                    dev is the unreleased next one, dhis2/core-dev:master
   --no-dhis2       leave DHIS2 out, and dhis2 connect with it
+  --chap-admin     run what chap-admin does, with chap-core only: install, update, a
+                   custom image, uninstall, and a takeover of a chap-core compose deployment
   --models LIST    model ids, comma separated, \`none\` or \`all\` (default: chapkit_simple_multistep_model)
   --work DIR       where the deployments and the report go (default: a temp dir)
 
@@ -57,6 +61,7 @@ while [ $# -gt 0 ]; do
     --models) MODELS="$2"; shift ;;
     --dhis2) DHIS2_VERSIONS="$2"; shift ;;
     --no-dhis2) DHIS2=0 ;;
+    --chap-admin) ADMIN=1 ;;
     --work) WORK="$2"; shift ;;
     -h | --help) usage; exit 0 ;;
     *) echo "error: unknown argument: $1" >&2; usage >&2; exit 2 ;;
@@ -201,6 +206,99 @@ dhis2_seed() {
   esac
 }
 
+# model_state DIR SERVICE STATE [VERSION]: the model row of `chap-devops status`
+# has STATE, and chap-core has it registered at VERSION when one is given.
+model_state() {
+  "$CHAP_DEVOPS" -C "$1" --json status | python3 -I -c '
+import json, sys
+service, state, version = sys.argv[1], sys.argv[2], sys.argv[3]
+report = json.load(sys.stdin)
+row = [m for m in report["models"] if m["id"] == service]
+if state == "absent":
+    sys.exit(0 if not row else 1)
+if not row or row[0]["state"] != state:
+    sys.exit("state of %s: %s" % (service, row[0]["state"] if row else "no row"))
+if version and not any(r["id"] == service and r["version"] == version for r in report["registered"]):
+    sys.exit("%s is not registered at %s" % (service, version))
+' "$2" "$3" "${4:-}"
+}
+
+# custom_model WORK: a model project from `chap-devops models new`, built as
+# e2e-model:dev, as option 11 of docs/ai.md builds one.
+custom_model() {
+  local work="$1/e2e-model"
+  rm -rf "$work"
+  "$CHAP_DEVOPS" models new "$work" || return 1
+  (
+    cd "$work" || exit 1
+    git init -q && git add . && git -c user.name=e2e -c user.email=e2e@localhost \
+      -c commit.gpgsign=false commit -qm "feat: first version" || exit 1
+    docker build --platform linux/amd64 --build-arg "GIT_REVISION=$(git rev-parse HEAD)" \
+      -t e2e-model:dev .
+  )
+}
+
+# old_deployment DIR TAG PORT: chap-core's own compose deployment, started and
+# stopped again, as `chap-devops init --adopt` expects to find it.
+old_deployment() {
+  local dir="$1" tag="$2" port="$3" ref=master
+  case "$tag" in v*) ref="$tag" ;; esac
+  rm -rf "$dir" && mkdir -p "$dir" || return 1
+  curl -fsSL -o "$dir/compose.ghcr.yml" \
+    "https://raw.githubusercontent.com/dhis2-chap/chap-core/$ref/compose.ghcr.yml" || return 1
+  printf 'CHAP_IMAGE_TAG=%s\n' "$tag" >"$dir/.env"
+  printf 'services:\n  chap:\n    ports: !override\n      - "%s:8000"\n' "$port" \
+    >"$dir/compose.port.yml"
+  (
+    cd "$dir" || exit 1
+    docker compose -f compose.ghcr.yml -f compose.port.yml up -d --wait --wait-timeout 600 &&
+      docker compose -f compose.ghcr.yml -f compose.port.yml down
+  )
+}
+
+# admin_steps LABEL DIR LOGS: what chap-admin does, with chap-devops.
+admin_steps() {
+  local label="$1" dir="$2" logs="$3" model=chapkit_simple_multistep_model
+  local service=chapkit-simple-multistep-model tag="${run_id%%/*}"
+  run "$label" init "$logs/init.log" \
+    "$CHAP_DEVOPS" init "$dir" --force --chap-tag "$tag" --models none --api-port "$api" \
+    --port-base "$base" || return
+  run "$label" install "$logs/install.log" sh -c \
+    '"$1" -C "$2" models enable "$3" --version 0.1.3 && "$1" -C "$2" up --wait' \
+    - "$CHAP_DEVOPS" "$dir" "$model"
+  run "$label" "install check" "$logs/install-check.log" \
+    model_state "$dir" "$service" registered 0.1.3
+  run "$label" update "$logs/update.log" sh -c \
+    '"$1" -C "$2" models enable "$3" --channel stable && "$1" -C "$2" up --wait' \
+    - "$CHAP_DEVOPS" "$dir" "$model"
+  run "$label" "update check" "$logs/update-check.log" \
+    model_state "$dir" "$service" registered 0.1.4
+  if run "$label" "custom build" "$logs/custom-build.log" custom_model "$logs"; then
+    run "$label" "custom image" "$logs/custom.log" sh -c \
+      '"$1" -C "$2" models add e2e-model:dev && "$1" -C "$2" up --wait' \
+      - "$CHAP_DEVOPS" "$dir"
+    run "$label" "custom test" "$logs/custom-test.log" \
+      "$CHAP_DEVOPS" -C "$dir" models test e2e_model -v
+  fi
+  run "$label" uninstall "$logs/uninstall.log" sh -c \
+    '"$1" -C "$2" models disable "$3" --retire --purge && "$1" -C "$2" up' \
+    - "$CHAP_DEVOPS" "$dir" "$model"
+  run "$label" "uninstall check" "$logs/uninstall-check.log" \
+    model_state "$dir" "$service" absent
+  "$CHAP_DEVOPS" -C "$dir" down --volumes --yes >"$logs/down.log" 2>&1
+
+  local old="$WORK/e2eold${offset}" new="$WORK/e2enew${offset}"
+  run "$label" "old deployment" "$logs/old.log" old_deployment "$old" "$tag" "$((api + 50))" ||
+    return
+  run "$label" takeover "$logs/takeover.log" \
+    "$CHAP_DEVOPS" init "$new" --adopt "$old" --api-port "$((api + 50))" || return
+  run "$label" "takeover up" "$logs/takeover-up.log" "$CHAP_DEVOPS" -C "$new" up --wait
+  run "$label" "takeover check" "$logs/takeover-check.log" "$CHAP_DEVOPS" -C "$new" status
+  if [ "$KEEP" = 0 ]; then
+    "$CHAP_DEVOPS" -C "$new" down --volumes --yes >"$logs/takeover-down.log" 2>&1
+  fi
+}
+
 # steps LABEL DIR LOGS: every step for one deployment, in order.
 steps() {
   local label="$1" dir="$2" logs="$3"
@@ -233,7 +331,9 @@ steps() {
 
 runs=()
 for tag in $TAGS; do
-  if [ "$DHIS2" = 1 ]; then
+  if [ "$ADMIN" = 1 ]; then
+    runs+=("$tag/admin")
+  elif [ "$DHIS2" = 1 ]; then
     for version in $DHIS2_VERSIONS; do runs+=("$tag/$version"); done
   else
     runs+=("$tag/-")
@@ -244,7 +344,11 @@ offset=0
 for run_id in "${runs[@]}"; do
   version="${run_id#*/}"
   name="chap-${run_id%%/*}"
-  [ "$version" != - ] && name="$name-dhis2-$version"
+  case "$version" in
+    -) ;;
+    admin) name="$name-admin" ;;
+    *) name="$name-dhis2-$version" ;;
+  esac
   dir="$WORK/$name"
   logs="$WORK/logs-$name"
   mkdir -p "$logs"
@@ -254,6 +358,14 @@ for run_id in "${runs[@]}"; do
   ocs=$((20000 + offset))
   offset=$((offset + 300))
 
+  if [ "$version" = admin ]; then
+    echo "== chap-core ${run_id%%/*}, the chap-admin commands  ($dir)"
+    admin_steps "$run_id" "$dir" "$logs"
+    if [ "$KEEP" = 0 ]; then
+      "$CHAP_DEVOPS" -C "$dir" down --volumes --yes >>"$logs/down.log" 2>&1
+    fi
+    continue
+  fi
   echo "== chap-core ${run_id%%/*}, DHIS2 ${version/-/off}  ($dir)"
   with="ocs,s3"
   extra=()

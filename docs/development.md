@@ -116,8 +116,18 @@ scripts/e2e.sh --dhis2 dev              # only the unreleased DHIS2
 scripts/e2e.sh --dhis2 2.42             # one DHIS2 version
 scripts/e2e.sh --tags v2.3.1 --keep     # one tag, left running afterwards
 scripts/e2e.sh --no-dhis2 --work ./e2e  # no DHIS2, results under ./e2e
+scripts/e2e.sh --chap-admin --tags master  # what chap-admin does, and a takeover
 make e2e TAGS="latest"
 ```
+
+`--chap-admin` runs what `chap-admin` does, with chap-core only, once per tag.
+It installs `chapkit_simple_multistep_model` at 0.1.3 and updates it to the
+stable version. It builds a model from `chap-devops models new` and adds the
+image, then uninstalls the first model. Each step checks the row and the
+registered version in `chap-devops status --json`. Then it starts chap-core's
+own `compose.ghcr.yml`, stops it, and takes it over with
+`chap-devops init --adopt`. [Taking over a chap-admin
+deployment](./use-cases/from-chap-admin.md) maps each `chap-admin` command.
 
 A failed step does not stop the run: its log is kept, the container logs are
 collected, and the steps that do not depend on it still run. `report.md` in the
