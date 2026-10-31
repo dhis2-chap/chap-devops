@@ -54,13 +54,6 @@ stored, so chap-core is as it was. `chap-admin` also stops the new container
 and starts the previous image again. `chap-devops` leaves the new container
 running.
 
-### The development overlays in a takeover
-
-`chap-devops init --adopt` reads `compose.marketplace.yml` only. A deployment that
-also ran chap-core's `compose.ewars.yml` or `compose.chapkit.yml` loses those
-services in the takeover. They are for development, but the takeover must
-at least name them.
-
 ### chap-devops for chap-admin users
 
 A page that maps each `chap-admin` command and flag to the `chap-devops`

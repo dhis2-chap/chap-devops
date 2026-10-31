@@ -209,6 +209,84 @@ fn a_missing_database_volume_is_refused() {
 }
 
 #[test]
+fn a_development_overlay_that_ran_is_named() {
+    let ewars = DevelopmentOverlay {
+        file: "compose.ewars.yml".to_string(),
+        services: vec!["ewars".to_string()],
+        volumes: vec!["ewars_data".to_string()],
+    };
+    let mut a = Adoption {
+        development: vec![ewars.clone()],
+        ..adoption(ENV, None)
+    };
+    check(
+        &mut a,
+        &docker(&|_| Some(false), &|name| name == "chapcore_chap-db"),
+    )
+    .unwrap();
+    assert!(
+        !a.warnings.iter().any(|w| w.contains("also ran")),
+        "{:?}",
+        a.warnings
+    );
+
+    let mut a = Adoption {
+        development: vec![ewars],
+        ..adoption(ENV, None)
+    };
+    check(
+        &mut a,
+        &docker(&|_| Some(false), &|name| {
+            name == "chapcore_chap-db" || name == "chapcore_ewars_data"
+        }),
+    )
+    .unwrap();
+    assert_eq!(
+        a.warnings[1..],
+        [
+            "the deployment in /srv/chap also ran compose.ewars.yml (chapcore_ewars_data is \
+             there), and chap-devops does not take over its services (ewars); if you need the \
+             model, add it with `chap-devops models enable`"
+        ]
+    );
+}
+
+#[test]
+fn the_development_overlays_and_their_includes_are_read() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(
+        dir.path().join("compose.chapkit.yml"),
+        "include:\n  - compose.ewars.yml\n  - compose.multistep.yml\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.path().join("compose.ewars.yml"),
+        "services:\n  ewars:\n    image: x\nvolumes:\n  ewars_data: {}\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.path().join("compose.multistep.yml"),
+        "services:\n  multistep:\n    image: y\n",
+    )
+    .unwrap();
+    assert_eq!(
+        development_overlays(dir.path()),
+        [
+            DevelopmentOverlay {
+                file: "compose.ewars.yml".to_string(),
+                services: vec!["ewars".to_string()],
+                volumes: vec!["ewars_data".to_string()],
+            },
+            DevelopmentOverlay {
+                file: "compose.multistep.yml".to_string(),
+                services: vec!["multistep".to_string()],
+                volumes: vec![],
+            },
+        ]
+    );
+}
+
+#[test]
 fn without_docker_the_takeover_goes_on_and_says_what_was_not_checked() {
     let mut a = adoption(ENV, None);
     check(&mut a, &docker(&|_| None, &|_| false)).unwrap();

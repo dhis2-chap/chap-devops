@@ -19,6 +19,10 @@ pub(super) const ADMIN_OVERLAY: &str = "compose.marketplace.yml";
 /// The host port chap-core's compose files publish the API on.
 pub(super) const ADMIN_API_PORT: u16 = 8000;
 
+/// chap-core's overlays for development. A takeover does not take over their
+/// services, but names them when their volumes show that they ran.
+const DEVELOPMENT_OVERLAYS: &[&str] = &["compose.ewars.yml", "compose.chapkit.yml"];
+
 /// The prefix `chap-admin` gives each model service.
 const SERVICE_PREFIX: &str = "marketplace-";
 
@@ -47,6 +51,16 @@ pub(super) struct Adoption {
     pub(super) notes: Vec<String>,
     /// Lines that need attention.
     pub(super) warnings: Vec<String>,
+    /// The development overlays in the old directory.
+    pub(super) development: Vec<DevelopmentOverlay>,
+}
+
+/// One development overlay of chap-core: its services and its volumes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct DevelopmentOverlay {
+    pub(super) file: String,
+    pub(super) services: Vec<String>,
+    pub(super) volumes: Vec<String>,
 }
 
 /// The settings of the old `.env` that the new one keeps.
@@ -138,7 +152,55 @@ pub(super) fn read(dir: &Path, registry: &Registry, registry_url: &str) -> Resul
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    plan(dir, &name, &env, overlay.as_deref(), registry, registry_url)
+    let mut adoption = plan(dir, &name, &env, overlay.as_deref(), registry, registry_url)?;
+    adoption.development = development_overlays(dir);
+    Ok(adoption)
+}
+
+/// The development overlays in `dir`, and the files they include. A file
+/// that cannot be read or parsed is left out: it only adds a warning.
+fn development_overlays(dir: &Path) -> Vec<DevelopmentOverlay> {
+    let mut files: Vec<String> = DEVELOPMENT_OVERLAYS.iter().map(|f| f.to_string()).collect();
+    let mut found = Vec::new();
+    let mut next = 0;
+    while next < files.len() {
+        let file = files[next].clone();
+        next += 1;
+        let Ok(body) = std::fs::read_to_string(dir.join(&file)) else {
+            continue;
+        };
+        let Ok(doc) = serde_yaml_ng::from_str::<serde_yaml_ng::Value>(&body) else {
+            continue;
+        };
+        for included in doc
+            .get("include")
+            .and_then(|v| v.as_sequence())
+            .into_iter()
+            .flatten()
+            .filter_map(|v| v.as_str())
+        {
+            if !files.iter().any(|f| f == included) {
+                files.push(included.to_string());
+            }
+        }
+        let keys = |key: &str| -> Vec<String> {
+            doc.get(key)
+                .and_then(|v| v.as_mapping())
+                .into_iter()
+                .flatten()
+                .filter_map(|(k, _)| k.as_str().map(str::to_string))
+                .collect()
+        };
+        let overlay = DevelopmentOverlay {
+            services: keys("services"),
+            volumes: keys("volumes"),
+            file,
+        };
+        if !overlay.services.is_empty() {
+            found.push(overlay);
+        }
+    }
+    found
 }
 
 /// [`read`] on what was read, so the decisions can be tested without files.
@@ -213,6 +275,7 @@ pub(super) fn plan(
         models,
         notes,
         warnings,
+        development: Vec::new(),
     })
 }
 
@@ -402,6 +465,22 @@ pub(super) fn check(adoption: &mut Adoption, docker: &Docker) -> Result<()> {
     adoption
         .notes
         .push(format!("chap-core keeps its database in {database}"));
+    for overlay in &adoption.development {
+        let Some(volume) = overlay
+            .volumes
+            .iter()
+            .map(|volume| format!("{project}_{volume}"))
+            .find(|volume| (docker.volume_exists)(volume))
+        else {
+            continue;
+        };
+        adoption.warnings.push(format!(
+            "the deployment in {} also ran {} ({volume} is there), and chap-devops does not take over its services ({}); if you need the model, add it with `chap-devops models enable`",
+            adoption.dir.display(),
+            overlay.file,
+            overlay.services.join(", ")
+        ));
+    }
     Ok(())
 }
 
