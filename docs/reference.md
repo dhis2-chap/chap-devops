@@ -355,6 +355,7 @@ Usage: chap-devops models add [OPTIONS] <SOURCE>
 | `--data-dir <PATH>` | Data directory inside the container. |
 | `--user <USER>` | User the container runs as, as user:group. |
 | `--runtime-amd64` | Record the image as published for amd64 only. |
+| `--allow-starter` | Enable a starter even though it is not a model. |
 
 Registry options: `--registry-url <URL>`, `--offline`, `--cache-dir <DIR>` (see [chap-devops](#chap-devops)).
 

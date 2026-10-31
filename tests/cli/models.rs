@@ -35,6 +35,30 @@ fn disabling_a_model_that_is_not_enabled_fails() {
         .stderr(predicates::str::contains("unknown model"));
 }
 
+/// `models add` names `--allow-starter` when its source is a starter, so it has
+/// to take the flag.
+#[test]
+fn a_starter_added_by_its_repository_needs_allow_starter() {
+    let sandbox = Sandbox::new();
+    let dir = sandbox.project();
+    sandbox.init(&["--models", "none"]).assert().success();
+    let url = "https://github.com/chap-models/chapkit_minimalist_example_py";
+
+    sandbox
+        .models(&["add", url])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("--allow-starter"));
+    sandbox
+        .models(&["add", url, "--allow-starter"])
+        .assert()
+        .success();
+    assert!(
+        dir.join("compose.chapkit-minimalist-example-py.yml")
+            .is_file()
+    );
+}
+
 #[test]
 fn a_starter_needs_allow_starter() {
     let sandbox = Sandbox::new();

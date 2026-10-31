@@ -300,6 +300,10 @@ pub struct ModelsAddArgs {
     /// Record the image as published for amd64 only
     #[arg(long)]
     pub runtime_amd64: bool,
+
+    /// Enable a starter even though it is not a model
+    #[arg(long)]
+    pub allow_starter: bool,
 }
 
 /// Create a model project from a template

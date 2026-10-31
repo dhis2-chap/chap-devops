@@ -453,8 +453,8 @@ fn enable_source(
             data_dir: None,
             user: None,
             runtime_amd64: false,
+            allow_starter: args.allow_starter,
         },
-        args.allow_starter,
     )?;
     Ok(match added {
         super::manual_models::Added::Marketplace(report) => report

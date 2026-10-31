@@ -462,6 +462,7 @@ pub(super) fn manual_args(adoption: &Adoption) -> Vec<crate::cli::ModelsAddArgs>
                 data_dir: None,
                 user: None,
                 runtime_amd64: false,
+                allow_starter: false,
             }),
             How::Marketplace(_) => None,
         })

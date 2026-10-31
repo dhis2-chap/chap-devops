@@ -81,7 +81,7 @@ struct RemoveReport {
 /// model holds all leave the deployment exactly as it was.
 pub fn add(ctx: &Ctx, args: &ModelsAddArgs) -> Result<()> {
     let (mut project, _lock) = ctx.project_mut()?;
-    match add_in(ctx, &mut project, args, false)? {
+    match add_in(ctx, &mut project, args)? {
         Added::Marketplace(report) => {
             let changed = super::enable::Changed::new(&report, &report, &project);
             ctx.out.report_ok(&changed, |lines| {
@@ -110,14 +110,8 @@ pub(crate) enum Added {
 }
 
 /// [`add`] on a project the caller has loaded and locked, writing the state
-/// and printing nothing. `allow_starter` lets a source that is a marketplace
-/// starter be enabled, which `chap-devops run --allow-starter` asks for.
-pub(crate) fn add_in(
-    ctx: &Ctx,
-    project: &mut Project,
-    args: &ModelsAddArgs,
-    allow_starter: bool,
-) -> Result<Added> {
+/// and printing nothing.
+pub(crate) fn add_in(ctx: &Ctx, project: &mut Project, args: &ModelsAddArgs) -> Result<Added> {
     // A source the marketplace already lists is that model: it is enabled
     // from the marketplace, curated pin and all, unless `--id` asks for a
     // separate entry beside it.
@@ -141,7 +135,7 @@ pub(crate) fn add_in(
                     bind: args.bind,
                     data_dir: args.data_dir.clone(),
                     user: args.user.clone(),
-                    allow_starter,
+                    allow_starter: args.allow_starter,
                 },
             )?;
             return Ok(Added::Marketplace(report));

@@ -603,7 +603,7 @@ fn finish_adoption(ctx: &Ctx, project: &mut Project, adoption: &adopt::Adoption)
     let mut lines = Vec::new();
     for args in adopt::manual_args(adoption) {
         let id = args.id.clone().unwrap_or_default();
-        if let Err(err) = crate::commands::manual_models::add_in(ctx, project, &args, false) {
+        if let Err(err) = crate::commands::manual_models::add_in(ctx, project, &args) {
             lines.push(format!(
                 "could not add {id}: {err:#}; run `chap-devops models add {} --id {id} \
                  --service-id {}` in the new deployment",
