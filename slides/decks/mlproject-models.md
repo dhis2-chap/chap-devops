@@ -38,8 +38,8 @@ image to build. You need Docker. Python, uv, R and chapkit are not necessary.
 - `chap-devops chapkit mlproject run` uses chapkit images of its own. It works
   with chap-core v2.4.0 and later.
 - `mlproject export`, `--run-config.as-chapkit` and the built-in models need
-  chap-core v2.5.0, the newest release.
-- In a deployment on an older tag, `chap-devops update` moves it to v2.5.0.
+  chap-core v2.5.0 or later. The newest release is v2.6.0.
+- In a deployment on an older tag, `chap-devops update` moves it to v2.6.0.
 
 ---
 

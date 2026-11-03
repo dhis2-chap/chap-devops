@@ -45,7 +45,7 @@ pub const NO_JOBS: &str = "no jobs yet; a backtest or prediction started from th
 
 /// The status in the body of `GET /v1/jobs/{id}`.
 ///
-/// chap-core after v2.5.1 answers with the whole job, as one entry of
+/// chap-core v2.6.0 and later answers with the whole job, as one entry of
 /// `GET /v1/jobs`, and earlier releases with the bare status string.
 pub fn status_in(body: &str) -> String {
     match serde_json::from_str::<serde_json::Value>(body) {

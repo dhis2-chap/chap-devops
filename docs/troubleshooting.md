@@ -287,8 +287,8 @@ change that is not committed would run under the revision of the last commit.
 The service registers with chap-core, but chap-core stores a model only with
 a git revision. Without it, `chap-devops models configs sync` and
 `chap-devops models test ID --backtest` fail with
-`is stored from revision None`, or `its source reports no git revision` after
-chap-core v2.5.1. In the model directory, run `git init`,
+`is stored from revision None`, or `its source reports no git revision` from
+chap-core v2.6.0. In the model directory, run `git init`,
 then `git add .` and `git commit`. Then run `chap-devops chapkit mlproject run DIR`
 again.
 

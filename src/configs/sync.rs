@@ -226,7 +226,7 @@ pub const UNMANAGED_NO_REVISION_WAY_OUT: &str =
 
 /// The words of chap-core's 409 for a template whose service reports no
 /// revision: `... its source now reports revision None` up to v2.5.1, and
-/// `... its source reports no git revision` after it.
+/// `... its source reports no git revision` from v2.6.0.
 const NO_REVISION_REFUSALS: [&str; 2] = ["reports revision None", "reports no git revision"];
 
 /// Whether `error` holds chap-core's refusal of a service with no revision.

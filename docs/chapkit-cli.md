@@ -22,8 +22,8 @@ chapkit is a dependency of chap-core, so the chap-core image has the chapkit
 CLI. chap-devops runs it in that image, and there is no other image to pin or to
 update. The chap-core image v2.4.0 has chapkit 2.1.0. From v2.5.0 it has
 chapkit 2.4.0, which adds `chapkit mlproject export` and writes the full
-MLproject contract with `migrate`; v2.5.1 has chapkit 2.4.1. In a deployment
-on an older tag, add `--tag v2.5.1` for these.
+MLproject contract with `migrate`; v2.5.1 has chapkit 2.4.1, and v2.6.0 has
+chapkit 2.5.0. In a deployment on an older tag, add `--tag v2.5.1` for these.
 
 The version follows the rules of `chap-devops chap`: in a deployment, the
 deployment's chap-core tag; outside a deployment, the newest chap-core

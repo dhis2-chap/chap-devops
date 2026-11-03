@@ -56,8 +56,8 @@ and installs the dependencies of the model.
   runs, then start it again ``. `chap-devops models configs sync` fails with
   `answered HTTP 409 Conflict` and gives the same way out. The chap-core log
   (`chap-devops logs chap`) says `is stored from revision None, but its source now
-  reports revision None`, or `its source reports no git revision` after chap-core
-  v2.5.1.
+  reports revision None`, or `its source reports no git revision` from chap-core
+  v2.6.0.
 - `--host 0.0.0.0` makes the model listen on more than the loopback, which is
   what a call from a container arrives on.
 
