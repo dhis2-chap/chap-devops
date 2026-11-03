@@ -41,6 +41,9 @@ bug that is fixed leaves the file.
 - Seen again 2026-10-30, `sha256:9f454cbca239`: 1 run of 15 answered 500 with
   `'/vsicurl/https://data.chc.ucsb.edu/.../chirps-v3.0.rnl.2024.01.03.cog' not
   recognized as being in a supported file format`.
+- Seen again 2026-11-03, `sha256:37d445d46b4f`, with chap-core v2.6.0: the
+  e2e ingestion answered 500 with `TIFFFillTile:Read error ... got 0 bytes`.
+- Fix: retry a failed read of a remote tile before the request fails.
 
 ## chap-models
 
