@@ -31,19 +31,6 @@ bug that is fixed leaves the file.
   elements to go to.
 - Fix: add monthly CHAP output elements to the demo database.
 
-## chap-core
-
-### A Helm chart release is the latest release of the repository
-
-- Seen: `chap-1.2.0`, published 2026-10-29, with `helm/chart-releaser-action`
-  v1.7.0 in `.github/workflows/release-chart.yaml`.
-- `GET /repos/dhis2-chap/chap-core/releases/latest` answers `chap-1.2.0`, and
-  the Releases page marks it as Latest in place of v2.5.1. Its one asset is
-  `chap-1.2.0.tgz`. No image has this tag, so a client that follows the latest
-  release gets `ghcr.io/dhis2-chap/chap-core:chap-1.2.0: not found`.
-- chap-devops now reads the release list and takes the highest `vX.Y.Z`.
-- Fix: set `mark_as_latest: false` on the chart-releaser step.
-
 ## Open Climate Service (`main`)
 
 ### A failed read from the CHIRPS3 server is a 500, with no retry
