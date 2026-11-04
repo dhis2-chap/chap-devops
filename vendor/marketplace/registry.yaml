@@ -1,4 +1,4 @@
-# Chap Hub — registry index
+# Chap Marketplace — registry index
 #
 # This file is the entry point for the marketplace site. Every model listed
 # here has been reviewed and verified by the Chap maintainers; a model (or a
@@ -16,15 +16,15 @@
 schema_version: 2
 
 marketplace:
-  name: Chap Hub
+  name: Chap Marketplace
   description: >-
-    Discover forecasting models for Chap, the Climate & Health Analytics
+    Discover forecasting models for the Chap Modeling
     Platform. Browse models, check their requirements and follow the
     installation instructions.
   # The marketplace's own repository. The site build ingests this repo's open
   # pull requests so an in-review model or version pin can appear on the site
   # with its running approval count before it merges.
-  repository: https://github.com/dhis2-chap/model-marketplace
+  repository: https://github.com/dhis2-chap/chap-marketplace
   documentation:
     chap: https://chap.dhis2.org
     # Only chapkit model services are supported. Every listed model is a

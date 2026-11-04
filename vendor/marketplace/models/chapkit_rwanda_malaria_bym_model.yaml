@@ -50,15 +50,24 @@ covariates:
     - population
     - rainfall
     - mean_temperature
-    - relative_humidity
+    - mean_relative_humidity
   defaults: []
   allow_free_additional: true
 
 channels:
-  stable: 0.1.4
-  latest: 0.1.4
+  stable: 0.1.5
+  latest: 0.1.5
 
 versions:
+  - version: 0.1.5
+    commit: 8a412b1e158c9b84fb69004082aa53d0191c1632
+    image_tag: sha-8a412b1
+    chapkit: ">=2.2.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round.
+    verified_by: []
+    changelog: >-
+      Renames the required covariate relative_humidity to mean_relative_humidity, the name CHAP datasets use, so the model can run on them. No change to the model: it does not read the humidity column.
   - version: 0.1.4
     commit: 84a27e835a19c091c7c5968dcc665c00695830f7
     image_tag: sha-84a27e8
