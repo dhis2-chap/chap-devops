@@ -179,9 +179,9 @@ steps and its "It worked when" lines in the same commit.
 ## Reference checkouts
 
 Checkouts on this machine that are the source of truth when something is
-unclear: `~/dev/dhis2-chap/chap-core` (compose.ghcr.yml, the REST API),
-`~/dev/dhis2-chap/chapkit` (model service framework, `chapkit test`, the
-sample-data route), `~/dev/dhis2-chap/open-climate-service` (OCS: `read_only.py`
+unclear: `~/dev/chap-workspace/chap-core` (compose.ghcr.yml, the REST API),
+`~/dev/chap-workspace/chapkit` (model service framework, `chapkit test`, the
+sample-data route), `~/dev/dhis2/open-climate-service` (OCS: `read_only.py`
 for what read-only closes, `shared/urls.py` for `CLIMATE_SERVICE_BASE_URL`,
 `plugins/datasets/` for which dataset needs which credential),
 `~/dev/chap-models/*` (every marketplace model), and the marketplace registry
