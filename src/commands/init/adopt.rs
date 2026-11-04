@@ -548,8 +548,8 @@ pub(super) fn manual_args(adoption: &Adoption) -> Vec<crate::cli::ModelsAddArgs>
 
 /// The base URL of a registry, for a comparison with `x-chap-registry`. The
 /// marketplace repository was `dhis2-chap/model-marketplace` before it became
-/// `dhis2-chap/chap-marketplace`, and chap-core still writes the old name, so
-/// both names give the same base.
+/// `dhis2-chap/chap-marketplace`. A deployment that `chap-admin` made before
+/// chap-core #828 has the old name, so both names give the same base.
 fn registry_base(url: &str) -> String {
     url.trim_end_matches('/')
         .trim_end_matches("/registry.yaml")

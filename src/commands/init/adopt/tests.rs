@@ -1,8 +1,8 @@
 use super::*;
 use crate::registry::{DEFAULT_REGISTRY_URL, load_embedded};
 
-/// The base URL `chap-admin` records in `x-chap-registry` for the default
-/// marketplace.
+/// The base URL `chap-admin` recorded in `x-chap-registry` for the default
+/// marketplace before chap-core #828, under the old repository name.
 const ADMIN_REGISTRY: &str = "https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main";
 
 /// A `compose.marketplace.yml` as `chap-admin` writes it: a marketplace
@@ -299,8 +299,8 @@ fn without_docker_the_takeover_goes_on_and_says_what_was_not_checked() {
     );
 }
 
-/// chap-core writes the old name of the marketplace repository in
-/// `x-chap-registry`; it is the same registry as the new name.
+/// A deployment from before chap-core #828 has the old name of the marketplace
+/// repository in `x-chap-registry`; it is the same registry as the new name.
 #[test]
 fn the_old_and_the_new_marketplace_repository_name_are_one_registry() {
     assert_eq!(
