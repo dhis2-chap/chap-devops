@@ -257,6 +257,8 @@ old_deployment() {
 }
 
 # admin_steps LABEL DIR LOGS: what chap-admin does, with chap-devops.
+# The sh -c scripts take their values as "$1".. on purpose, so they stay in single quotes.
+# shellcheck disable=SC2016
 admin_steps() {
   local label="$1" dir="$2" logs="$3" model=chapkit_simple_multistep_model
   local service=chapkit-simple-multistep-model tag="${run_id%%/*}"
