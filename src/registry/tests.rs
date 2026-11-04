@@ -446,7 +446,7 @@ fn provenance_describes_its_age() {
 fn model_url_replaces_the_index_filename() {
     assert_eq!(
         model_url(DEFAULT_REGISTRY_URL, "models/chapkit_ewars_model.yaml"),
-        "https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/models/chapkit_ewars_model.yaml"
+        "https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/models/chapkit_ewars_model.yaml"
     );
     assert_eq!(model_url("registry.yaml", "models/x.yaml"), "models/x.yaml");
 }

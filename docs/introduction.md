@@ -12,7 +12,7 @@ shows it end to end on demo data.
 around it, as Docker Compose deployments:
 [chap-core](https://github.com/dhis2-chap/chap-core), the forecasting model
 services published in the
-[Chap model marketplace](https://github.com/dhis2-chap/model-marketplace),
+[Chap Marketplace](https://github.com/dhis2-chap/chap-marketplace),
 [Open Climate Service](https://github.com/dhis2/open-climate-service) (OCS) with
 an S3-compatible object store, and [DHIS2](https://dhis2.org).
 

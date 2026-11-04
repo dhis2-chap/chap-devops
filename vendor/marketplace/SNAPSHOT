@@ -1,7 +1,7 @@
 CHAP model marketplace snapshot
 ===============================
 
-upstream:       https://github.com/dhis2-chap/model-marketplace
+upstream:       https://github.com/dhis2-chap/chap-marketplace
 ref:            main
 commit:         d55deb56e5fe6329da62c3da7e03a54d7d9f283f
 

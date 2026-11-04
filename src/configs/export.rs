@@ -4,7 +4,7 @@
 //! {description, config}`, where `config` is the flat object chapkit takes
 //! on `POST /api/v1/configs`: the user options, `additional_continuous_
 //! covariates`, and `prediction_periods`, which the marketplace requires
-//! (`models/README.md` in dhis2-chap/model-marketplace). chap-core does not
+//! (`models/README.md` in dhis2-chap/chap-marketplace). chap-core does not
 //! store `prediction_periods` with a configured model, so an export takes it
 //! from somewhere else and says where.
 

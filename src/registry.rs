@@ -17,7 +17,7 @@ use std::time::Duration;
 
 /// Raw URL of the upstream marketplace index.
 pub const DEFAULT_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/registry.yaml";
+    "https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml";
 
 /// How long a cached snapshot is considered fresh.
 pub const CACHE_TTL: Duration = Duration::from_hours(24);

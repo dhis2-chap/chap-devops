@@ -185,5 +185,5 @@ sample-data route), `~/dev/dhis2-chap/open-climate-service` (OCS: `read_only.py`
 for what read-only closes, `shared/urls.py` for `CLIMATE_SERVICE_BASE_URL`,
 `plugins/datasets/` for which dataset needs which credential),
 `~/dev/chap-models/*` (every marketplace model), and the marketplace registry
-at github.com/dhis2-chap/model-marketplace (YAML, vendored under
+at github.com/dhis2-chap/chap-marketplace (YAML, vendored under
 `vendor/marketplace/`).

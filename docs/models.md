@@ -2,10 +2,10 @@
 
 ## Where the catalogue comes from
 
-The catalogue is the YAML in the model-marketplace repository, read from
+The catalogue is the YAML in the chap-marketplace repository, read from
 
 ```text
-https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/registry.yaml
+https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml
 ```
 
 `--registry-url` points somewhere else, for a fork or a mirror. `chap-devops init
@@ -26,10 +26,10 @@ Resolution order for every command that needs the catalogue:
 `chap-devops registry show` prints which of those was used:
 
 ```text
-  url     https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/registry.yaml
+  url     https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml
   source  cache (54 minutes old)
   models  6
-  cache   /home/me/.cache/chap-devops/registries/https_raw_githubusercontent_com_dhis2_chap_model_marketplace_mai-f6e5270ab795f1bd
+  cache   /home/me/.cache/chap-devops/registries/https_raw_githubusercontent_com_dhis2_chap_chap_marketplace_main-be9d244ed3ca18ea
 
   chapkit_rwanda_malaria_bym_model
   chapkit_simple_multistep_model

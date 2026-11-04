@@ -288,9 +288,7 @@ fn adopt_models(
 ) -> Result<Vec<AdoptedModel>> {
     let overlay: serde_yaml_ng::Value = serde_yaml_ng::from_str(body)
         .map_err(|e| anyhow::anyhow!("{ADMIN_OVERLAY} of the old deployment: {e}"))?;
-    let ours = registry_url
-        .trim_end_matches("/registry.yaml")
-        .trim_end_matches('/');
+    let ours = registry_base(registry_url);
     let mut models = Vec::new();
     let services = overlay
         .get("services")
@@ -327,7 +325,7 @@ fn adopt_models(
         let listed = registry.get(&id).filter(|model| !model.manual);
         let how = match (custom, listed, version.as_deref()) {
             (false, Some(model), Some(version))
-                if from.as_deref().map(|r| r.trim_end_matches('/')) == Some(ours) =>
+                if from.as_deref().map(registry_base) == Some(ours.clone()) =>
             {
                 match model.version(version) {
                     Some(found) if found.status != crate::registry::VersionStatus::Yanked => {
@@ -546,6 +544,20 @@ pub(super) fn manual_args(adoption: &Adoption) -> Vec<crate::cli::ModelsAddArgs>
             How::Marketplace(_) => None,
         })
         .collect()
+}
+
+/// The base URL of a registry, for a comparison with `x-chap-registry`. The
+/// marketplace repository was `dhis2-chap/model-marketplace` before it became
+/// `dhis2-chap/chap-marketplace`, and chap-core still writes the old name, so
+/// both names give the same base.
+fn registry_base(url: &str) -> String {
+    url.trim_end_matches('/')
+        .trim_end_matches("/registry.yaml")
+        .trim_end_matches('/')
+        .replace(
+            "/dhis2-chap/model-marketplace/",
+            "/dhis2-chap/chap-marketplace/",
+        )
 }
 
 #[cfg(test)]

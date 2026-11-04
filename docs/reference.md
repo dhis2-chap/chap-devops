@@ -24,7 +24,7 @@ Usage: chap-devops [OPTIONS] <COMMAND>
 | `-v, --verbose` | Show the hints; -vv also shows the commands and requests that run. |
 | `-d, --debug` | -vv plus the raw responses. |
 | `-C, --project-dir <DIR>` | Deployment directory, or any directory inside one. Default: `.`. |
-| `--registry-url <URL>` | URL of the marketplace registry index. Default: `https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/registry.yaml`. |
+| `--registry-url <URL>` | URL of the marketplace registry index. Default: `https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml`. |
 | `--offline` | Never touch the network; use what is cached or on this machine. |
 | `--cache-dir <DIR>` | Cache directory: the registry snapshot and the self-update downloads. |
 

@@ -24,11 +24,6 @@ dumps do. The plan:
 reviewed the image. `chap-devops models add` asks for no confirmation. Whether it
 should, and how (a flag, or a question at a terminal), is still open.
 
-### Chap Hub
-
-The marketplace now calls itself Chap Hub in its `registry.yaml`. The help,
-the messages and the docs change to that name when the Chap team confirms it.
-
 ## Not planned
 
 ### Native Windows

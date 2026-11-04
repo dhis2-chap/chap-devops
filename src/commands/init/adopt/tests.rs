@@ -298,3 +298,28 @@ fn without_docker_the_takeover_goes_on_and_says_what_was_not_checked() {
         a.warnings
     );
 }
+
+/// chap-core writes the old name of the marketplace repository in
+/// `x-chap-registry`; it is the same registry as the new name.
+#[test]
+fn the_old_and_the_new_marketplace_repository_name_are_one_registry() {
+    assert_eq!(
+        registry_base(ADMIN_REGISTRY),
+        registry_base(DEFAULT_REGISTRY_URL)
+    );
+    assert_eq!(
+        registry_base("https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/"),
+        registry_base(DEFAULT_REGISTRY_URL)
+    );
+    assert_ne!(
+        registry_base("https://example.org/fork/main"),
+        registry_base(DEFAULT_REGISTRY_URL)
+    );
+    assert!(matches!(
+        how(
+            &adoption(ENV, Some(OVERLAY)),
+            "chapkit_simple_multistep_model"
+        ),
+        How::Marketplace(_)
+    ));
+}

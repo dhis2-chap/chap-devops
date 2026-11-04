@@ -18,7 +18,7 @@ together with [DHIS2](https://dhis2.org), through the Modeling App.
 `chap-devops` deploys and manages Chap and the services around it, as Docker Compose
 deployments: [chap-core](https://github.com/dhis2-chap/chap-core), the forecasting model
 services published in the
-[Chap model marketplace](https://github.com/dhis2-chap/model-marketplace),
+[Chap Marketplace](https://github.com/dhis2-chap/chap-marketplace),
 [Open Climate Service](https://github.com/dhis2/open-climate-service) with an
 S3 store, and [DHIS2](https://dhis2.org). They deploy together or any of them
 on its own. One command writes a self-contained deployment directory, and after

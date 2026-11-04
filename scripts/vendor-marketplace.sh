@@ -2,13 +2,13 @@
 # Refresh the vendored marketplace snapshot in vendor/marketplace/.
 #
 # Downloads registry.yaml and every model file it lists from the upstream
-# model-marketplace repository, verbatim, and records the upstream commit in
+# chap-marketplace repository, verbatim, and records the upstream commit in
 # vendor/marketplace/SNAPSHOT. No fetch date: a run against an unchanged
 # upstream must leave the directory byte for byte as it was, or the weekly
 # workflow opens a pull request for nothing.
 set -euo pipefail
 
-REPO="${MARKETPLACE_REPO:-dhis2-chap/model-marketplace}"
+REPO="${MARKETPLACE_REPO:-dhis2-chap/chap-marketplace}"
 REF="${MARKETPLACE_REF:-main}"
 RAW="https://raw.githubusercontent.com/${REPO}/${REF}"
 

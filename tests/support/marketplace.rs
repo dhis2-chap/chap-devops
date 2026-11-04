@@ -13,7 +13,7 @@ use std::path::Path;
 /// The registry URL the cache entry is for: `DEFAULT_REGISTRY_URL` in
 /// `src/registry.rs`.
 const REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/dhis2-chap/model-marketplace/main/registry.yaml";
+    "https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml";
 
 /// Write the frozen marketplace data into `cache_dir` as the cache entry
 /// `src/registry/cache.rs` reads for the default registry.

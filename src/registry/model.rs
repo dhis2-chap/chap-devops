@@ -1,6 +1,6 @@
-//! Serde types for the Chap model marketplace schema (schema_version 2).
+//! Serde types for the Chap Marketplace schema (schema_version 2).
 //!
-//! These mirror the YAML in <https://github.com/dhis2-chap/model-marketplace>
+//! These mirror the YAML in <https://github.com/dhis2-chap/chap-marketplace>
 //! verbatim. Unknown fields are tolerated on purpose: the marketplace may add
 //! fields before the CLI learns about them, and an old CLI must keep working.
 
