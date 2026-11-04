@@ -248,18 +248,33 @@ grep ' chap-devops-x86_64-unknown-linux-musl.tar.gz$' SHA256SUMS | sha256sum -c 
 ```
 
 The macOS binaries are unsigned: the dhis2-chap organisation has no Apple
-Developer ID. macOS blocks an unsigned binary only when the file has the
-quarantine mark, which a browser sets on a download. The install script,
-`curl` and `chap-devops self update` do not set it, so a binary installed in
-those ways runs.
+Developer ID. Each binary has only the ad-hoc signature that the linker
+writes. macOS blocks such a binary only when the file has the quarantine mark.
 
-If a browser downloaded the archive, macOS says that it cannot check the
-binary for malicious software. Remove the mark from the extracted binary,
-then run it:
+A browser puts the mark on the archive it downloads. The mark gets to the
+binary only when Finder or Archive Utility opens the archive. Safari can
+open an archive automatically after the download, which also uses Archive
+Utility. These ways do not put the mark on the binary, so the binary runs:
+
+- the install script;
+- `chap-devops self update`;
+- `curl`, then `tar -xzf` in a terminal, also when a browser downloaded the
+  archive.
+
+If the binary has the mark, macOS stops it and says that it cannot verify the
+binary. To remove the mark, go to the extracted directory and run `xattr`:
 
 ```sh
+cd chap-devops-v*-universal-apple-darwin
 xattr -d com.apple.quarantine chap-devops
+./chap-devops self version
 ```
+
+If `xattr` says `No such xattr: com.apple.quarantine`, the binary had no mark
+and nothing blocks it. The other way is the Gatekeeper dialog: run the binary
+once, then go to System Settings > Privacy & Security and click "Open
+Anyway". See
+[the troubleshooting entry](./troubleshooting.md#apple-could-not-verify-chap-devops-is-free-of-malware).
 
 `SHA256SUMS` is then the check that the file is the one the release built.
 

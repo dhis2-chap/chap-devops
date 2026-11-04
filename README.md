@@ -109,9 +109,10 @@ An archive holds one directory, `chap-devops-<version>-<target>/`, with the bina
 no version, so the links above keep working after the next release, and
 `SHA256SUMS` in the release covers every one of them.
 
-The macOS binaries are unsigned. macOS runs them from the install script and
-from `chap-devops self update`. If a browser downloaded the archive, run
-`xattr -d com.apple.quarantine chap-devops` on the binary first. The Windows binaries are
+The macOS binaries are unsigned. macOS runs them from the install script, from
+`chap-devops self update`, and after `tar -xzf` in a terminal. If Finder or
+Safari extracted the archive, macOS blocks the binary; run
+`xattr -d com.apple.quarantine chap-devops` in the extracted directory first. The Windows binaries are
 unsigned and published untested; on Windows, run the Linux binary inside WSL 2
 with Docker Desktop's WSL integration (see the install chapter).
 

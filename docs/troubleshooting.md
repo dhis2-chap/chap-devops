@@ -13,6 +13,26 @@ which catalogue it loaded and which files `sync` compared, all on stderr and
 all out of the way of `--json`. `-d` adds the response bodies and the resolved
 project paths.
 
+## `Apple could not verify "chap-devops" is free of malware`
+
+macOS shows this dialog, or on older versions `"chap-devops" cannot be
+opened because the developer cannot be verified`, when an unsigned binary has
+the quarantine mark. The macOS binaries of chap-devops are unsigned. The mark
+gets to the binary when Finder, Archive Utility or Safari extracts a
+downloaded archive. `tar -xzf` in a terminal does not copy the mark.
+
+Remove the mark in the extracted directory, then run the binary again:
+
+```sh
+xattr -d com.apple.quarantine chap-devops
+```
+
+If `xattr` says `No such xattr: com.apple.quarantine`, the binary has no mark,
+and the cause is a different one. Instead of `xattr`, you can click "Open
+Anyway" in System Settings > Privacy & Security after the first try. To get a
+binary without the mark, use the install script or `chap-devops self update`.
+See [Install](./install.md).
+
 ## the restore of the DHIS2 seed stopped before the end
 
 `chap-devops up` printed this under `why dhis2-db is unhealthy:`. The restore of the

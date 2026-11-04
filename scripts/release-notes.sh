@@ -242,9 +242,10 @@ TEXT
   else
     cat <<TEXT
 
-macOS runs the binary from the install script and from \`chap-devops self
-update\`. If a browser downloaded the archive, macOS blocks it; run
-\`xattr -d com.apple.quarantine chap-devops\` on the extracted binary.
+macOS runs the binary from the install script, from \`chap-devops self
+update\`, and after \`tar -xzf\` in a terminal. If Finder or Safari extracted
+the archive, macOS blocks the binary; run
+\`xattr -d com.apple.quarantine chap-devops\` in the extracted directory.
 TEXT
   fi
 }
