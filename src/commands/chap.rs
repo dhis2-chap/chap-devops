@@ -493,7 +493,8 @@ pub(crate) fn pull_moving_tag(ctx: &Ctx, asked: Option<&str>, reference: &str) {
     ));
     if !docker::pull_image(reference) {
         output::warn(&format!(
-            "could not pull {reference}; the run uses the image on this machine, which can be              old; run `docker pull {reference}` to see why"
+            "could not pull {reference}; the run uses the image on this machine, which can be              old; run `docker pull --platform {} {reference}` to see why",
+            crate::compose::AMD64_PLATFORM
         ));
     }
 }
@@ -527,7 +528,8 @@ pub(crate) fn resolve_tag(
         return local().ok_or_else(|| {
             anyhow::anyhow!(
                 "--offline needs a chap-core or chap-worker image on this machine, and there is \
-                 none; run once without --offline, or `docker pull {core}:TAG`"
+                 none; run once without --offline, or `docker pull --platform {} {core}:TAG`",
+                crate::compose::AMD64_PLATFORM
             )
         });
     }

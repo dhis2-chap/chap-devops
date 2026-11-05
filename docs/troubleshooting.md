@@ -325,7 +325,10 @@ The local image of the moving tag is older than the command. chap-devops
 Newer versions pull a moving tag first when `--tag` names it.
 
 - Update chap-devops with `chap-devops self update`.
-- Or pull the image yourself: `docker pull ghcr.io/dhis2-chap/chap-core:master`.
+- Or pull the image yourself:
+  `docker pull --platform linux/amd64 ghcr.io/dhis2-chap/chap-core:master`.
+  The image is amd64 only, so without `--platform` an arm64 machine gets
+  `no matching manifest for linux/arm64/v8`.
 
 ## `chapkit did not accept the arguments, and its usage is above`
 
