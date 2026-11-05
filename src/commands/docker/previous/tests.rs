@@ -7,6 +7,7 @@ fn enabled(previous: bool) -> EnabledModel {
         previous: previous.then(|| PreviousPin {
             version: "1.0.0".to_string(),
             image_tag: "sha-1111111".to_string(),
+            image_digest: None,
             user: "chapkit:chapkit".to_string(),
             user_from: Default::default(),
             reads_port: false,
@@ -15,6 +16,7 @@ fn enabled(previous: bool) -> EnabledModel {
         service_id: "m".to_string(),
         image: "ghcr.io/chap-models/m".to_string(),
         image_tag: "sha-2222222".to_string(),
+        image_digest: None,
         version: "1.1.0".to_string(),
         channel: None,
         host_port: None,

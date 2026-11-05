@@ -147,6 +147,7 @@ fn state_with_ewars(registry: &Registry, host_port: Option<u16>) -> ProjectState
                 .expect("stable resolves")
                 .image_tag
                 .clone(),
+            image_digest: None,
             version: model.channels.stable.clone(),
             channel: Some(Channel::Stable),
             host_port,

@@ -15,6 +15,7 @@ fn project_with_ewars(host_port: Option<u16>) -> Project {
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
         image_tag: "sha-fa880a1".into(),
+        image_digest: None,
         version: "1.0.0".into(),
         channel: Some(Channel::Stable),
         host_port,

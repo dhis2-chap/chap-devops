@@ -206,6 +206,10 @@ pub struct Version {
     pub commit: String,
     /// Image tag for this pin, e.g. `sha-fa880a1`.
     pub image_tag: String,
+    /// What the tag resolved to when the version was listed, `sha256:...`.
+    /// With a digest, docker pulls the reviewed image even if the tag moves.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_digest: Option<String>,
     /// chapkit version requirement, e.g. `>=2.0.0,<3`.
     pub chapkit: String,
     pub status: VersionStatus,
@@ -225,6 +229,12 @@ impl Version {
         self.image_tag
             .strip_prefix("sha-")
             .is_some_and(|prefix| prefix.len() >= 7 && self.commit.starts_with(prefix))
+    }
+
+    /// The tag with the digest, as the image reference carries it; see
+    /// [`crate::compose::pinned_tag`].
+    pub fn pinned_tag(&self) -> String {
+        crate::compose::pinned_tag(&self.image_tag, self.image_digest.as_deref())
     }
 }
 
@@ -342,6 +352,18 @@ impl Model {
             }
             .into());
         }
+        if let Some(digest) = found
+            .image_digest
+            .as_deref()
+            .filter(|d| !crate::compose::is_digest(d))
+        {
+            return Err(crate::error::ChapError::InvalidDigest {
+                id: self.id.clone(),
+                version: wanted,
+                digest: digest.to_string(),
+            }
+            .into());
+        }
         Ok(found)
     }
 
@@ -357,7 +379,7 @@ impl Model {
 
     /// Fully qualified image reference for a version.
     pub fn image_ref(&self, v: &Version) -> String {
-        crate::compose::image_ref(&self.source.image, &v.image_tag)
+        crate::compose::image_ref(&self.source.image, &v.pinned_tag())
     }
 
     /// Whether the service needs `platform: linux/amd64`, i.e. whether it is

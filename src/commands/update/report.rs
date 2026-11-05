@@ -133,12 +133,11 @@ pub(super) fn plan_text(report: &UpdateReport, out: &Out) -> String {
         // the only thing that is coloured.
         let old = version_cell(m, &m.old_version, &m.old_tag);
         let line = if m.changed {
-            format!(
-                "  {:<width$}  {} -> {}",
-                m.id,
-                out.dim(&old),
-                out.ok(&version_cell(m, &m.new_version, &m.new_tag))
-            )
+            let (old, new) = match digest_cells(m) {
+                Some(cells) => cells,
+                None => (old, version_cell(m, &m.new_version, &m.new_tag)),
+            };
+            format!("  {:<width$}  {} -> {}", m.id, out.dim(&old), out.ok(&new))
         } else {
             format!(
                 "  {:<width$}  {}  {}",
@@ -205,6 +204,22 @@ pub(super) fn version_cell(m: &ModelUpdate, version: &str, tag: &str) -> String 
         return tag.to_string();
     }
     format!("v{version} ({tag})")
+}
+
+/// The two cells of a row where only the digest moved, so the change is
+/// visible: `v1.0.2 (sha-e9047d4@380b0218ca3e)`. `None` for every other row.
+pub(super) fn digest_cells(m: &ModelUpdate) -> Option<(String, String)> {
+    if m.old_version != m.new_version || m.old_tag != m.new_tag {
+        return None;
+    }
+    let cell = |digest: &Option<String>| {
+        let digest = match digest {
+            Some(digest) => crate::docker::short_digest(digest),
+            None => "no digest".to_string(),
+        };
+        version_cell(m, &m.new_version, &format!("{}@{digest}", m.new_tag))
+    };
+    Some((cell(&m.old_digest), cell(&m.new_digest)))
 }
 
 /// What a row that did not move says for itself.

@@ -386,6 +386,9 @@ pub struct OverlaySpec {
     /// Tagless image reference.
     pub image: String,
     pub image_tag: String,
+    /// The digest the overlay pins with the tag; see
+    /// [`crate::compose::pinned_tag`].
+    pub image_digest: Option<String>,
     /// See [`crate::compose::tag_env_var`].
     pub tag_env_var: String,
     /// Host port to publish 8000 on, or `None` for a service that is only
@@ -455,6 +458,7 @@ impl OverlaySpec {
             repository: m.source.repository.clone(),
             image: m.source.image.clone(),
             image_tag: v.image_tag.clone(),
+            image_digest: v.image_digest.clone(),
             tag_env_var: tag_env_var(&m.id),
             host_port,
             bind: None,
@@ -505,6 +509,7 @@ impl OverlaySpec {
             repository: e.image.clone(),
             image: e.image.clone(),
             image_tag: e.image_tag.clone(),
+            image_digest: e.image_digest.clone(),
             tag_env_var: tag_env_var(id),
             host_port: e.host_port,
             bind: e.bind,

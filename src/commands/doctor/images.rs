@@ -191,10 +191,10 @@ pub fn component_images(components: &Components, env: &str) -> Vec<(String, Stri
 }
 
 /// The image reference compose pulls for one model: its tag variable in
-/// `.env` when that sets one, the pinned tag otherwise.
+/// `.env` when that sets one, the pinned tag and digest otherwise.
 pub fn model_reference(id: &str, model: &crate::project::EnabledModel, env: &str) -> String {
     let tag = crate::dotenv::non_empty(env, &crate::compose::tag_env_var(id))
-        .unwrap_or_else(|| model.image_tag.clone());
+        .unwrap_or_else(|| model.pinned_tag());
     crate::compose::image_ref(&model.image, &tag)
 }
 

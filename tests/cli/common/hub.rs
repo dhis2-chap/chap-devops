@@ -70,6 +70,8 @@ pub(crate) struct Hub {
     /// The commit the served marketplace entry pins, which is what the
     /// `registry pin` checks compare against the branch.
     pub(crate) pinned: String,
+    /// The `image_digest` the served marketplace entry lists, if any.
+    pub(crate) digest: Option<String>,
     /// Whether ghcr refuses an anonymous pull token, which is what it answers
     /// for a repository that publishes no public image.
     pub(crate) denied: bool,
@@ -135,6 +137,7 @@ impl Hub {
                 .map(|(tag, at)| (tag.to_string(), at.to_string()))
                 .collect(),
             pinned: MARKETPLACE_SHA.to_string(),
+            digest: None,
             denied: false,
             unbuilt: Vec::new(),
             built: Vec::new(),
@@ -176,9 +179,22 @@ impl Hub {
         }
     }
 
+    /// The same, with the marketplace entry listing `digest` as the
+    /// `image_digest` of its version.
+    pub(crate) fn listing_digest(self, digest: &str) -> Hub {
+        Hub {
+            digest: Some(digest.to_string()),
+            ..self
+        }
+    }
+
     /// The marketplace entry as this hub serves it: the template, repinned.
     pub(crate) fn marketplace_model(&self) -> String {
         let short: String = self.pinned.chars().take(7).collect();
+        let digest = match &self.digest {
+            Some(digest) => format!("\n    image_digest: {digest}"),
+            None => String::new(),
+        };
         MARKETPLACE_MODEL
             .replace(
                 &format!("commit: {MARKETPLACE_SHA}"),
@@ -186,7 +202,7 @@ impl Hub {
             )
             .replace(
                 &format!("image_tag: sha-{MARKETPLACE_SHA}"),
-                &format!("image_tag: sha-{short}"),
+                &format!("image_tag: sha-{short}{digest}"),
             )
     }
 

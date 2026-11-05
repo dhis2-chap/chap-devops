@@ -24,6 +24,7 @@ fn state(registry: &Registry, chap_core: bool) -> ProjectState {
             service_id: model.service_id.clone(),
             image: model.source.image.clone(),
             image_tag: "sha-1".to_string(),
+            image_digest: None,
             version: "1.0.0".to_string(),
             channel: None,
             host_port: None,

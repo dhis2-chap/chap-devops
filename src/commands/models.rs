@@ -525,10 +525,7 @@ fn render_info(out: &Out, detail: &ModelDetail) -> String {
                         None => format!("{} (pinned)", enabled.version),
                     },
                 ),
-                (
-                    "image",
-                    crate::compose::image_ref(&enabled.image, &enabled.image_tag),
-                ),
+                ("image", enabled.image_ref()),
                 ("data dir", enabled.data_dir.clone()),
                 // Where the user came from is half the answer: `table` is the
                 // last resort, and the difference between `root` from the

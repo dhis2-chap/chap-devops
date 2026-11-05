@@ -205,6 +205,7 @@ fn a_revision_that_is_not_the_pin_is_named() {
         service_id: service_id.to_string(),
         image: "ghcr.io/chap-models/x".to_string(),
         image_tag: image_tag.to_string(),
+        image_digest: None,
         version: "1.0.0".to_string(),
         channel: None,
         host_port: None,

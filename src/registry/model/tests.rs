@@ -260,3 +260,49 @@ fn the_identity_of_an_entry_matches_its_file() {
     m.service_id = "auto_arima_chapkit".to_string();
     assert!(!m.identity_matches("models/auto_arima_chapkit.yaml"));
 }
+
+/// The digest the marketplace lists goes into the image reference, and one
+/// that is not `sha256:<64 hex>` stops the version before it is pinned.
+#[test]
+fn resolve_carries_the_digest_and_refuses_a_malformed_one() {
+    let mut m = model("auto_arima_chapkit");
+    let stable = m.channels.stable.clone();
+    let at = m
+        .versions
+        .iter()
+        .position(|v| v.version == stable)
+        .expect("the stable version is listed");
+    let digest = format!("sha256:{}", "c".repeat(64));
+    m.versions[at].image_digest = Some(digest.clone());
+    let v = m
+        .resolve(&VersionSelector::Channel(Channel::Stable))
+        .expect("a well-formed digest resolves");
+    assert_eq!(
+        m.image_ref(v),
+        format!("{}:{}@{digest}", m.source.image, v.image_tag)
+    );
+
+    m.versions[at].image_digest = Some("sha256:nope".to_string());
+    let err = m
+        .resolve(&VersionSelector::Channel(Channel::Stable))
+        .expect_err("a malformed digest errors");
+    assert!(
+        matches!(
+            err.downcast_ref::<crate::error::ChapError>(),
+            Some(crate::error::ChapError::InvalidDigest { digest, .. }) if digest == "sha256:nope"
+        ),
+        "{err}"
+    );
+}
+
+/// A marketplace file without digests still parses: the field is optional.
+#[test]
+fn a_version_without_a_digest_parses() {
+    let v: Version = serde_yaml_ng::from_str(
+        "version: 1.0.0\ncommit: 1111111111111111111111111111111111111111\n\
+         image_tag: sha-1111111\nchapkit: \">=2\"\nstatus: verified\n",
+    )
+    .unwrap();
+    assert_eq!(v.image_digest, None);
+    assert_eq!(v.pinned_tag(), "sha-1111111");
+}

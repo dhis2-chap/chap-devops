@@ -94,6 +94,43 @@ fn plan_moves_a_channel_pin_and_skips_an_exact_one() {
     assert_eq!(arima.new_tag, "sha-1111111");
 }
 
+/// The marketplace can pin a new digest under the same tag and version; that
+/// moves the pin as well, and the plan carries the digest to record.
+#[test]
+fn plan_moves_a_pin_whose_digest_changed() {
+    let (_dir, project, mut registry) = project_with(&["chapkit_ewars_model"]);
+    let entry = &project.state.models["chapkit_ewars_model"];
+    let digest = format!("sha256:{}", "e".repeat(64));
+    let model = registry
+        .models
+        .iter_mut()
+        .find(|m| m.id == "chapkit_ewars_model")
+        .unwrap();
+    let stable = model.channels.stable.clone();
+    let version = model
+        .versions
+        .iter_mut()
+        .find(|v| v.version == stable)
+        .unwrap();
+    assert_eq!(version.image_tag, entry.image_tag);
+    version.image_digest = Some(digest.clone());
+
+    let plan = plan(&project, &registry, &no_lookup).unwrap();
+    assert!(plan[0].changed);
+    assert_eq!(plan[0].old_tag, plan[0].new_tag);
+    assert_eq!(plan[0].old_digest, entry.image_digest);
+    assert_eq!(plan[0].new_digest.as_deref(), Some(digest.as_str()));
+    assert_eq!(plan[0].new_pin(), format!("{}@{digest}", entry.image_tag));
+    let version = format!("v{}", entry.version);
+    assert_eq!(
+        digest_cells(&plan[0]),
+        Some((
+            format!("{version} ({}@no digest)", entry.image_tag),
+            format!("{version} ({}@eeeeeeeeeeee)", entry.image_tag),
+        ))
+    );
+}
+
 /// A project with one manually added model, enabled.
 fn project_with_manual(follow: Option<&str>) -> (tempfile::TempDir, Project, Registry) {
     let dir = tempfile::tempdir().unwrap();
@@ -389,6 +426,7 @@ fn row(id: &str) -> ModelUpdate {
             service_id: id.to_string(),
             image: format!("ghcr.io/chap-models/{id}"),
             image_tag: "sha-0000000".into(),
+            image_digest: None,
             version: "1.0.0".into(),
             channel: Some(Channel::Stable),
             host_port: None,
@@ -1184,6 +1222,7 @@ fn a_moved_pin_keeps_the_one_before_it() {
         service_id: "m".to_string(),
         image: "ghcr.io/chap-models/m".into(),
         image_tag: "sha-1111111".into(),
+        image_digest: None,
         version: "1.0.0".into(),
         channel: Some(Channel::Stable),
         host_port: None,
@@ -1213,4 +1252,13 @@ fn a_moved_pin_keeps_the_one_before_it() {
     let mut same = model();
     record_previous(&mut same, "sha-1111111", false);
     assert_eq!(same.previous, None);
+
+    // The same tag under a new digest is a move, and the digest is kept.
+    let digest = format!("sha256:{}", "f".repeat(64));
+    let mut pinned = model();
+    pinned.image_digest = Some(digest.clone());
+    record_previous(&mut pinned, &format!("sha-1111111@{digest}"), false);
+    assert_eq!(pinned.previous, None);
+    record_previous(&mut pinned, "sha-1111111", false);
+    assert_eq!(pinned.previous.map(|p| p.image_digest), Some(Some(digest)));
 }

@@ -327,6 +327,7 @@ fn unmanaged(service_id: &str) -> EnabledModel {
         service_id: service_id.to_string(),
         image: String::new(),
         image_tag: String::new(),
+        image_digest: None,
         version: String::new(),
         channel: None,
         host_port: None,

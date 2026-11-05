@@ -15,6 +15,7 @@ mod components;
 mod components_again;
 mod dhis2;
 mod dhis2_stand_in;
+mod digest;
 mod doctor;
 mod expose;
 mod help;

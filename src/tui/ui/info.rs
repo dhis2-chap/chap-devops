@@ -479,7 +479,7 @@ pub(super) fn info_lines<'a>(app: &App, row: &Row, width: usize, theme: &Theme) 
     lines.push(field(theme, "reach", &reach));
 
     let image = match app.resolved(row) {
-        Some(version) => crate::compose::image_ref(&model.source.image, &version.image_tag),
+        Some(version) => model.image_ref(version),
         None => model.source.image.clone(),
     };
     lines.extend(wrapped_field(theme, "image", &image, width));

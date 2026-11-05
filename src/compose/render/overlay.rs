@@ -43,7 +43,10 @@ pub fn render_overlay(spec: &OverlaySpec) -> String {
             // nothing rather than with a colon.
             tag_sep => crate::compose::tag_separator(&spec.image_tag),
             tag_var => &spec.tag_env_var,
-            image_tag => &spec.image_tag,
+            // The digest goes in the default of the tag variable, not after
+            // it: a tag set in `.env` then replaces the whole pin, and is not
+            // silently overruled by a digest it does not match.
+            image_tag => crate::compose::pinned_tag(&spec.image_tag, spec.image_digest.as_deref()),
             local => crate::compose::is_local_image(&spec.image),
             platform => spec.platform.as_deref(),
             container_port => container_port(spec),

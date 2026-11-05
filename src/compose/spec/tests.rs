@@ -95,6 +95,7 @@ fn from_enabled_replays_the_recorded_state() {
         service_id: "chapkit-ewars-model".into(),
         image: "ghcr.io/chap-models/chapkit_ewars_model".into(),
         image_tag: "sha-0000000".into(),
+        image_digest: None,
         version: "0.9.0".into(),
         channel: None,
         host_port: Some(5007),

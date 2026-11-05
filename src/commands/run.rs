@@ -294,7 +294,7 @@ fn start(ctx: &Ctx, args: &ModelRunArgs) -> Result<RunReport> {
             Some(g) if g != DEFAULT_GROUP => format!("chap-devops run {} --group {g}", args.source),
             _ => format!("chap-devops run {}", args.source),
         };
-        let image = crate::compose::image_ref(&model.image, &model.image_tag);
+        let image = model.image_ref();
         return Err(err.context(start_failure(&service, &image, said.as_deref(), &again)));
     }
     drop(up_lock);

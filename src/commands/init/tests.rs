@@ -546,6 +546,7 @@ fn model_record() -> crate::project::EnabledModel {
         service_id: "x".to_string(),
         image: "ghcr.io/chap-models/x".into(),
         image_tag: "sha-1111111".into(),
+        image_digest: None,
         version: "1.0.0".into(),
         channel: None,
         host_port: None,

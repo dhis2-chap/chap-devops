@@ -63,6 +63,7 @@ fn enabled(service_id: &str, port: Option<u16>) -> EnabledModel {
         service_id: service_id.to_string(),
         image: "ghcr.io/chap-models/x".into(),
         image_tag: "sha-1111111".into(),
+        image_digest: None,
         version: "1.0.0".into(),
         channel: None,
         host_port: port,

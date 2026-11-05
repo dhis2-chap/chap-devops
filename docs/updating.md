@@ -95,6 +95,10 @@ A run is four steps, printed in that order:
    A model enabled with `--version 0.1.1` reads
    `v0.1.1 (sha-6c1d9ee)  pinned, skipped` instead.
 
+   The marketplace can list a new image digest for the same version and tag.
+   That is a move too, and the row shows the first 12 hex characters of each
+   digest: `v1.0.4 (sha-49ee939@no digest) -> v1.0.4 (sha-49ee939@49f2b0ecce17)`.
+
    A model added with `chap-devops models add` is resolved against its own
    repository rather than the catalogue, so its row reads in image tags:
 

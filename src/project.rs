@@ -309,6 +309,10 @@ pub struct EnabledModel {
     pub image: String,
     /// Image tag of the pinned version, e.g. `sha-fa880a1`.
     pub image_tag: String,
+    /// The digest the marketplace lists for the version. The overlay pulls
+    /// `image:tag@digest`, so the reviewed image runs even if the tag moves.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_digest: Option<String>,
     pub version: String,
     /// `Some` when the pin follows a channel, `None` when it is exact.
     pub channel: Option<Channel>,
@@ -364,6 +368,8 @@ pub struct EnabledModel {
 pub struct PreviousPin {
     pub version: String,
     pub image_tag: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_digest: Option<String>,
     pub user: String,
     #[serde(default)]
     pub user_from: UserSource,
@@ -376,6 +382,19 @@ pub struct PreviousPin {
 pub struct Project {
     pub dir: PathBuf,
     pub state: ProjectState,
+}
+
+impl EnabledModel {
+    /// The tag with the digest, as the overlay pins it; see
+    /// [`crate::compose::pinned_tag`].
+    pub fn pinned_tag(&self) -> String {
+        crate::compose::pinned_tag(&self.image_tag, self.image_digest.as_deref())
+    }
+
+    /// The image reference the overlay pulls when `.env` overrides nothing.
+    pub fn image_ref(&self) -> String {
+        crate::compose::image_ref(&self.image, &self.pinned_tag())
+    }
 }
 
 impl Project {

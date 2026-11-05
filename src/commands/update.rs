@@ -309,13 +309,14 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
             .models
             .get_mut(&change.id)
             .expect("plan only lists enabled models");
-        record_previous(entry, &change.new_tag, manual);
+        record_previous(entry, &change.new_pin(), manual);
         entry.version = change.new_version.clone();
         entry.image_tag = change.new_tag.clone();
+        entry.image_digest = change.new_digest.clone();
         entry.user = change.new_user.clone();
         entry.user_from = change.user_from;
         entry.reads_port = change.reads_port;
-        refresh_env_pin(&project.dir, &tag_env_var(&change.id), &change.new_tag)?;
+        refresh_env_pin(&project.dir, &tag_env_var(&change.id), &change.new_pin())?;
     }
     let synced = sync(&mut project, &registry, false)?;
     warnings.extend(synced.warnings.iter().cloned());
@@ -371,13 +372,14 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
 /// chap-core refuses the new version. An earlier update that was never
 /// configured keeps the pin from before it. A model from `models add` also
 /// has its pin in `models-manual.yaml`, so it gets no previous pin.
-fn record_previous(entry: &mut crate::project::EnabledModel, new_tag: &str, manual: bool) {
-    if manual || entry.previous.is_some() || entry.image_tag == new_tag {
+fn record_previous(entry: &mut crate::project::EnabledModel, new_pin: &str, manual: bool) {
+    if manual || entry.previous.is_some() || entry.pinned_tag() == new_pin {
         return;
     }
     entry.previous = Some(crate::project::PreviousPin {
         version: entry.version.clone(),
         image_tag: entry.image_tag.clone(),
+        image_digest: entry.image_digest.clone(),
         user: entry.user.clone(),
         user_from: entry.user_from,
         reads_port: entry.reads_port,

@@ -975,6 +975,23 @@ fn refresh_env_pin_moves_only_the_commented_line() {
     assert!(!refresh_env_pin(&dir.path().join("missing"), "X", "y").unwrap());
 }
 
+/// The commented pin in `.env` carries the digest, so uncommenting it keeps
+/// the image the overlay pins.
+#[test]
+fn the_env_pin_carries_the_digest() {
+    let (dir, mut project, registry) = project_with(&["chapkit_ewars_model"]);
+    let env = dir.path().join(ENV_FILE);
+    std::fs::write(&env, "POSTGRES_PASSWORD=secret\n").unwrap();
+    let digest = format!("sha256:{}", "a".repeat(64));
+    let model = project.state.models.get_mut("chapkit_ewars_model").unwrap();
+    model.image_digest = Some(digest.clone());
+    let tag = model.image_tag.clone();
+    sync(&mut project, &registry, false).unwrap();
+    assert!(std::fs::read_to_string(&env).unwrap().contains(&format!(
+        "\n# CHAPKIT_EWARS_MODEL_IMAGE_TAG={tag}@{digest}\n"
+    )));
+}
+
 #[test]
 fn check_counts_a_missing_env_pin_as_drift() {
     let (dir, mut project, registry) = project_with(&["chapkit_ewars_model"]);
@@ -989,9 +1006,7 @@ fn check_counts_a_missing_env_pin_as_drift() {
     );
 
     sync(&mut project, &registry, false).unwrap();
-    let pinned = project.state.models["chapkit_ewars_model"]
-        .image_tag
-        .clone();
+    let pinned = project.state.models["chapkit_ewars_model"].pinned_tag();
     assert!(
         std::fs::read_to_string(&env)
             .unwrap()

@@ -8,6 +8,7 @@ fn request<'a>(id: &'a str, user: Option<&'a str>) -> Request<'a> {
         id,
         image: IMAGE,
         image_tag: TAG,
+        image_digest: None,
         data_dir_flag: None,
         user_flag: user,
     }
@@ -249,4 +250,30 @@ fn a_command_that_names_a_port_fixes_it_and_any_other_reads_port() {
     )));
     // A command nobody could read is the common case: a fixed 8000.
     assert!(!reads_port_env(&[]));
+}
+
+/// With a digest, the registry is asked for the digest, which is what runs,
+/// and the local lookup uses the reference with both.
+#[test]
+fn a_digest_is_what_the_lookups_ask_for() {
+    let digest = format!("sha256:{}", "b".repeat(64));
+    let req = Request {
+        image_digest: Some(&digest),
+        ..request("chapkit_ewars_model", None)
+    };
+    let asked = std::cell::RefCell::new(Vec::new());
+    from_image_with(
+        &req,
+        &endpoints(),
+        &|_, reference| {
+            asked.borrow_mut().push(reference.to_string());
+            Ok(Some(config("root", "/work")))
+        },
+        &|_| None,
+        &|_| None,
+        &|_| true,
+        &|_, _| None,
+    );
+    assert_eq!(asked.into_inner(), vec![digest.clone()]);
+    assert_eq!(req.reference(), format!("{IMAGE}:{TAG}@{digest}"));
 }
