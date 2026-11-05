@@ -4,6 +4,8 @@ id: auto_arima_chapkit
 service_id: auto-arima-chapkit
 display_name: Auto-ARIMA
 kind: model
+# The authors opt the model in to the marketplace benchmarks.
+benchmarking: true
 
 # The author's own chapkit AssessedStatus, copied from the service — not a
 # marketplace verdict. red = highly experimental prototype, not validated.
@@ -40,13 +42,24 @@ covariates:
   allow_free_additional: false
 
 channels:
-  stable: 1.0.3
-  latest: 1.0.3
+  stable: 1.0.4
+  latest: 1.0.4
 
 versions:
+  - version: 1.0.4
+    commit: 49ee939ae6841f449abf43b62a61606555135bf5
+    image_tag: sha-49ee939
+    image_digest: sha256:49f2b0ecce17cdb908606f4797bc93b6ac8b8c19e444a1f768226f764ff3314f
+    chapkit: ">=2.2.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round (CLIM-1745).
+    verified_by: []
+    changelog: >-
+      Builds on the chapkit-r-tidyverse base image pinned by digest in the Dockerfile, so the commit fixes the base image it was built on. No change to the model.
   - version: 1.0.3
     commit: c445da979bb3c29d041118335f34f79ffca2e01c
     image_tag: sha-c445da9
+    image_digest: sha256:380b0218ca3ee00e04e8dbccd1596f4a1bb0a3179bd85fc3e81bd72e6eac4ba1
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round (security fix).
@@ -56,6 +69,7 @@ versions:
   - version: 1.0.2
     commit: e9047d405050869a8918ba55ddca95d271961a00
     image_tag: sha-e9047d4
+    image_digest: sha256:7f2b4b767010187f79374d811ffaf45e3b590eb459aca32ff492a5c428be59cc
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round.
@@ -65,6 +79,7 @@ versions:
   - version: 1.0.1
     commit: 5adf3a8329f58764956c4df0584a549d16bcf119
     image_tag: sha-5adf3a8
+    image_digest: sha256:f99f7d49e3573ed98870defe14823bb04650283dea96a0903a07ae9e06fd3315
     chapkit: ">=2.1.2,<3"
     status: verified
     # Verified by the merge gate. Part of the chapkit 2.0.0 seed import.

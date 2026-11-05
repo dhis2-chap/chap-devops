@@ -4,6 +4,8 @@ id: chapkit_rwanda_malaria_bym_model
 service_id: chapkit-rwanda-malaria-bym-model
 display_name: Rwanda Malaria BYM
 kind: model
+# The authors opt the model in to the marketplace benchmarks.
+benchmarking: true
 
 # The author's own chapkit AssessedStatus, copied from the service — not a
 # marketplace verdict. gray = not intended for use — deprecated, or kept only
@@ -31,8 +33,7 @@ attribution:
   author: Similien NDAGIJIMANA (adapted by Chap team)
   organization: HISP Rwanda
   citation: >-
-    Climate Health Analytics Platform. 2025. "Kigali Malaria BYM Model". HISP
-    Rwanda.
+    Chap Modeling Platform. 2025. "Kigali Malaria BYM Model". HISP Rwanda.
   original_source: https://github.com/knutdrand/Kigali-Malaria-modelling-23-27-Feb
 
 compatibility:
@@ -55,13 +56,24 @@ covariates:
   allow_free_additional: true
 
 channels:
-  stable: 0.1.5
-  latest: 0.1.5
+  stable: 0.1.6
+  latest: 0.1.6
 
 versions:
+  - version: 0.1.6
+    commit: 597636dd00e75a0cc90febc578365c59df0b31a3
+    image_tag: sha-597636d
+    image_digest: sha256:e80d5ccbe876c391c51b4b6d0f02f893b81ccc64844f821279a7b7d50f523442
+    chapkit: ">=2.2.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round (CLIM-1745).
+    verified_by: []
+    changelog: >-
+      Builds on the chapkit-r-inla base image pinned by digest in the Dockerfile, so the commit fixes the base image it was built on. No change to the model.
   - version: 0.1.5
     commit: 8a412b1e158c9b84fb69004082aa53d0191c1632
     image_tag: sha-8a412b1
+    image_digest: sha256:1a3e1d3b116f01fa5c470f6905490c367aa3a47bc5449f2f1fce3e9952482db4
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round.
@@ -71,6 +83,7 @@ versions:
   - version: 0.1.4
     commit: 84a27e835a19c091c7c5968dcc665c00695830f7
     image_tag: sha-84a27e8
+    image_digest: sha256:e235b122abfca0e27843b65b42318a412846e680dc820dffda52083493418b52
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round (security fix).
@@ -80,6 +93,7 @@ versions:
   - version: 0.1.3
     commit: 1ee5ea1792ea2cbbb591ace37c7b58d7a96f6f3a
     image_tag: sha-1ee5ea1
+    image_digest: sha256:6fdb83a22d5cf8abcb85bc0d80c29ed0d04f0a30d04ff55a9eedebd09eab6d8e
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round.
@@ -89,6 +103,7 @@ versions:
   - version: 0.1.2
     commit: a7b2892d74c694f5140a315357061ab2592897c6
     image_tag: sha-a7b2892
+    image_digest: sha256:0003a5e89597af306ae9f3e0f7cecc443b78fefee51a11cfaab9cb0a2e29f094
     chapkit: ">=2.1.2,<3"
     status: verified
     # Verified by the merge gate. Part of the chapkit 2.0.0 seed import.
