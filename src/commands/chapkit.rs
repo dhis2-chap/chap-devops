@@ -70,6 +70,7 @@ pub fn run(ctx: &Ctx, args: &ChapkitArgs) -> Result<()> {
         };
     let tag = resolve_tag(ctx, args.tag.as_deref(), deployment.as_ref(), false)?;
     let reference = format!("{}:{tag}", plan::CORE_REPOSITORY);
+    crate::commands::chap::pull_moving_tag(ctx, args.tag.as_deref(), &reference);
 
     let outside = plan::outside_paths(&chapkit_args, &cwd);
     let mounts =

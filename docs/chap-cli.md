@@ -111,6 +111,16 @@ size.
   of either image.
 - `--tag TAG` overrides all of these, for example `--tag master`.
 
+A moving tag (`master`, `dev`, `latest`) can point at a new image every day.
+`docker run` uses the image that is on this machine, so chap-devops pulls a
+moving tag first when `--tag` names it. Without the pull, `--tag master`
+runs the master of the day of the first pull. With `--offline`, chap-devops
+does not pull. If the pull fails, the run uses the local image, with a
+warning. A moving tag that comes from the deployment is not pulled: the CLI
+stays on the same image as the server, and `chap-devops update` pulls it.
+In a deployment on `master`, `--tag master` pulls the image that the
+deployment uses too, so the next `chap-devops up` starts the new image.
+
 ## Chapkit models: no `chap-devops up`
 
 A chapkit model is a model service: chap sends it data over HTTP, and the

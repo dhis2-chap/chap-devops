@@ -393,6 +393,17 @@ pub fn mount_dirs(
     Ok(kept)
 }
 
+/// Whether the run pulls its image first: only for a moving tag (`master`,
+/// `dev`, `latest`) that `--tag` asked for, and never `--offline`.
+///
+/// `docker run` uses the local image of a tag when it has one, so without
+/// this pull a `--tag master` runs the master of the day it was first
+/// pulled. A tag that comes from the deployment is left alone: the run then
+/// uses the same chap as the deployment, and `chap-devops update` re-pulls it.
+pub fn pulls_first(asked: Option<&str>, offline: bool) -> bool {
+    !offline && asked.is_some_and(crate::chapcore::is_moving_tag)
+}
+
 /// Everything one `docker run` of the chap CLI needs.
 #[derive(Debug, Clone)]
 pub struct RunSpec {

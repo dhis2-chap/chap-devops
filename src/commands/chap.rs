@@ -97,6 +97,7 @@ pub fn run(ctx: &Ctx, args: &ChapArgs) -> Result<()> {
     });
     let repository = plan::repository(image);
     let reference = format!("{repository}:{tag}");
+    pull_moving_tag(ctx, args.tag.as_deref(), &reference);
 
     if args.image == Some(ChapImage::Core)
         && matches!(kind, ModelKind::GitHub { .. } | ModelKind::Local(_))
@@ -476,6 +477,24 @@ fn loopback_refusal(url: &str, port: u16, place: &Place) -> String {
              `auto_arima_chapkit` and chap-devops starts it",
             crate::components::HOST_GATEWAY
         ),
+    }
+}
+
+/// Pull `reference` before the run when [`plan::pulls_first`] says so.
+///
+/// A failed pull is a warning, not an error: the image this machine has may
+/// still run, and if there is none, `docker run` says so itself.
+pub(crate) fn pull_moving_tag(ctx: &Ctx, asked: Option<&str>, reference: &str) {
+    if !plan::pulls_first(asked, ctx.registry.offline) {
+        return;
+    }
+    output::notice(&format!(
+        "pulling {reference}: the tag moves, and the image on this machine can be old"
+    ));
+    if !docker::pull_image(reference) {
+        output::warn(&format!(
+            "could not pull {reference}; the run uses the image on this machine, which can be              old; run `docker pull {reference}` to see why"
+        ));
     }
 }
 

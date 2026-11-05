@@ -312,6 +312,21 @@ chap-core v2.6.0. In the model directory, run `git init`,
 then `git add .` and `git commit`. Then run `chap-devops chapkit mlproject run DIR`
 again.
 
+## `Unknown command "init"` from `chap-devops chap --tag master`
+
+```text
+running `chap init` in ghcr.io/dhis2-chap/chap-core:master
+Unknown command "init". Available commands: aggregate-eval, causal, ...
+error: chap exited with status 2; its own message is above
+```
+
+The local image of the moving tag is older than the command. chap-devops
+0.118.0 and earlier ran the `master` image of the day of the first pull.
+Newer versions pull a moving tag first when `--tag` names it.
+
+- Update chap-devops with `chap-devops self update`.
+- Or pull the image yourself: `docker pull ghcr.io/dhis2-chap/chap-core:master`.
+
 ## `chapkit did not accept the arguments, and its usage is above`
 
 chapkit exited with status 2, which is a usage error: a command, an argument
