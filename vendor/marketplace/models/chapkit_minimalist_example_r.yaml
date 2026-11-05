@@ -43,13 +43,24 @@ covariates:
   allow_free_additional: false
 
 channels:
-  stable: 1.0.3
-  latest: 1.0.3
+  stable: 1.0.4
+  latest: 1.0.4
 
 versions:
+  - version: 1.0.4
+    commit: eef3ddc409120aa693752787bc477b249672f627
+    image_tag: sha-eef3ddc
+    image_digest: sha256:b3facb57c599e0973ceb77d673c671f10fd59afda13b5afbac61edeaa613094d
+    chapkit: ">=2.2.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round (CLIM-1745).
+    verified_by: []
+    changelog: >-
+      Builds on the chapkit-r-inla base image pinned by digest in the Dockerfile, so the commit fixes the base image it was built on. No change to the model.
   - version: 1.0.3
     commit: 1abf9887fe4c624b43fdead8b79b1b0f362542c1
     image_tag: sha-1abf988
+    image_digest: sha256:db56c9728170eb493c85527a2375c1c603c06176dcb9be671d5698a4b977705b
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round (security fix).
@@ -59,6 +70,7 @@ versions:
   - version: 1.0.2
     commit: 4349892df6986a7943f2804e6c14801b865ba96a
     image_tag: sha-4349892
+    image_digest: sha256:c82e40f47909d8e6012f937cccb0cce5b6a9d53197ae70a270fb0b81fe6a23b2
     chapkit: ">=2.2.0,<3"
     status: verified
     # Pinned by the maintainers without the three-approval round.
@@ -68,6 +80,7 @@ versions:
   - version: 1.0.1
     commit: 9fbdd09494fd74d6a55b1c9bef33a2d479cdb402
     image_tag: sha-9fbdd09
+    image_digest: sha256:d61aaeb7d4a82a11a59c7564dab93f0b405db0190e3c9248496c1a0c19e22df0
     chapkit: ">=2.1.2,<3"
     status: verified
     # Verified by the merge gate. Part of the chapkit 2.0.0 seed import.
