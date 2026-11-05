@@ -54,6 +54,7 @@ fn state_with_port(
             service_id: model.service_id.clone(),
             image: model.source.image.clone(),
             image_tag: version.image_tag.clone(),
+            image_digest: None,
             version: version.version.clone(),
             channel,
             host_port,

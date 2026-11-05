@@ -29,7 +29,7 @@ pub(crate) fn append_env_pins(project: &Project, check: bool) -> Result<Option<P
     for (id, model) in &project.state.models {
         let var = tag_env_var(id);
         if !mentions_var(&body, &var) {
-            pins.push(format!("# {var}={}", model.image_tag));
+            pins.push(format!("# {var}={}", model.pinned_tag()));
         }
     }
     let components = component_env_sections(&project.state.components, &body)?;

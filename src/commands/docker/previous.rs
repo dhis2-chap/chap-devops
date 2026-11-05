@@ -78,6 +78,7 @@ pub(super) fn settle(ctx: &Ctx, project: &mut Project, configured: &Folded) -> V
                 ));
                 enabled.version = previous.version;
                 enabled.image_tag = previous.image_tag;
+                enabled.image_digest = previous.image_digest;
                 enabled.user = previous.user;
                 enabled.user_from = previous.user_from;
                 enabled.reads_port = previous.reads_port;
@@ -96,8 +97,8 @@ pub(super) fn settle(ctx: &Ctx, project: &mut Project, configured: &Folded) -> V
 /// Write the state, render the files again and start the restored services.
 fn restart(ctx: &Ctx, project: &mut Project, restored: &[(String, String)]) -> Result<()> {
     for (id, _) in restored {
-        let tag = &project.state.models[id].image_tag;
-        sync::refresh_env_pin(&project.dir, &tag_env_var(id), tag)?;
+        let tag = project.state.models[id].pinned_tag();
+        sync::refresh_env_pin(&project.dir, &tag_env_var(id), &tag)?;
     }
     if restored.is_empty() {
         return project.save();

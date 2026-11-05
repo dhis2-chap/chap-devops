@@ -287,6 +287,7 @@ fn allocator_for_seeds_from_the_state_and_the_directory() {
         service_id: "m".into(),
         image: "ghcr.io/x".into(),
         image_tag: "sha-1111111".into(),
+        image_digest: None,
         version: "1.0.0".into(),
         channel: None,
         host_port: Some(5001),

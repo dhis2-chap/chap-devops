@@ -83,6 +83,24 @@ fn overlay_matches_the_golden_fixture() {
     assert_eq!(text, golden);
 }
 
+/// A digest goes in the default of the tag variable, so a tag set in `.env`
+/// replaces the whole pin rather than being overruled by the digest.
+#[test]
+fn an_overlay_pins_the_digest_in_the_default_of_the_tag_variable() {
+    let mut spec = overlay_spec("chapkit_ewars_model");
+    let digest = format!("sha256:{}", "d".repeat(64));
+    spec.image_tag = "sha-1111111".to_string();
+    spec.image_digest = Some(digest.clone());
+    let text = render_overlay(&spec);
+    assert!(
+        text.contains(&format!(
+            "    image: {}:${{CHAPKIT_EWARS_MODEL_IMAGE_TAG:-sha-1111111@{digest}}}\n",
+            spec.image
+        )),
+        "{text}"
+    );
+}
+
 /// The same shape under the other WorkingDir: `/work/data`, which is
 /// where most of the catalogue keeps its database, rather than the EWARS
 /// image's `/app/data`.

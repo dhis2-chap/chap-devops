@@ -50,6 +50,16 @@ pub enum ChapError {
     },
 
     #[error(
+        "version {version} of `{id}` lists the image digest {digest}, which is not \
+         sha256:<64 hex characters>; pick another version with `--version`"
+    )]
+    InvalidDigest {
+        id: String,
+        version: String,
+        digest: String,
+    },
+
+    #[error(
         "the stable version {version} of `{id}` is {status}, not verified; pass \
          `--version {version}` to enable it anyway"
     )]

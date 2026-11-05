@@ -56,6 +56,8 @@ pub struct Request<'a> {
     pub image: &'a str,
     /// The tag the enable pins, which is the image that will actually run.
     pub image_tag: &'a str,
+    /// The digest pinned with the tag, which the lookups use when there is one.
+    pub image_digest: Option<&'a str>,
     pub data_dir_flag: Option<&'a str>,
     pub user_flag: Option<&'a str>,
 }
@@ -63,7 +65,16 @@ pub struct Request<'a> {
 impl Request<'_> {
     /// The reference the lookups are made against.
     fn reference(&self) -> String {
-        crate::compose::image_ref(self.image, self.image_tag)
+        crate::compose::image_ref(
+            self.image,
+            &crate::compose::pinned_tag(self.image_tag, self.image_digest),
+        )
+    }
+
+    /// What the registry is asked for: the digest when there is one, as that
+    /// is what runs; the tag otherwise.
+    fn registry_reference(&self) -> &str {
+        self.image_digest.unwrap_or(self.image_tag)
     }
 
     /// The repository inside its registry, such as `<owner>/<name>`.
@@ -151,7 +162,7 @@ pub fn from_image_with(
     let mut declared: Option<(ghcr::ImageConfig, UserSource)> = None;
 
     if !endpoints.offline {
-        match registry(&req.repository(), req.image_tag) {
+        match registry(&req.repository(), req.registry_reference()) {
             Ok(Some(config)) => declared = Some((config, UserSource::ImageConfig)),
             Ok(None) => notes.push(format!(
                 "{reference} is not published at {}, so its user comes from the \

@@ -185,7 +185,7 @@ fn parse_repo(text: &str) -> Result<Repo> {
 fn parse_image(text: &str) -> Result<Image> {
     if let Some((image, digest)) = text.split_once('@') {
         let digest = digest.trim();
-        if !is_digest(digest) {
+        if !crate::compose::is_digest(digest) {
             return Err(anyhow::anyhow!(
                 "`{digest}` is not a digest; the form is @sha256:<64 hex characters>"
             ));
@@ -222,7 +222,7 @@ fn parse_image(text: &str) -> Result<Image> {
 /// with no registry host, which only the local image store can have.
 fn parse_local(text: &str) -> Result<Image> {
     if let Some((image, digest)) = text.split_once('@') {
-        if !is_digest(digest.trim()) {
+        if !crate::compose::is_digest(digest.trim()) {
             return Err(anyhow::anyhow!(
                 "`{digest}` is not a digest; the form is @sha256:<64 hex characters>"
             ));
@@ -241,14 +241,6 @@ fn parse_local(text: &str) -> Result<Image> {
             "`{text}` names no tag, so there is nothing to pin; build it with a tag \
              (`docker build -t {text}:dev .`) and add `{text}:dev`"
         )),
-    }
-}
-
-/// Whether `text` is a `sha256:<64 hex>` digest.
-fn is_digest(text: &str) -> bool {
-    match text.split_once(':') {
-        Some(("sha256", hex)) => hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit()),
-        _ => false,
     }
 }
 

@@ -16,6 +16,10 @@ pub struct ModelUpdate {
     pub old_tag: String,
     pub new_version: String,
     pub new_tag: String,
+    /// The digest pinned with the tag before and after; see
+    /// [`crate::compose::pinned_tag`].
+    pub old_digest: Option<String>,
+    pub new_digest: Option<String>,
     pub changed: bool,
     /// Pinned to an exact version, so nothing was consulted.
     pub pinned: bool,
@@ -45,6 +49,11 @@ pub struct ModelUpdate {
 }
 
 impl ModelUpdate {
+    /// The pin this row moves to, with its digest.
+    pub(super) fn new_pin(&self) -> String {
+        crate::compose::pinned_tag(&self.new_tag, self.new_digest.as_deref())
+    }
+
     /// The row this entry starts as: unchanged, and checked.
     pub(super) fn unchanged(id: &str, entry: &crate::project::EnabledModel) -> ModelUpdate {
         ModelUpdate {
@@ -53,6 +62,8 @@ impl ModelUpdate {
             old_tag: entry.image_tag.clone(),
             new_version: entry.version.clone(),
             new_tag: entry.image_tag.clone(),
+            old_digest: entry.image_digest.clone(),
+            new_digest: entry.image_digest.clone(),
             changed: false,
             pinned: entry.channel.is_none(),
             manual: false,
@@ -120,8 +131,12 @@ pub(super) fn plan(
             let version = model.resolve(&VersionSelector::Channel(channel))?;
             update.new_version = version.version.clone();
             update.new_tag = version.image_tag.clone();
-            update.changed =
-                update.new_version != update.old_version || update.new_tag != update.old_tag;
+            update.new_digest = version.image_digest.clone();
+            // A new digest under the same tag is a change as well: the
+            // marketplace now pins another image than the one that runs.
+            update.changed = update.new_version != update.old_version
+                || update.new_tag != update.old_tag
+                || update.new_digest != update.old_digest;
         }
         out.push(update);
     }
@@ -149,6 +164,7 @@ pub(super) fn resolve_users(
                 id: &update.id,
                 image: &entry.image,
                 image_tag: &update.new_tag,
+                image_digest: update.new_digest.as_deref(),
                 data_dir_flag: None,
                 user_flag: None,
             },

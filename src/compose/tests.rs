@@ -83,3 +83,34 @@ fn a_model_volume_name_reads_back_as_the_id_that_made_it() {
     assert_eq!(volume_model_id("ck__data"), None);
     assert_eq!(volume_model_id("ck_ewars"), None);
 }
+
+#[test]
+fn a_digest_is_pinned_after_the_tag() {
+    let digest = format!("sha256:{}", "a".repeat(64));
+    assert_eq!(
+        pinned_tag("sha-b1d6c31", Some(&digest)),
+        format!("sha-b1d6c31@{digest}")
+    );
+    assert_eq!(pinned_tag("sha-b1d6c31", None), "sha-b1d6c31");
+    // A tag that is a digest already takes no second one.
+    assert_eq!(
+        pinned_tag(&format!("@{digest}"), Some(&digest)),
+        format!("@{digest}")
+    );
+    assert_eq!(
+        image_ref(
+            "ghcr.io/chap-models/m",
+            &pinned_tag("sha-b1d6c31", Some(&digest))
+        ),
+        format!("ghcr.io/chap-models/m:sha-b1d6c31@{digest}")
+    );
+}
+
+#[test]
+fn a_digest_is_sha256_and_64_hex_characters() {
+    assert!(is_digest(&format!("sha256:{}", "a".repeat(64))));
+    assert!(!is_digest(&format!("sha256:{}", "a".repeat(63))));
+    assert!(!is_digest(&format!("sha256:{}", "g".repeat(64))));
+    assert!(!is_digest(&format!("sha512:{}", "a".repeat(64))));
+    assert!(!is_digest("sha-b1d6c31"));
+}

@@ -126,6 +126,7 @@ impl ManualModel {
                 version: self.tag.clone(),
                 commit: self.commit.clone().unwrap_or_default(),
                 image_tag: self.tag.clone(),
+                image_digest: None,
                 chapkit: String::new(),
                 status: VersionStatus::Unstable,
                 verified_by: Vec::new(),

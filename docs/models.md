@@ -87,7 +87,13 @@ The `stable` channel takes only a version with `status: verified`, as
 `--version` that takes it anyway. A yanked version is refused in every form.
 
 Every version pins one commit of the model's own repository, and the image
-built from it; whether that commit is still the newest build the repository
+built from it. The marketplace also lists the digest of that image
+(`image_digest`). chap-devops then runs `<repo>:<tag>@<digest>`, and Docker
+pulls by the digest. If someone moves the tag on the registry, the image that
+runs does not change. A version without a digest runs by its tag alone. A
+digest that is not `sha256:` and 64 hex characters stops the enable.
+
+Whether that commit is still the newest build the repository
 has published is what [`chap-devops doctor`](./doctor.md#project-checks) reports as
 one `registry pin <id>` line per enabled model, because a pin that lags is for
 the marketplace to move and not something a deployment can fix.
@@ -1798,9 +1804,12 @@ The overlay does seven things.
   deployment's kind, so `docker ps --filter label=io.github.dhis2-chap.chap-devops.model`
   finds every model on the machine. See
   [Container labels](./concepts.md#container-labels).
-- **Pins the image.** `image: <repo>:${<ID>_IMAGE_TAG:-sha-<commit>}`, where the
-  default is the `image_tag` of the version the channel resolves to. The
-  deployment stays reproducible, and a different build is one `.env` line away.
+- **Pins the image.** `image: <repo>:${<ID>_IMAGE_TAG:-sha-<commit>@sha256:<digest>}`,
+  where the default is the `image_tag` and the `image_digest` of the version
+  the channel resolves to. The deployment stays reproducible, and a different
+  build is one `.env` line away. The digest is part of the default, so a tag
+  set in `.env` replaces the full pin. If the digest came after the variable,
+  Docker would pull the digest and ignore the tag in `.env`.
 - **Self-registration.** The service registers itself with chap-core through
   `SERVICEKIT_ORCHESTRATOR_URL: http://chap:8000/v2/services/$$register` (the
   `$$` is a literal `$` for Compose). The Compose service name, the DNS name

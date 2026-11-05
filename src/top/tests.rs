@@ -49,6 +49,7 @@ fn model(service: &str, port: Option<u16>) -> EnabledModel {
         service_id: service.to_string(),
         image: format!("ghcr.io/chap-models/{service}"),
         image_tag: "sha-1".to_string(),
+        image_digest: None,
         version: "1.0.0".to_string(),
         channel: None,
         host_port: port,

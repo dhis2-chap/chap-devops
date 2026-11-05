@@ -239,8 +239,9 @@ renders the same labels, and `chap-devops up` leaves running containers alone.
 A deployment is reproducible because everything it runs is pinned.
 
 - **Models** are pinned to an image tag, which for marketplace images is a
-  `sha-<short commit>` build:
-  `image: <repo>:${<ID>_IMAGE_TAG:-sha-24d58c0}`. A model that follows a
+  `sha-<short commit>` build, and to the image digest that the marketplace
+  lists for it:
+  `image: <repo>:${<ID>_IMAGE_TAG:-sha-24d58c0@sha256:...}`. A model that follows a
   channel records both the channel and the version the channel resolved to; one
   enabled with `--version` records the version alone and never moves.
 - **chap-core** is pinned to a release tag. `init` resolves the default
@@ -334,7 +335,7 @@ already carry.
 | `CHAP_API_TOKEN` | API token. Commented out means no authentication at all. See [Authentication](./auth.md). |
 | `SERVICEKIT_REGISTRATION_KEY` | Shared secret each model sends when it registers, and the one chap-core checks. It travels with the API token. |
 | `CHAP_ROOT_PATH` | Path prefix, for serving the API behind a reverse proxy. Not written by `init`; add it when you need it. |
-| `<ID>_IMAGE_TAG` | Per-model pin, one commented line per enabled model. Uncomment to run a different build of that model. |
+| `<ID>_IMAGE_TAG` | Per-model pin, one commented line per enabled model, with the digest where the marketplace lists one. Uncomment to run a different build of that model. A tag set here replaces the digest as well. |
 | `OCS_IMAGE_TAG`, `S3_IMAGE_TAG`, `DHIS2_IMAGE_TAG` | The same for the components. See [Components](./components.md). |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Root credentials for the object store, generated once when `s3` is enabled. The volume is created with them, so changing them later locks the store's own data away. |
 | `DHIS2_DB_PASSWORD`, `DHIS2_ENCRYPTION_PASSWORD` | DHIS2's own database password and the key it encrypts stored credentials with, generated once when `dhis2` is enabled. 32 hex characters each, past the 24 DHIS2 demands of the second. Nothing to do with the Chap database: DHIS2 has its own. See [DHIS2](./dhis2.md#encryptionpassword). |

@@ -15,6 +15,7 @@ fn a_model_opens_its_docs_on_its_port_or_through_chap_core() {
         service_id: "chapkit-ewars-model".into(),
         image: String::new(),
         image_tag: String::new(),
+        image_digest: None,
         version: String::new(),
         channel: None,
         host_port: Some(5001),

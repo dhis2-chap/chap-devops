@@ -66,6 +66,28 @@ pub fn image_ref(image: &str, tag: &str) -> String {
     format!("{image}{}{tag}", tag_separator(tag))
 }
 
+/// The pin a model runs at: `tag@sha256:...` when the marketplace lists a
+/// digest for the version, the tag alone otherwise.
+///
+/// Docker pulls `image:tag@digest` by the digest, so a tag that was moved on
+/// the registry cannot change what runs. The tag stays in the reference for
+/// the reader. A tag that is itself a digest (`@sha256:...`, a manual pin)
+/// takes no second one.
+pub fn pinned_tag(tag: &str, digest: Option<&str>) -> String {
+    match digest {
+        Some(digest) if !tag.starts_with('@') => format!("{tag}@{digest}"),
+        _ => tag.to_string(),
+    }
+}
+
+/// Whether `text` is a `sha256:<64 hex>` digest.
+pub fn is_digest(text: &str) -> bool {
+    match text.split_once(':') {
+        Some(("sha256", hex)) => hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit()),
+        _ => false,
+    }
+}
+
 /// Whether an image reference names no registry, so only the local image
 /// store can have it: `my-model:dev`, `org/my-model:dev`. Docker reads the
 /// first path segment as a registry host when it has a `.` or a `:` or is

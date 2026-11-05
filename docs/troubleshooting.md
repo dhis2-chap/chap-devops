@@ -1696,6 +1696,19 @@ chap-devops follows `chap-admin` and runs a marketplace version only from a
 - To run the model, enable another version with `--version`.
 - Report the entry to the marketplace.
 
+## `version VERSION of ID lists the image digest DIGEST, which is not sha256:<64 hex characters>`
+
+```text
+error: version 1.0.0 of `chapkit_ewars_model` lists the image digest sha256:short, which is not sha256:<64 hex characters>; pick another version with `--version`
+```
+
+The marketplace entry lists an `image_digest` that Docker cannot pull. A digest
+is `sha256:` and 64 hex characters. chap-devops does not fall back to the tag,
+because the digest is the pin that the review approved.
+
+- To run the model, enable another version with `--version`.
+- Report the entry to the marketplace.
+
 ## `left out models/FILE of the marketplace registry: its id is ID and its service_id is SERVICE`
 
 The `id` of a marketplace entry must be the name of its file, and its

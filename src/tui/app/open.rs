@@ -73,7 +73,7 @@ impl App<'_> {
         };
         let model = self.model(row);
         let reference = match self.resolved(row) {
-            Some(version) => crate::compose::image_ref(&model.source.image, &version.image_tag),
+            Some(version) => model.image_ref(version),
             None => model.source.image.clone(),
         };
         self.message = Some(reference);

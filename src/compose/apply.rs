@@ -413,6 +413,7 @@ pub(crate) fn plan_with(
                     id: &model.id,
                     image: &model.source.image,
                     image_tag: &version.image_tag,
+                    image_digest: version.image_digest.as_deref(),
                     data_dir_flag: req.data_dir.as_deref(),
                     user_flag: req.user.as_deref(),
                 }))
@@ -484,6 +485,7 @@ pub(crate) fn plan_with(
                     service_id: model.service_id.clone(),
                     image: model.source.image.clone(),
                     image_tag: version.image_tag.clone(),
+                    image_digest: version.image_digest.clone(),
                     version: version.version.clone(),
                     channel: match &req.selector {
                         VersionSelector::Channel(c) => Some(*c),
