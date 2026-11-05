@@ -27,7 +27,8 @@ chapkit 2.5.0. In a deployment on an older tag, add `--tag v2.5.1` for these.
 
 The version follows the rules of `chap-devops chap`: in a deployment, the
 deployment's chap-core tag; outside a deployment, the newest chap-core
-release; `--tag TAG` overrides both. See
+release; `--tag TAG` overrides both, and a moving tag that `--tag` names is
+pulled first. See
 [Which version](./chap-cli.md#which-version). The image is amd64 only, so on
 an arm64 machine, such as a Mac with Apple silicon, it runs under emulation.
 

@@ -424,3 +424,14 @@ fn what_needs_v2_5_is_refused_at_an_older_release_only() {
     let kind = model_kind(model_name(&plain));
     assert!(too_old(&plain, &kind, "v2.3.1").is_none());
 }
+
+/// Only a moving tag that `--tag` named is pulled first, and never offline.
+#[test]
+fn a_moving_tag_from_the_flag_is_pulled_first() {
+    for tag in ["master", "dev", "latest"] {
+        assert!(pulls_first(Some(tag), false), "{tag}");
+        assert!(!pulls_first(Some(tag), true), "{tag} offline");
+    }
+    assert!(!pulls_first(Some("v2.6.0"), false));
+    assert!(!pulls_first(None, false));
+}
