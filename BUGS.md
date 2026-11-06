@@ -55,10 +55,39 @@ bug that is fixed leaves the file.
 - On the shared server (proxy log, 7 days), small requests such as
   `configured-models` and `alert-policies` have a mean of about 100 ms and a
   max of 1.2 s; the `sample_bias_*` plots take 1.2 to 1.9 s.
-- Fix: run more than one worker process (the reason for one was "potential
-  bugs"; test the startup migration and the job state with 4), and move the
-  pandas work out of the request, or cache the plot and metric results per
-  backtest, which do not change after the backtest is stored.
+- Fix: run more than one worker process, after the fix in the next entry; and
+  move the pandas work out of the request, or cache the plot and metric
+  results per backtest, which do not change after the backtest is stored.
+- Measured with `--workers 4` and the fix of the next entry, on a backtest of
+  500 locations, 8 at a time: 63 to 81 s for 75 requests instead of 174 s,
+  `backtests` p50 27 to 105 ms instead of 1239 ms, no `WORKER TIMEOUT`, 0 of
+  150 requests failed.
+
+### With more than one API worker, the workers share database connections
+
+- Seen: chap-core `master` as above, gunicorn `--workers 4` from a compose
+  override, `chap-devops bench 48 --repeat 3 --parallel 8`, 2026-11-06.
+- 10 of 225 requests failed, all in the first run after a start, with
+  `Unhandled exception` and:
+  - `psycopg2.OperationalError: lost synchronization with server: got message type "0", length 859373568`
+  - `psycopg2.OperationalError: unexpected field count in "D" message`
+  - `psycopg2.OperationalError: server closed the connection unexpectedly`
+- `database.py` makes the engine when it is imported, `on_starting` in
+  `gunicorn.conf.py` runs the migration with it in the gunicorn master, and
+  the workers fork with the open connections of its pool. Two workers then
+  read from one socket. This is likely the "potential bugs" of `a0a1a544`,
+  which set `--workers 1`: the errors come only just after a start, until the
+  pool drops the broken connections.
+- Fix, tested: add to `gunicorn.conf.py`
+
+  ```python
+  def post_fork(server, worker):
+      from chap_core.database.database import engine
+      if engine is not None:
+          engine.dispose(close=False)
+  ```
+
+  With it, 0 of 150 requests failed and the log had no connection error.
 
 ### Plot requests grow with the locations, and from 500 they kill the API worker
 
@@ -88,6 +117,21 @@ bug that is fixed leaves the file.
 - Fix: make the blocking handlers plain `def`, so FastAPI runs them in its
   thread pool; compute the plot data once per backtest and store it; send the
   Modeling App the data for one panel, not the whole set.
+
+### No index on `backtestforecast.backtest_id` or `observation.dataset_id`
+
+- Seen: chap-core `master` as above, 2026-11-06. The two foreign keys have no
+  index (Postgres does not make one for a foreign key), so every read of one
+  backtest or one dataset scans the whole table.
+- With 247k forecast rows (509 MB) and 871k observations in the database, a
+  backtest of 378 forecast rows took 36 ms to read (`Seq Scan`, `Rows Removed
+  by Filter: 82488` per worker). After `create index ... (backtest_id)` and
+  `... (dataset_id)`: 0.24 ms (`Index Scan`). `chap-devops bench 4 --repeat 5`
+  went from 22.4 to 16.4 s; `evaluation-entry adm0` from 76 to 37 ms, the
+  `evaluation_plot` subplot from 256 to 123 ms.
+- The cost grows with all the data in the database, not with the backtest
+  that is read, so a server with many evaluations gets slower on every page.
+- Fix: an Alembic migration that adds the two indexes.
 
 ### `facet-coords` of the sample bias plots takes 0.2 to 22 s to answer `{}`
 
