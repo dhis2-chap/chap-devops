@@ -1083,6 +1083,8 @@ Usage: chap-devops top [OPTIONS]
 | Argument | Description |
 | --- | --- |
 | `--interval <SECONDS>` | Seconds between two looks at docker. Default: `2`. |
+| `--record <FILE>` | Append CPU and memory samples to FILE as JSON lines, with no screen. |
+| `--duration <SECONDS>` | Stop the recording after this many seconds; Ctrl-C stops it too. |
 
 ## chap-devops cleanup
 

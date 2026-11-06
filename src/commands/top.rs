@@ -22,6 +22,9 @@ fn known(ctx: &Ctx) -> Vec<PathBuf> {
 /// The screen on a terminal; under `--json`, or with stdout not a terminal,
 /// one snapshot of the same tree.
 pub fn run(ctx: &Ctx, args: &TopArgs) -> Result<()> {
+    if let Some(path) = &args.record {
+        return record(ctx, args, path);
+    }
     if ctx.out.json || !std::io::stdout().is_terminal() {
         let nodes = data::collect(&known(ctx));
         let value = serde_json::json!({ "deployments": nodes });
@@ -33,6 +36,34 @@ pub fn run(ctx: &Ctx, args: &TopArgs) -> Result<()> {
             .report(&value, |lines| snapshot_lines(&nodes, lines));
     }
     crate::top::run(ctx, known(ctx), args.interval)
+}
+
+/// `--record`: samples to a file until `--duration` or Ctrl-C, then one line
+/// that says how much was written.
+fn record(ctx: &Ctx, args: &TopArgs, path: &std::path::Path) -> Result<()> {
+    crate::interrupt::install();
+    let summary = crate::top::record::record(path, &known(ctx), args.interval, args.duration)
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "could not write the recording to `{}`: {e}; name a file in a directory you can write to",
+                path.display()
+            )
+        })?;
+    let value = serde_json::json!({ "file": path, "recording": summary });
+    ctx.out.report(&value, |lines| {
+        lines.info(format!(
+            "recorded {} samples in {} ticks over {} s to `{}`",
+            summary.lines,
+            summary.ticks,
+            summary.seconds,
+            path.display()
+        ));
+        if summary.lines == 0 {
+            lines.warning(
+                "no chap-devops container was found, so the file has no samples; start a deployment with `chap-devops up` first",
+            );
+        }
+    })
 }
 
 /// The lines under the tree: what was found, and that it is a snapshot.

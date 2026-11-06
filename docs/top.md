@@ -40,6 +40,43 @@ models - and what each container is doing.
 `--interval SECONDS` (2 by default, at most 3600) sets how often docker is asked. Docker is
 asked from a thread of its own, so a slow daemon never holds up a key.
 
+## Recording CPU and memory
+
+`chap-devops top --record FILE` shows no screen. It looks at docker at each
+interval and adds one JSON line for each service to `FILE`. Use it while a load
+test or a long backtest runs, to see what each container used over time:
+
+```sh
+chap-devops top --record usage.jsonl --interval 5 --duration 600
+```
+
+The recording stops after `--duration` seconds, or at Ctrl-C. Then it says how
+much it wrote:
+
+```text
+recorded 51 samples in 3 ticks over 6 s to `usage.jsonl`
+```
+
+A line has the fields below. A container that is not running has no `cpu_percent`
+and no memory fields.
+
+| Field | What it holds |
+| --- | --- |
+| `unix`, `time` | When docker was asked: Unix seconds, and the same time in this machine's zone. |
+| `deployment`, `service`, `role`, `model` | Which container it is, as in the tree. |
+| `state` | docker's state, such as `running` or `exited`. |
+| `cpu_percent` | `docker stats` CPU, in percent of one core: `250.0` is two and a half cores. |
+| `memory_bytes`, `memory_limit_bytes` | The memory the container uses, and its limit. |
+
+The file is appended to, so two recordings to the same file make one longer
+recording. One `docker stats` look takes about two seconds, so ticks can come
+less often than `--interval` asks. Use the `unix` field, not a count of
+ticks, for the time axis.
+
+```sh
+jq -r 'select(.service == "worker") | [.time, .cpu_percent, .memory_bytes] | @tsv' usage.jsonl
+```
+
 ## How it finds them
 
 Every container chap-devops starts carries labels that say what it is (see

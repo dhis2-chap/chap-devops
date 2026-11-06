@@ -75,6 +75,14 @@ pub struct TopArgs {
     /// Seconds between two looks at docker
     #[arg(long, value_name = "SECONDS", default_value_t = 2, value_parser = clap::value_parser!(u64).range(1..=3600))]
     pub interval: u64,
+
+    /// Append CPU and memory samples to FILE as JSON lines, with no screen
+    #[arg(long, value_name = "FILE")]
+    pub record: Option<std::path::PathBuf>,
+
+    /// Stop the recording after this many seconds; Ctrl-C stops it too
+    #[arg(long, value_name = "SECONDS", requires = "record", value_parser = clap::value_parser!(u64).range(1..))]
+    pub duration: Option<u64>,
 }
 
 /// Stop a model and remove its compose overlay; its data stays

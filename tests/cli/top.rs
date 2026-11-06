@@ -109,3 +109,65 @@ fn top_refuses_an_interval_over_an_hour() {
     .code(2)
     .stderr(predicates::str::contains("3601"));
 }
+
+#[test]
+fn top_record_writes_one_json_line_per_service_and_says_how_many() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .init(&["--models", "none", "--with", "dhis2"])
+        .assert()
+        .success();
+    let dir = sandbox.project();
+    let (_fake, bin) = labelled_docker(&dir);
+    let file = sandbox.home.path().join("usage.jsonl");
+    let file_arg = file.to_string_lossy().to_string();
+
+    let out = chap_with_docker(
+        &sandbox,
+        sandbox.home.path(),
+        &bin,
+        &[
+            "top",
+            "--record",
+            &file_arg,
+            "--interval",
+            "1",
+            "--duration",
+            "1",
+        ],
+    )
+    .assert()
+    .success()
+    .get_output()
+    .stdout
+    .clone();
+    let text = String::from_utf8(out).expect("text");
+    assert!(text.contains("recorded "), "{text}");
+    assert!(text.contains("usage.jsonl"), "{text}");
+
+    let written = std::fs::read_to_string(&file).expect("the recording");
+    let rows: Vec<serde_json::Value> = written
+        .lines()
+        .map(|l| serde_json::from_str(l).expect("one JSON object per line"))
+        .collect();
+    assert!(rows.len() >= 2, "{written}");
+    let chap = rows
+        .iter()
+        .find(|r| r["service"] == "chap")
+        .expect("a chap sample");
+    assert_eq!(chap["deployment"], "chapx");
+    assert_eq!(chap["cpu_percent"], 2.0);
+    assert_eq!(chap["memory_bytes"], 300u64 * 1024 * 1024);
+    assert_eq!(chap["memory_limit_bytes"], 8u64 * 1024 * 1024 * 1024);
+}
+
+#[test]
+fn top_duration_needs_record() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .chap()
+        .args(["top", "--duration", "5"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("--record"));
+}

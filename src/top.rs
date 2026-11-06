@@ -7,6 +7,7 @@
 //! holds up a key press; the screen draws whatever snapshot arrived last.
 
 pub mod data;
+pub mod record;
 pub mod view;
 
 use crate::commands::Ctx;
