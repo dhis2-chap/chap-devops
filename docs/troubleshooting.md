@@ -13,6 +13,27 @@ which catalogue it loaded and which files `sync` compared, all on stderr and
 all out of the way of `--json`. `-d` adds the response bodies and the resolved
 project paths.
 
+## Every job fails with `unexpected keyword argument`
+
+`chap-devops jobs logs <id>` ends with a line such as:
+
+```text
+TypeError: got an unexpected keyword argument 'queue_baselines'
+```
+
+The chap-core API and the worker run images of the same moving tag
+(`master`, `dev`) from different days. The API sends the worker an argument
+that the older worker does not know. This happens when the machine had an old
+image of the tag from an earlier deployment. Seen 2026-11-06: the API image
+was from 2026-11-05 and the worker image from 2026-10-30.
+
+A new deployment pulls both images on its first `chap-devops up`. For one that
+runs already, pull both and start them again:
+
+```sh
+chap-devops up --pull
+```
+
 ## `Apple could not verify "chap-devops" is free of malware`
 
 macOS shows this dialog, or on older versions `"chap-devops" cannot be

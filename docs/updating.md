@@ -322,7 +322,21 @@ warning saying what Chap will actually run.
 `--chap-tag latest|master|dev` keeps a moving tag instead. There is nothing to
 move, so `update` only re-pulls it. Compose never re-pulls a tag it already
 has, so the image is refreshed by `chap-devops docker pull`, `chap-devops update` or
-`chap-devops up --pull`. The plan row says so:
+`chap-devops up --pull`. The first `chap-devops up` of a deployment is the
+exception: when no chap or worker container exists yet, it pulls those two
+images first, and says so:
+
+```text
+pulled chap, worker first: `master` is a moving tag, and this is the first start
+```
+
+Without that pull, an image of the same tag from an earlier deployment on the
+machine starts, and the API and the worker can come from different days. See
+[Every job fails with `unexpected keyword argument`](./troubleshooting.md#every-job-fails-with-unexpected-keyword-argument).
+`--offline` skips the pull. A pull that fails is a warning, and the images on
+the machine start.
+
+The plan row of `update` says so:
 
 ```text
   chap-core  latest  moving tag, re-pulled; pin it with `chap-devops update --pin-chap-core`

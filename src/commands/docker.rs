@@ -8,6 +8,7 @@
 
 mod args;
 mod down;
+mod fresh;
 mod preflight;
 mod previous;
 mod removal;
@@ -100,6 +101,12 @@ pub fn run(ctx: &Ctx, cmd: &DockerCmd) -> Result<()> {
         Pre::Skip(0) => return Ok(()),
         Pre::Skip(code) => std::process::exit(code),
     };
+
+    if let DockerCmd::Up(args) = cmd
+        && !args.pull
+    {
+        fresh::pull_first(ctx, &project, &before);
+    }
 
     // A config file edited under a running service is the one change compose
     // cannot see, so those services are recreated first, on their own; the
@@ -582,7 +589,7 @@ fn nothing_to_start(project: &Project) -> bool {
 ///
 /// Under `--json` it goes to stderr: stdout is whatever docker printed, and a
 /// parser reading it must not find a sentence in the middle.
-fn note(ctx: &Ctx, line: &str) {
+pub(super) fn note(ctx: &Ctx, line: &str) {
     if ctx.out.json {
         eprintln!("{line}");
     } else {

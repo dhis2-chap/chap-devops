@@ -979,3 +979,37 @@ fn down_volumes_removes_only_the_leftovers_compose_made_for_it() {
         "volume v is still there (volume is in use); remove it with `docker volume rm v`"
     );
 }
+
+/// A deployment that runs its own chap-core at `tag`.
+fn chap_core_at(tag: &str) -> Project {
+    let mut state = crate::project::ProjectState {
+        chap_image_tag: tag.to_string(),
+        ..crate::project::ProjectState::default()
+    };
+    state.components.chap_core.enabled = true;
+    Project {
+        dir: std::path::PathBuf::from("/nonexistent"),
+        state,
+    }
+}
+
+#[test]
+fn the_first_up_on_a_moving_tag_pulls_the_chap_core_images() {
+    let fresh = chap_core_at("master");
+    assert_eq!(fresh::pulls(&fresh, &[], false), vec!["chap", "worker"]);
+    assert_eq!(
+        fresh::pull_args(&fresh::pulls(&fresh, &[], false)),
+        vec!["pull", "--quiet", "chap", "worker"]
+    );
+    // Any later up keeps the images that run.
+    let started = [container("worker", "a1", "2026-11-06 10:00:00 +0100 CET")];
+    assert!(fresh::pulls(&fresh, &started, false).is_empty());
+    // --offline never pulls.
+    assert!(fresh::pulls(&fresh, &[], true).is_empty());
+    // A release tag names one image, so what is on the machine is it.
+    assert!(fresh::pulls(&chap_core_at("v2.6.0"), &[], false).is_empty());
+    // A deployment without its own chap-core has nothing to pull.
+    let mut elsewhere = chap_core_at("master");
+    elsewhere.state.components.chap_core.enabled = false;
+    assert!(fresh::pulls(&elsewhere, &[], false).is_empty());
+}
