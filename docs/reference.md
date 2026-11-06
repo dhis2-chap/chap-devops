@@ -28,7 +28,7 @@ Usage: chap-devops [OPTIONS] <COMMAND>
 | `--offline` | Never touch the network; use what is cached or on this machine. |
 | `--cache-dir <DIR>` | Cache directory: the registry snapshot and the self-update downloads. |
 
-Subcommands: [`chap-devops init`](#chap-devops-init), [`chap-devops components`](#chap-devops-components), [`chap-devops models`](#chap-devops-models), [`chap-devops registry`](#chap-devops-registry), [`chap-devops sync`](#chap-devops-sync), [`chap-devops update`](#chap-devops-update), [`chap-devops auth`](#chap-devops-auth), [`chap-devops dhis2`](#chap-devops-dhis2), [`chap-devops up`](#chap-devops-up), [`chap-devops down`](#chap-devops-down), [`chap-devops restart`](#chap-devops-restart), [`chap-devops status`](#chap-devops-status), [`chap-devops logs`](#chap-devops-logs), [`chap-devops open`](#chap-devops-open), [`chap-devops ui`](#chap-devops-ui), [`chap-devops run`](#chap-devops-run), [`chap-devops ps`](#chap-devops-ps), [`chap-devops stop`](#chap-devops-stop), [`chap-devops jobs`](#chap-devops-jobs), [`chap-devops api`](#chap-devops-api), [`chap-devops chap`](#chap-devops-chap), [`chap-devops chapkit`](#chap-devops-chapkit), [`chap-devops backup`](#chap-devops-backup), [`chap-devops doctor`](#chap-devops-doctor), [`chap-devops docker`](#chap-devops-docker), [`chap-devops top`](#chap-devops-top), [`chap-devops cleanup`](#chap-devops-cleanup), [`chap-devops self`](#chap-devops-self), [`chap-devops completions`](#chap-devops-completions)
+Subcommands: [`chap-devops init`](#chap-devops-init), [`chap-devops components`](#chap-devops-components), [`chap-devops models`](#chap-devops-models), [`chap-devops registry`](#chap-devops-registry), [`chap-devops sync`](#chap-devops-sync), [`chap-devops update`](#chap-devops-update), [`chap-devops auth`](#chap-devops-auth), [`chap-devops dhis2`](#chap-devops-dhis2), [`chap-devops up`](#chap-devops-up), [`chap-devops down`](#chap-devops-down), [`chap-devops restart`](#chap-devops-restart), [`chap-devops status`](#chap-devops-status), [`chap-devops logs`](#chap-devops-logs), [`chap-devops open`](#chap-devops-open), [`chap-devops ui`](#chap-devops-ui), [`chap-devops run`](#chap-devops-run), [`chap-devops ps`](#chap-devops-ps), [`chap-devops stop`](#chap-devops-stop), [`chap-devops jobs`](#chap-devops-jobs), [`chap-devops api`](#chap-devops-api), [`chap-devops bench`](#chap-devops-bench), [`chap-devops chap`](#chap-devops-chap), [`chap-devops chapkit`](#chap-devops-chapkit), [`chap-devops backup`](#chap-devops-backup), [`chap-devops doctor`](#chap-devops-doctor), [`chap-devops docker`](#chap-devops-docker), [`chap-devops top`](#chap-devops-top), [`chap-devops cleanup`](#chap-devops-cleanup), [`chap-devops self`](#chap-devops-self), [`chap-devops completions`](#chap-devops-completions)
 
 ## chap-devops init
 
@@ -914,6 +914,22 @@ Usage: chap-devops api [OPTIONS] <METHOD> <PATH>
 | `--url <URL>` | Base URL of the chap-core API. |
 | `--raw` | Print the body exactly as it arrived. |
 | `--timeout <SECONDS>` | Request timeout in seconds. Default: `30`. |
+
+## chap-devops bench
+
+Time the chap-core requests the Modeling App makes for one evaluation.
+
+```text
+Usage: chap-devops bench [OPTIONS] [BACKTEST]
+```
+
+| Argument | Description |
+| --- | --- |
+| `<BACKTEST>` | Backtest id to time; the newest backtest when not given. |
+| `--repeat <N>` | How many times to send each request. Default: `3`. |
+| `--parallel <N>` | How many requests to have open at the same time. Default: `1`. |
+| `--url <URL>` | Base URL of the chap-core API. |
+| `--timeout <SECONDS>` | Request timeout in seconds. Default: `120`. |
 
 ## chap-devops chap
 

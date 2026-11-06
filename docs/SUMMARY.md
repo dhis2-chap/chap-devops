@@ -43,6 +43,7 @@
 - [Backup and restore](./backup.md)
 - [Status and output](./status.md)
 - [Jobs and the API](./jobs.md)
+- [Timing chap-core: chap-devops bench](./bench.md)
 - [The chap CLI](./chap-cli.md)
 - [The chapkit CLI](./chapkit-cli.md)
 - [Doctor](./doctor.md)

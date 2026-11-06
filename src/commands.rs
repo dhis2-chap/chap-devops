@@ -3,6 +3,7 @@
 pub mod api;
 pub mod auth;
 pub mod backup;
+pub mod bench;
 pub mod chap;
 pub mod chapkit;
 pub mod cleanup;

@@ -220,6 +220,30 @@ pub struct ApiArgs {
     pub timeout: u64,
 }
 
+/// Time the chap-core requests the Modeling App makes for one evaluation
+#[derive(Debug, Clone, Args)]
+pub struct BenchArgs {
+    /// Backtest id to time; the newest backtest when not given
+    #[arg(value_name = "BACKTEST")]
+    pub backtest: Option<i64>,
+
+    /// How many times to send each request
+    #[arg(long, value_name = "N", default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=1000))]
+    pub repeat: u32,
+
+    /// How many requests to have open at the same time
+    #[arg(long, value_name = "N", default_value_t = 1, value_parser = clap::value_parser!(u32).range(1..=64))]
+    pub parallel: u32,
+
+    /// Base URL of the chap-core API
+    #[arg(long, value_name = "URL")]
+    pub url: Option<String>,
+
+    /// Request timeout in seconds
+    #[arg(long, value_name = "SECONDS", default_value_t = 120)]
+    pub timeout: u64,
+}
+
 /// Run a checklist over this machine and this deployment
 #[derive(Debug, Clone, Args)]
 pub struct DoctorArgs {}

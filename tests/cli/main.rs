@@ -7,6 +7,7 @@
 mod adopt;
 mod auth;
 mod backup;
+mod bench;
 mod chap;
 mod chapkit;
 mod cleanup;

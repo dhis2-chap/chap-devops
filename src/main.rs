@@ -57,6 +57,7 @@ const PROJECT_ONLY: &[&str] = &[
     "backup",
     "status",
     "jobs",
+    "bench",
     "sync",
     "ui",
     "auth",
@@ -204,6 +205,7 @@ fn dispatch(ctx: &Ctx, cli: &Cli) -> error::Result<()> {
         },
 
         Command::Api(args) => commands::api::run(ctx, args),
+        Command::Bench(args) => commands::bench::run(ctx, args),
         Command::Chap(args) => commands::chap::run(ctx, args),
         Command::Chapkit(args) => commands::chapkit::run(ctx, args),
 

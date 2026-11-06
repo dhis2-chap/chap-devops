@@ -52,11 +52,11 @@ fn no_help_is_longer_than_a_screen_and_no_option_longer_than_a_clause() {
     /// One screen of `--help`, and one clause of option help.
     ///
     /// The root listing is the only thing near the line: it grows by one
-    /// row per top-level command, and there are now twenty-nine of them,
+    /// row per top-level command, and there are now thirty of them,
     /// and it lists both option blocks: the global and the registry ones.
     /// Outside a deployment the listing is shorter still, because the
     /// commands that need a project are hidden from it.
-    const MAX_LINES: usize = 53;
+    const MAX_LINES: usize = 54;
     const MAX_CHARS: usize = 90;
 
     fn check(command: &mut clap::Command, path: &str) {

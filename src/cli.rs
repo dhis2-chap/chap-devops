@@ -323,6 +323,9 @@ pub enum Command {
     /// Send one authenticated request to chap-core's API
     Api(ApiArgs),
 
+    /// Time the chap-core requests the Modeling App makes for one evaluation
+    Bench(BenchArgs),
+
     /// Run the chap CLI in a container, with no Python or uv installed
     Chap(ChapArgs),
 

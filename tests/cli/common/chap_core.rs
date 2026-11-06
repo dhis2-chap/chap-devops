@@ -661,6 +661,9 @@ pub(crate) fn chap_core_route(
     if let Some(answer) = analytics_route(method, route, body, recorded) {
         return answer;
     }
+    if let Some(answer) = bench_route(method, route) {
+        return answer;
+    }
 
     if route == "/v1/jobs" && method == "GET" {
         // The `status` query parameter is the one filter the CLI sends.
@@ -832,4 +835,41 @@ pub(crate) fn online_update(sandbox: &Sandbox, port: u16, bin: &Path, args: &[&s
     );
     cmd.arg("update").args(args);
     cmd
+}
+
+/// The backtest `chap-devops bench` times by default: the newest in the list.
+pub(crate) const BENCH_BACKTEST: i64 = 9;
+
+/// The requests `chap-devops bench` makes about one backtest. Every one of them
+/// answers, except `compatible-backtests`, which fails the way a chap-core
+/// error does, so the test sees the warning.
+fn bench_route(method: &str, route: &str) -> Option<(u16, &'static str, String)> {
+    let json = "application/json";
+    let id = BENCH_BACKTEST;
+    let info = format!("/v1/crud/backtests/{id}/info");
+    let compatible = format!("/v1/analytics/compatible-backtests/{id}");
+    let plot = format!("/v1/visualization/backtest-plots/bias/{id}");
+    let answer = match (method, route) {
+        ("GET", "/v1/crud/backtests") => r#"[{"id":7},{"id":9}]"#.to_string(),
+        ("GET", r) if r == info => {
+            r#"{"id":9,"datasetId":3,"specificationId":2,"orgUnits":["ou1","ou2"]}"#.to_string()
+        }
+        ("GET", "/v1/visualization/backtest-plots/") => r#"[{"id":"bias"}]"#.to_string(),
+        ("GET", r) if r == format!("{plot}/facet-coords") => r#"{"horizon":[1,2]}"#.to_string(),
+        ("POST", r) if r == format!("{plot}/subplot") => r#"{"mark":"line"}"#.to_string(),
+        ("GET", r) if r == compatible => {
+            return Some((500, json, r#"{"detail":"database is gone"}"#.to_string()));
+        }
+        ("GET", r)
+            if r.starts_with("/v1/analytics/")
+                || r.starts_with("/v1/crud/backtest-specifications/")
+                || r == "/v1/crud/datasets"
+                || r.starts_with("/v1/crud/datasets/")
+                || r.starts_with("/v1/visualization/metrics/") =>
+        {
+            "[]".to_string()
+        }
+        _ => return None,
+    };
+    Some((200, json, answer))
 }
