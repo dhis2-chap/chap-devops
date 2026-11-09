@@ -55,9 +55,12 @@ bug that is fixed leaves the file.
 - On the shared server (proxy log, 7 days), small requests such as
   `configured-models` and `alert-policies` have a mean of about 100 ms and a
   max of 1.2 s; the `sample_bias_*` plots take 1.2 to 1.9 s.
-- Fix: run more than one worker process, after the fix in the next entry; and
-  move the pandas work out of the request, or cache the plot and metric
-  results per backtest, which do not change after the backtest is stored.
+- Fix: make the number of worker processes a setting of the deployment
+  (gunicorn reads `WEB_CONCURRENCY` when `--workers` is not given), after the
+  fix in the next entry. The right number depends on the server, 2 or 16, and
+  on memory: one heavy request used 3.3 GB at 500 locations. Also move the
+  pandas work out of the request, or cache the plot and metric results per
+  backtest, which do not change after the backtest is stored.
 - Measured with `--workers 4` and the fix of the next entry, on a backtest of
   500 locations, 8 at a time: 63 to 81 s for 75 requests instead of 174 s,
   `backtests` p50 27 to 105 ms instead of 1239 ms, no `WORKER TIMEOUT`, 0 of
@@ -191,6 +194,20 @@ bug that is fixed leaves the file.
   use `UV_LINK_MODE=hardlink` with the cache on the same file system; remove
   a run directory when its job ends.
 
+### The worker starts one process for each CPU it sees
+
+- Seen: chap-core `master`, 2026-11-09, `compose.yml`, `compose.ghcr.yml` and
+  the Helm chart (`charts/chap/values.yaml`).
+- The worker starts with `celery -A chap_core.rest_api.celery_tasks worker
+  --loglevel=info`, with no `--concurrency` and no setting for it. Celery then
+  starts one child process for each CPU. In a container this is usually the
+  number of CPUs of the host, not the CPU limit of the container.
+- Each job loads its own copy of the dataset. At 2000 locations the worker
+  used 9.1 GiB and 1,706% CPU with a backtest and 3 baselines at the same time.
+- Fix: read the concurrency from one setting in the compose files and the
+  Helm chart, with a low default, and document how to size it by the memory
+  of one job.
+
 ## DHIS2 routes (hosted DHIS2 2.43.2)
 
 ### One route request in ten waits 30 s and ends in an empty 504
@@ -254,7 +271,43 @@ bug that is fixed leaves the file.
   e2e ingestion answered 500 with `TIFFFillTile:Read error ... got 0 bytes`.
 - Fix: retry a failed read of a remote tile before the request fails.
 
+## chapkit (`main`)
+
+### A deployment cannot set how many jobs a model service runs at the same time
+
+- Seen: chapkit `main`, 2026-11-09, all 42 repositories in chap-models.
+- The scheduler limit comes from `max_concurrency` in the code of the model
+  (`src/chapkit/api/service_builder.py`). The default is 1, "to avoid SQLite
+  write lock issues". No model in chap-models sets it, and no environment
+  variable changes it.
+- So a benchmark that sends one model several backtests runs them one after
+  the other on every server. A change needs a new release of the model.
+- Fix: read the default from an environment variable, keep 1 when it is not
+  set, and let a value in the code of the model win.
+
 ## chap-models
+
+### Models set their thread count in different ways, often in code
+
+- Seen: the default branch of all 42 repositories in chap-models, 2026-11-09.
+
+  | Model | Thread count |
+  | --- | --- |
+  | `mstl_arima` | `StatsForecast(..., n_jobs=1)` in `chap_mstl_arima/model.py`: always one core |
+  | `rwanda_random_forest` | `n_jobs=-1` in `train.py`: every job takes every core |
+  | `epidemiar_example_model` | `detectCores()` in `settings.R`: the cores of the host |
+  | `chapkit_simple_multistep_model` | not set, so one core |
+  | the INLA models | `num.threads` not set, so INLA decides |
+  | `chapkit_ghr_model` | config option `nthreads`, default 4 |
+  | `chtorch` | config option `num_workers`, default 0 |
+
+- R `detectCores()` and Python `os.cpu_count()` count the CPUs of the host,
+  not the CPU limit of the container.
+- On a shared server, models that take every core compete with each other and
+  with the worker. Models that use one core cannot use a large server.
+- Fix: one convention for all models. The deployment sets the thread count in
+  an environment variable, a config option can change it, and the default is
+  1. Put it in the model templates and the docs for model developers.
 
 ### `auto_regressive_weekly` needs `population`, but does not say so
 
@@ -277,8 +330,9 @@ bug that is fixed leaves the file.
   model several backtests runs them one after the other.
 - Memory of the model container went to 12.4 GiB at 2000 locations, 60
   months and 3 covariates.
-- Fix: `n_jobs=-1` (or a config option for it), and a `max_concurrency` that
-  fits the memory of the model.
+- Fix: a thread count from the convention in "Models set their thread count
+  in different ways", and a `max_concurrency` that fits the memory of the
+  model.
 
 ### `chapkit_simple_multistep_model` forecasts negative case counts
 
