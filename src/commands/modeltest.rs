@@ -381,6 +381,6 @@ fn period_type(info: Option<&serde_json::Value>) -> String {
 }
 
 /// The first line of a message, for a cell that has room for one.
-fn first_line(text: &str) -> String {
+pub(crate) fn first_line(text: &str) -> String {
     text.lines().next().unwrap_or_default().trim().to_string()
 }

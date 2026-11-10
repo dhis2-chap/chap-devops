@@ -5,6 +5,7 @@ pub mod auth;
 pub mod backup;
 pub mod bench;
 pub mod chap;
+pub(crate) mod chap_jobs;
 pub mod chapkit;
 pub mod cleanup;
 pub mod completions;
