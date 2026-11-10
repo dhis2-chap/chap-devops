@@ -1,4 +1,7 @@
+use super::detail::{ModelDetail, first_line, indent_block, info_lines, render_info};
 use super::*;
+use crate::output;
+use crate::project::ManualModel;
 
 fn registry() -> crate::registry::Registry {
     crate::registry::load_embedded().expect("the embedded snapshot parses")
