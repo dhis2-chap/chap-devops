@@ -42,6 +42,18 @@ pub struct Target {
     pub org_units: Vec<String>,
 }
 
+/// Why there is no newest backtest: the list is empty. chap-core leaves the
+/// backtests of its built-in baselines out of the list, as the Modeling App
+/// does, so they can still be there and be timed by id.
+pub fn no_backtest(base: &str) -> String {
+    format!(
+        "chap-core at {base} lists no backtest to time; it does not list the backtests of the \
+         built-in baselines (seasonal_median, global_median, persistence, \
+         seasonal_shift_persistence), so give the id of one of those with `chap-devops bench ID`, \
+         or run an evaluation of another model first"
+    )
+}
+
 /// The highest backtest id in a `GET /v1/crud/backtests` answer.
 pub fn newest_backtest(list: &Value) -> Option<i64> {
     list.as_array()?

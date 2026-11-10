@@ -40,12 +40,8 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
 
     let id = match args.backtest {
         Some(id) => id,
-        None => plan::newest_backtest(&ask.get_json("/v1/crud/backtests")?).ok_or_else(|| {
-            anyhow::anyhow!(
-                "chap-core at {} has no backtest to time; run an evaluation in the Modeling App first",
-                ask.base()
-            )
-        })?,
+        None => plan::newest_backtest(&ask.get_json("/v1/crud/backtests")?)
+            .ok_or_else(|| anyhow::anyhow!(plan::no_backtest(ask.base())))?,
     };
     let info = ask
         .get_json(&format!("/v1/crud/backtests/{id}/info"))

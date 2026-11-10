@@ -193,3 +193,11 @@ fn the_cleanup_line_counts_each_backtest_once() {
         "deleted the 1 backtest the run made; --keep keeps them"
     );
 }
+
+#[test]
+fn an_empty_list_names_the_hidden_baselines_and_the_way_out() {
+    let text = no_backtest("http://localhost:8700");
+    assert!(text.contains("lists no backtest to time"), "{text}");
+    assert!(text.contains("seasonal_median"), "{text}");
+    assert!(text.contains("`chap-devops bench ID`"), "{text}");
+}

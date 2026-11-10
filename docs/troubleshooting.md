@@ -441,6 +441,19 @@ was no terminal, or `--json` was set.
    deployment, next to chap-core and its database.
 2. Run the same command again with `--yes`.
 
+## `chap-core at ... lists no backtest to time`
+
+`chap-devops bench` with no id times the newest backtest in chap-core's list.
+chap-core does not list the backtests of its built-in baselines
+(`seasonal_median`, `global_median`, `persistence`,
+`seasonal_shift_persistence`), as the Modeling App does not. So after
+`bench --write --model seasonal_median --keep`, the list can be empty.
+
+- If you know the id, give it: `chap-devops bench 12`. `bench --write --keep`
+  names the ids it kept.
+- Otherwise run an evaluation of another model first, for example
+  `chap-devops bench --write --model naive_model --keep`.
+
 ## `--write needs --model`
 
 `chap-devops bench --write` needs the configured model to backtest. The message
