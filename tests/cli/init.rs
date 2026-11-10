@@ -827,9 +827,9 @@ fn the_api_port_reaches_the_env_file_the_state_and_status() {
 fn a_kept_env_file_that_pins_another_api_port_is_reported() {
     let sandbox = Sandbox::new();
     let dir = sandbox.project();
-    // Two ports of this test's own: the last assertion is that nothing was
-    // said about CHAP_API_PORT, and `init` warns about a port something else
-    // on this machine is holding in those very words.
+    // Two ports of this test's own. Another test can still bind one of them
+    // between here and `init`, so the last assertion names the `.env`
+    // warning, not every line that mentions CHAP_API_PORT.
     let pinned = free_port();
     let moved = free_port();
     sandbox
@@ -867,7 +867,7 @@ fn a_kept_env_file_that_pins_another_api_port_is_reported() {
     );
     assert!(read(&dir.join(".env")).contains(&format!("\nCHAP_API_PORT={pinned}\n")));
 
-    // Re-initialising at the port .env already holds says nothing.
+    // Re-initialising at the port .env already holds says nothing about .env.
     let out = sandbox
         .init(&[
             "--models",
@@ -882,7 +882,7 @@ fn a_kept_env_file_that_pins_another_api_port_is_reported() {
         .stderr
         .clone();
     let stderr = String::from_utf8(out).expect("utf-8 stderr");
-    assert!(!stderr.contains("CHAP_API_PORT"), "{stderr}");
+    assert!(!stderr.contains(".env already sets"), "{stderr}");
 }
 
 #[test]
