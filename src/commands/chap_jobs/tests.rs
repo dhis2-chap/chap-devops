@@ -1,36 +1,38 @@
 use super::*;
 
 #[test]
-fn one_backtest_and_the_dataset_are_two_rows() {
+fn each_backtest_is_its_own_request_before_the_dataset() {
     assert_eq!(
-        row_paths(&[4], Some(1)),
+        row_paths(&[1, 2], Some(9)),
         [
-            ("backtest 4".to_string(), "/v1/crud/backtests/4".to_string()),
-            ("dataset 1".to_string(), "/v1/crud/datasets/1".to_string()),
+            "/v1/crud/backtests/1",
+            "/v1/crud/backtests/2",
+            "/v1/crud/datasets/9"
         ]
     );
-}
-
-#[test]
-fn the_backtests_of_the_baselines_go_in_one_request_before_the_dataset() {
-    assert_eq!(
-        row_paths(&[1, 2, 3, 4], Some(1)),
-        [
-            (
-                "backtests 1, 2, 3 and 4".to_string(),
-                "/v1/crud/backtests?ids=1,2,3,4".to_string()
-            ),
-            ("dataset 1".to_string(), "/v1/crud/datasets/1".to_string()),
-        ]
-    );
-    assert_eq!(
-        shell_word("/v1/crud/backtests?ids=1,2"),
-        "'/v1/crud/backtests?ids=1,2'"
-    );
-    assert_eq!(shell_word("/v1/crud/datasets/1"), "/v1/crud/datasets/1");
 }
 
 #[test]
 fn nothing_made_is_nothing_to_delete() {
     assert!(row_paths(&[], None).is_empty());
+    assert_eq!(kept_line(&[], None), None);
+}
+
+#[test]
+fn the_kept_line_names_the_rows_and_how_to_remove_them() {
+    assert_eq!(
+        kept_line(&[8], Some(7)).unwrap(),
+        "kept backtest 8 and dataset 7; remove them with `chap-devops api DELETE \
+         /v1/crud/backtests/8` then `chap-devops api DELETE /v1/crud/datasets/7`"
+    );
+    assert_eq!(
+        kept_line(&[25, 26, 27, 28], Some(7)).unwrap(),
+        "kept backtests 25, 26, 27 and 28 and dataset 7; remove each backtest with \
+         `chap-devops api DELETE /v1/crud/backtests/ID`, then the dataset with \
+         `chap-devops api DELETE /v1/crud/datasets/7`"
+    );
+    assert_eq!(
+        kept_line(&[], Some(7)).unwrap(),
+        "kept dataset 7; remove it with `chap-devops api DELETE /v1/crud/datasets/7`"
+    );
 }

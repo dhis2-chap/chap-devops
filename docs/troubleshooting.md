@@ -409,7 +409,7 @@ not delete its backtest yet.
 1. Run `chap-devops jobs`, and wait until no `run_baseline` job is running.
 2. Run `chap-devops api GET /v1/jobs`, and note the `result` of each `run_baseline`
    job: it is the id of its backtest.
-3. Run `chap-devops api DELETE '/v1/crud/backtests?ids=ID,ID,ID'` with these ids.
+3. For each of these ids, run `chap-devops api DELETE /v1/crud/backtests/ID`.
 4. Run the `chap-devops api DELETE /v1/crud/datasets/N` command that the warning
    names.
 

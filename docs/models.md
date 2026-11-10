@@ -911,10 +911,10 @@ built-in baseline, and each job writes a backtest on the same dataset.
 chap-core leaves these out of the backtest lists, but it does not delete a
 dataset while they point at it. So chap-devops waits up to a minute for the
 baselines of the run, and deletes their backtests with the backtest of the
-model, in one request. The line then names them all:
+model, one request for each backtest. The line then names them all:
 
 ```text
-kept backtests 25, 26, 27 and 28 and dataset 7; remove them with `chap-devops api DELETE '/v1/crud/backtests?ids=25,26,27,28'` then `chap-devops api DELETE /v1/crud/datasets/7`
+kept backtests 25, 26, 27 and 28 and dataset 7; remove each backtest with `chap-devops api DELETE /v1/crud/backtests/ID`, then the dataset with `chap-devops api DELETE /v1/crud/datasets/7`
 ```
 
 Both lines are closing lines of the command. They go to stdout, and `--json`

@@ -105,8 +105,10 @@ pub(crate) fn job_failure(api: &Api, job: &str) -> (String, String) {
 /// or left behind, for the closing lines.
 ///
 /// The rows go in the order chap-core accepts: the backtests of the
-/// baselines and of the model first, in one request when there are several,
-/// then the dataset they point at.
+/// baselines and of the model first, then the dataset they point at. Each
+/// backtest is one request: chap-core deletes the forecasts of a backtest
+/// one row at a time, and a batch of large backtests runs past the API
+/// worker's timeout (`BUGS.md`).
 pub(crate) fn drop_rows(
     ctx: &Ctx,
     api: &Api,
@@ -120,25 +122,16 @@ pub(crate) fn drop_rows(
         .unwrap_or_default();
     backtests.extend_from_slice(made);
     backtests.sort_unstable();
-    let rows = row_paths(&backtests, dataset);
+    backtests.dedup();
     let mut lines = Vec::new();
     if keep {
-        if !rows.is_empty() {
-            let named: Vec<&str> = rows.iter().map(|(named, _)| named.as_str()).collect();
-            let commands: Vec<String> = rows
-                .iter()
-                .map(|(_, path)| format!("`chap-devops api DELETE {}`", shell_word(path)))
-                .collect();
-            lines.push(Message::info(format!(
-                "kept {}; remove them with {}",
-                named.join(" and "),
-                commands.join(" then ")
-            )));
+        if let Some(line) = kept_line(&backtests, dataset) {
+            lines.push(Message::info(line));
         }
         return lines;
     }
-    for (_, path) in rows {
-        let command = format!("`chap-devops api DELETE {}`", shell_word(&path));
+    for path in row_paths(&backtests, dataset) {
+        let command = format!("`chap-devops api DELETE {path}`");
         match api.send("DELETE", &path, None) {
             Ok(answer) if answer.is_success() => ctx.out.verbose(&format!("deleted {path}")),
             Ok(answer) => lines.push(Message::warning(format!(
@@ -154,39 +147,41 @@ pub(crate) fn drop_rows(
     lines
 }
 
-/// What to delete, in order, as `(what it is, the API path)`: the backtests,
-/// in one request when there are several, then the dataset.
-fn row_paths(backtests: &[i64], dataset: Option<i64>) -> Vec<(String, String)> {
-    let mut rows = Vec::new();
-    match backtests {
-        [] => {}
-        [one] => rows.push((
-            format!("backtest {one}"),
-            format!("/v1/crud/backtests/{one}"),
-        )),
-        several => {
-            let ids: Vec<String> = several.iter().map(i64::to_string).collect();
-            rows.push((
-                format!("backtests {}", and_list(&ids)),
-                format!("/v1/crud/backtests?ids={}", ids.join(",")),
-            ));
-        }
-    }
-    if let Some(dataset) = dataset {
-        rows.push((
-            format!("dataset {dataset}"),
-            format!("/v1/crud/datasets/{dataset}"),
-        ));
-    }
-    rows
+/// What to delete, in order: each backtest, then the dataset.
+fn row_paths(backtests: &[i64], dataset: Option<i64>) -> Vec<String> {
+    backtests
+        .iter()
+        .map(|id| format!("/v1/crud/backtests/{id}"))
+        .chain(dataset.map(|id| format!("/v1/crud/datasets/{id}")))
+        .collect()
 }
 
-/// A path as one shell word: a query string has `?`, which a shell expands.
-fn shell_word(path: &str) -> String {
-    match path.contains('?') {
-        true => format!("'{path}'"),
-        false => path.to_string(),
-    }
+/// The line for `--keep`: what was kept, and the commands that remove it.
+fn kept_line(backtests: &[i64], dataset: Option<i64>) -> Option<String> {
+    let ids: Vec<String> = backtests.iter().map(i64::to_string).collect();
+    let dataset_command = |d: i64| format!("`chap-devops api DELETE /v1/crud/datasets/{d}`");
+    Some(match (ids.as_slice(), dataset) {
+        ([], None) => return None,
+        ([], Some(d)) => format!("kept dataset {d}; remove it with {}", dataset_command(d)),
+        ([one], None) => format!(
+            "kept backtest {one}; remove it with `chap-devops api DELETE /v1/crud/backtests/{one}`"
+        ),
+        ([one], Some(d)) => format!(
+            "kept backtest {one} and dataset {d}; remove them with \
+             `chap-devops api DELETE /v1/crud/backtests/{one}` then {}",
+            dataset_command(d)
+        ),
+        (several, None) => format!(
+            "kept backtests {}; remove each with `chap-devops api DELETE /v1/crud/backtests/ID`",
+            and_list(several)
+        ),
+        (several, Some(d)) => format!(
+            "kept backtests {} and dataset {d}; remove each backtest with \
+             `chap-devops api DELETE /v1/crud/backtests/ID`, then the dataset with {}",
+            and_list(several),
+            dataset_command(d)
+        ),
+    })
 }
 
 /// `a`, `a and b`, `a, b and c`.
