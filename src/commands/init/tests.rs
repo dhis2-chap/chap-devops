@@ -7,8 +7,10 @@ use super::*;
 use crate::chapcore;
 use crate::cli::ComponentPortArg;
 use crate::components::Components;
+use crate::compose::{EnableRequest, Selection};
 use crate::project::{AuthState, cached_compose_file};
 use crate::registry::load_embedded;
+use std::path::{Path, PathBuf};
 
 /// A deployment without chap-core can take models too, and is told how
 /// they run there before it enables one.
