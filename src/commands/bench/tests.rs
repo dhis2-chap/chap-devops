@@ -145,3 +145,9 @@ fn durations_and_sizes_read_well() {
     assert_eq!(human_bytes(12_300), "12.3 kB");
     assert_eq!(human_bytes(4_500_000), "4.5 MB");
 }
+
+#[test]
+fn one_round_reads_once_each() {
+    assert_eq!(times_each(1), "once each");
+    assert_eq!(times_each(3), "3 times each");
+}

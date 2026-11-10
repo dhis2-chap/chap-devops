@@ -87,6 +87,14 @@ pub fn human_ms(ms: f64) -> String {
     }
 }
 
+/// `once each` for one round, `3 times each` for more.
+pub fn times_each(repeat: u32) -> String {
+    match repeat {
+        1 => "once each".to_string(),
+        n => format!("{n} times each"),
+    }
+}
+
 /// `512 B`, `12.3 kB`, `4.5 MB`.
 pub fn human_bytes(bytes: usize) -> String {
     let b = bytes as f64;

@@ -84,9 +84,9 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     let local = args.url.is_none();
     ctx.out.report(&value, |lines| {
         lines.info(format!(
-            "timed {} requests of backtest {id}, {} times each, {} at a time, in {}",
+            "timed {} requests of backtest {id}, {}, {} at a time, in {}",
             results.len(),
-            args.repeat,
+            measure::times_each(args.repeat),
             args.parallel,
             human_ms(seconds * 1000.0)
         ));
