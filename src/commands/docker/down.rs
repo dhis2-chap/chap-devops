@@ -200,13 +200,18 @@ fn volume_count(count: usize) -> String {
 }
 
 /// The line a `down` ends on: what brings the deployment back, and after a
-/// `--volumes` that there is nothing left in the folder worth keeping.
-pub fn down_next(volumes_removed: bool) -> &'static str {
-    match volumes_removed {
-        false => "run `chap-devops up` to start it again, with its data",
-        true => {
+/// `--volumes` that removed every volume, that there is nothing left in the
+/// folder worth keeping. `left` is how many volumes a `--volumes` did not
+/// remove.
+pub fn down_next(volumes_removed: bool, left: usize) -> &'static str {
+    match (volumes_removed, left) {
+        (false, _) => "run `chap-devops up` to start it again, with its data",
+        (true, 0) => {
             "run `chap-devops up` to start it again with empty data, or delete this folder: its containers \
              and volumes are gone"
+        }
+        (true, _) => {
+            "run `chap-devops up` to start it again; the volumes in the warnings above still hold their data"
         }
     }
 }

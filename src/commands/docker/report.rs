@@ -93,7 +93,7 @@ pub(super) fn report_what_changed(
                     Some(Err(line)) => lines.warning(line),
                     None => lines,
                 };
-                lines.hint(down_next(removed.is_some()));
+                lines.hint(down_next(removed.is_some(), kept.len()));
             })
         }
         DockerCmd::Pull(_) => {

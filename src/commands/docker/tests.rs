@@ -708,10 +708,15 @@ fn down_volumes_names_the_volumes_it_removed() {
 
 #[test]
 fn down_names_what_brings_the_deployment_back() {
-    assert!(down_next(false).contains("`chap-devops up`"));
-    assert!(down_next(false).contains("with its data"));
-    assert!(down_next(true).contains("`chap-devops up`"));
-    assert!(down_next(true).contains("delete this folder"));
+    assert!(down_next(false, 0).contains("`chap-devops up`"));
+    assert!(down_next(false, 0).contains("with its data"));
+    assert!(down_next(true, 0).contains("`chap-devops up`"));
+    assert!(down_next(true, 0).contains("delete this folder"));
+    // A volume that docker kept is not gone, so the folder is not empty
+    // of data.
+    assert!(!down_next(true, 1).contains("are gone"));
+    assert!(!down_next(true, 1).contains("delete this folder"));
+    assert!(down_next(true, 1).contains("still hold their data"));
 }
 
 /// The command line as the process received it.
