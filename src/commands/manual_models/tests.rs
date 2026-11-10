@@ -1,4 +1,5 @@
 use super::*;
+use crate::manual::Names;
 use crate::manual::source::Source;
 use crate::project::ProjectState;
 
