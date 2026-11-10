@@ -28,7 +28,7 @@ pub(crate) use dhis2::{
 
 use crate::auth::{API_TOKEN_ENV_VAR, REGISTRATION_KEY_ENV_VAR};
 use crate::compose::spec::{BaseSpec, ChapDevopsOverlaySpec, EnvSpec};
-use crate::project::API_PORT_ENV_VAR;
+use crate::project::{API_PORT_ENV_VAR, API_WORKERS_ENV_VAR};
 use labels::{ROLE_CHAP_CORE, labels_block};
 use std::sync::LazyLock;
 
@@ -122,6 +122,12 @@ pub fn render_base(spec: &BaseSpec) -> String {
 /// socket at the writable `/tmp` tmpfs keeps that line out of the log. Only
 /// the `chap` service needs it: the worker runs celery, not gunicorn.
 ///
+/// The block also sets `WEB_CONCURRENCY`, the number of gunicorn worker
+/// processes, from `CHAP_API_WORKERS` in `.env` (default 1). gunicorn reads it
+/// at every chap-core tag, because the image command never set a worker count
+/// that gunicorn used. chap-core's own compose files map it the same way after
+/// v2.7.0 (CLIM-1809); rendering it here makes it work at older tags too.
+///
 /// `checkout` is a chap-core checkout the chap and worker images are built
 /// from instead of pulled (`chap-devops init --source`). `pull_policy: build` makes
 /// every `chap-devops up` build the checkout as it is now, which Docker's layer
@@ -178,6 +184,7 @@ pub fn render_chap_devops_overlay(spec: &ChapDevopsOverlaySpec) -> String {
          \x20   environment:\n\
          \x20     {REGISTRATION_KEY_ENV_VAR}: ${{{REGISTRATION_KEY_ENV_VAR}:-}}\n\
          \x20     XDG_RUNTIME_DIR: /tmp\n\
+         \x20     WEB_CONCURRENCY: ${{{API_WORKERS_ENV_VAR}:-1}}\n\
          {worker}{rest}",
         project_name_block(project_name),
         spec.api_port,

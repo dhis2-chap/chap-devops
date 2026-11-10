@@ -818,6 +818,7 @@ fn env_writes_the_postgres_credentials() {
     assert!(text.contains("\n# CHAP_API_TOKEN=\n"));
     assert!(text.contains("\n# SERVICEKIT_REGISTRATION_KEY=\n"));
     assert!(text.contains("\n# CHAP_DATABASE_URL=\n"));
+    assert!(text.contains("\n# CHAP_API_WORKERS=1\n"));
     assert!(text.ends_with('\n'));
 }
 
@@ -924,4 +925,21 @@ fn a_secret_line_is_an_assignment_or_a_placeholder() {
         "CHAP_API_TOKEN=abc"
     );
     assert_eq!(secret_line("CHAP_API_TOKEN", None), "# CHAP_API_TOKEN=");
+}
+
+#[test]
+fn the_chap_devops_overlay_takes_the_api_worker_count_from_env() {
+    // gunicorn reads WEB_CONCURRENCY at every chap-core tag; .env sets it
+    // as CHAP_API_WORKERS, and an unset variable keeps one worker.
+    let text = chap_devops_overlay(8000, None, None);
+    assert_eq!(
+        parse(&text)["services"]["chap"]["environment"]["WEB_CONCURRENCY"].as_str(),
+        Some("${CHAP_API_WORKERS:-1}")
+    );
+    // The worker runs celery, not gunicorn.
+    assert!(
+        parse(&text)["services"]["worker"]
+            .get("environment")
+            .is_none()
+    );
 }

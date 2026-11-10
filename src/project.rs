@@ -53,6 +53,9 @@ pub const CHECKOUT_COMPOSE: &str = "compose.ghcr.yml";
 pub const CHAP_TAG_ENV_VAR: &str = "CHAP_IMAGE_TAG";
 /// The `.env` variable [`CHAP_DEVOPS_COMPOSE`] reads the API's host port from.
 pub const API_PORT_ENV_VAR: &str = "CHAP_API_PORT";
+/// The `.env` variable [`CHAP_DEVOPS_COMPOSE`] reads the number of API worker
+/// processes from, passed to gunicorn as `WEB_CONCURRENCY`.
+pub const API_WORKERS_ENV_VAR: &str = "CHAP_API_WORKERS";
 /// The `.env` variable that gives chap-core's API a path prefix, for an
 /// instance served behind a reverse proxy. Never written by `init`.
 pub const ROOT_PATH_ENV_VAR: &str = "CHAP_ROOT_PATH";
