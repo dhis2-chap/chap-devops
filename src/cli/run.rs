@@ -31,6 +31,10 @@ pub struct ModelRunArgs {
     #[arg(long)]
     pub allow_starter: bool,
 
+    /// Run an image that nobody reviewed without asking first
+    #[arg(short, long)]
+    pub yes: bool,
+
     /// Return once the container started, without waiting for it to answer
     #[arg(long)]
     pub no_wait: bool,

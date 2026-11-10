@@ -361,6 +361,8 @@ fn resolve_model(
         chap_core: None,
         models_host: None,
         timeout: args.timeout,
+        // A model id, which the marketplace lists, so nothing to ask.
+        yes: false,
     };
     let group = crate::commands::run::start_quietly(ctx, &run)?;
     *place = Place::find(ctx, args.group.as_deref())?;

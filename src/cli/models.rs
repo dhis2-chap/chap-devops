@@ -304,6 +304,10 @@ pub struct ModelsAddArgs {
     /// Enable a starter even though it is not a model
     #[arg(long)]
     pub allow_starter: bool,
+
+    /// Add an image that nobody reviewed without asking first
+    #[arg(short, long)]
+    pub yes: bool,
 }
 
 /// Create a model project from a template

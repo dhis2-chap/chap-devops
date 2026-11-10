@@ -431,6 +431,16 @@ thousands of forecasts, this can take longer than the API worker may run. Then
    test deployment.
 4. Then run the `chap-devops api DELETE /v1/crud/datasets/N` command.
 
+## `... is not in the marketplace, so nobody reviewed it; ... run it again with --yes`
+
+`chap-devops models add` or `chap-devops run` was given an image or a
+repository that the marketplace does not list, and it could not ask: there
+was no terminal, or `--json` was set.
+
+1. Make sure that you trust the image: it runs on the network of the
+   deployment, next to chap-core and its database.
+2. Run the same command again with `--yes`.
+
 ## `--write needs --model`
 
 `chap-devops bench --write` needs the configured model to backtest. The message

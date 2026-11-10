@@ -540,6 +540,8 @@ pub(super) fn manual_args(adoption: &Adoption) -> Vec<crate::cli::ModelsAddArgs>
                 user: None,
                 runtime_amd64: false,
                 allow_starter: false,
+                // The old deployment already runs this image.
+                yes: true,
             }),
             How::Marketplace(_) => None,
         })

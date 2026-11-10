@@ -109,6 +109,11 @@ starts one model, not two. An image counts as the same only at the same tag.
 `models add`; an `--id` other than the one the source was added under adds a
 second copy beside it.
 
+For an image or a repository that the marketplace does not list, `run` asks
+first, because nobody reviewed it. `--yes` answers the question, and without a
+terminal `run` stops and names `--yes`. See
+[The question before an image nobody reviewed](./models.md#the-question-before-an-image-nobody-reviewed).
+
 A word with no `:`, `/` or `@` is a marketplace id, never a local image (a local
 image always carries a tag), so `chap-devops run does_not_exist` says there is no such
 model and names `chap-devops models search`. A marketplace starter is refused like it

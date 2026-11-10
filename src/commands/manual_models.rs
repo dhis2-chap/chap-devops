@@ -17,7 +17,9 @@ use serde::Serialize;
 
 mod names;
 
-use names::{AUTO_ID, check_free, check_not_live, free_id, marketplace_match, marketplace_twin};
+use names::{
+    AUTO_ID, check_free, check_not_live, free_id, marketplace_match, marketplace_twin, reviewed,
+};
 pub(crate) use names::{added_as, enabled_twin};
 
 /// How `models add`'s own origin reads to every command downstream.
@@ -85,6 +87,9 @@ struct RemoveReport {
 /// model holds all leave the deployment exactly as it was.
 pub fn add(ctx: &Ctx, args: &ModelsAddArgs) -> Result<()> {
     let (mut project, _lock) = ctx.project_mut()?;
+    if !args.yes {
+        check_reviewed(ctx, &args.source)?;
+    }
     match add_in(ctx, &mut project, args)? {
         Added::Marketplace(report) => {
             let changed = super::enable::Changed::new(&report, &report, &project);
@@ -103,6 +108,51 @@ pub fn add(ctx: &Ctx, args: &ModelsAddArgs) -> Result<()> {
                 }
             })
         }
+    }
+}
+
+/// Ask about `source` when the marketplace does not list its image. For
+/// `models add`, and for `run` with an image or a URL.
+pub(crate) fn check_reviewed(ctx: &Ctx, source: &str) -> Result<()> {
+    let parsed = crate::manual::source::Source::parse(source)?;
+    let marketplace = crate::registry::load(&ctx.registry)?;
+    match reviewed(&marketplace, &parsed) {
+        true => Ok(()),
+        false => confirm_unreviewed(ctx, source.trim()),
+    }
+}
+
+/// Ask before adding an image that the marketplace does not list.
+///
+/// The image runs as a service of the deployment, on its network, and
+/// nobody reviewed it. `--yes` is how a script says it meant it. A run that
+/// cannot ask (no terminal, or `--json`) refuses and names `--yes`.
+pub(crate) fn confirm_unreviewed(ctx: &Ctx, source: &str) -> Result<()> {
+    use std::io::{BufRead, IsTerminal, Write};
+    let risk = format!(
+        "`{source}` is not in the marketplace, so nobody reviewed it; it runs as a service of \
+         this deployment, on its network"
+    );
+    if ctx.out.json || !std::io::stdin().is_terminal() {
+        let why = match ctx.out.json {
+            true => "--json cannot ask",
+            false => "there is no terminal to ask at",
+        };
+        return Err(ChapError::Usage(format!(
+            "{risk}, and {why}; run it again with --yes to add it"
+        ))
+        .into());
+    }
+    eprint!("{risk}.\nAdd it? [y/N] ");
+    let _ = std::io::stderr().flush();
+    let mut answer = String::new();
+    std::io::stdin()
+        .lock()
+        .read_line(&mut answer)
+        .map_err(|e| anyhow::anyhow!("reading the answer: {e}"))?;
+    match answer.trim() {
+        "y" | "Y" | "yes" | "Yes" => Ok(()),
+        _ => Err(anyhow::anyhow!("cancelled; nothing was added")),
     }
 }
 

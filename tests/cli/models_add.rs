@@ -140,7 +140,7 @@ fn models_add_from_a_repository_without_a_public_image_says_to_build_one() {
     });
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .failure()
         .stderr(predicates::str::contains(format!(
@@ -162,7 +162,12 @@ fn models_add_from_a_repository_github_does_not_know_says_what_404_means() {
         .online(port)
         .env_remove("GITHUB_TOKEN")
         .env_remove("GH_TOKEN")
-        .args(["models", "add", "https://github.com/example/does-not-exist"])
+        .args([
+            "models",
+            "add",
+            "--yes",
+            "https://github.com/example/does-not-exist",
+        ])
         .assert()
         .failure()
         .stderr(predicates::str::contains(
@@ -177,7 +182,7 @@ fn models_add_from_a_repository_pins_the_newest_published_build() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["-v", "models", "add", REPO_URL])
+        .args(["-v", "models", "add", "--yes", REPO_URL])
         .assert()
         .success()
         .stdout(predicates::str::contains(
@@ -252,7 +257,7 @@ fn a_manually_added_model_is_marked_in_the_list_and_on_its_page() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
 
@@ -310,7 +315,7 @@ fn update_moves_a_following_manual_model_when_a_newer_build_appears() {
     let (sandbox, _dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
 
@@ -360,7 +365,13 @@ fn models_add_from_an_image_reference_is_pinned() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["-v", "models", "add", &format!("{IMAGE}:{NEW_TAG}")])
+        .args([
+            "-v",
+            "models",
+            "add",
+            "--yes",
+            &format!("{IMAGE}:{NEW_TAG}"),
+        ])
         .assert()
         .success()
         .stdout(predicates::str::contains(format!("hint: pin: {NEW_TAG}")))
@@ -393,7 +404,7 @@ fn models_add_accepts_a_digest_and_renders_a_digest_reference() {
     let digest = format!("sha256:{}", "a".repeat(64));
     sandbox
         .online(port)
-        .args(["-v", "models", "add", &format!("{IMAGE}@{digest}")])
+        .args(["-v", "models", "add", "--yes", &format!("{IMAGE}@{digest}")])
         .assert()
         .success()
         .stdout(predicates::str::contains(format!("hint: pin: @{digest}")));
@@ -419,7 +430,7 @@ fn models_add_keeps_a_user_it_cannot_resolve_and_says_what_it_will_chown() {
     let (sandbox, dir, port) = added_sandbox(Hub::new().running_as("app"));
     sandbox
         .online(port)
-        .args(["-v", "models", "add", REPO_URL])
+        .args(["-v", "models", "add", "--yes", REPO_URL])
         .assert()
         .success()
         .stdout(predicates::str::contains(
@@ -445,6 +456,7 @@ fn models_add_keeps_a_user_it_cannot_resolve_and_says_what_it_will_chown() {
             "-v",
             "models",
             "add",
+            "--yes",
             REPO_URL,
             "--id",
             "second_manual_model",
@@ -470,7 +482,7 @@ fn models_add_from_a_repository_refuses_to_run_offline() {
     let sandbox = Sandbox::new();
     sandbox.init(&["--models", "none"]).assert().success();
     sandbox
-        .models(&["add", REPO_URL])
+        .models(&["add", "--yes", REPO_URL])
         .assert()
         .failure()
         .stderr(predicates::str::contains("--offline"))
@@ -484,7 +496,14 @@ fn models_add_refuses_a_name_the_marketplace_or_this_project_holds() {
     // An id the catalogue lists is a model to enable, not one to add.
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL, "--id", "chapkit_ewars_model"])
+        .args([
+            "models",
+            "add",
+            "--yes",
+            REPO_URL,
+            "--id",
+            "chapkit_ewars_model",
+        ])
         .assert()
         .failure()
         .stderr(predicates::str::contains(
@@ -497,6 +516,7 @@ fn models_add_refuses_a_name_the_marketplace_or_this_project_holds() {
         .args([
             "models",
             "add",
+            "--yes",
             REPO_URL,
             "--service-id",
             "chapkit-ewars-model",
@@ -511,7 +531,7 @@ fn models_add_refuses_a_name_the_marketplace_or_this_project_holds() {
     for reserved in ["chap-devops", "chap", "marketplace", "dhis2"] {
         sandbox
             .online(port)
-            .args(["models", "add", REPO_URL, "--service-id", reserved])
+            .args(["models", "add", "--yes", REPO_URL, "--service-id", reserved])
             .assert()
             .failure()
             .stderr(predicates::str::contains(
@@ -523,12 +543,12 @@ fn models_add_refuses_a_name_the_marketplace_or_this_project_holds() {
     // Adding the same source twice needs a name of its own.
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .failure()
         .stderr(predicates::str::contains("was already added"))
@@ -537,7 +557,7 @@ fn models_add_refuses_a_name_the_marketplace_or_this_project_holds() {
     // A bare image name is a local image, and one with no tag pins nothing.
     sandbox
         .online(port)
-        .args(["models", "add", "chapkit_example_manual_model"])
+        .args(["models", "add", "--yes", "chapkit_example_manual_model"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("names no tag"));
@@ -548,7 +568,7 @@ fn models_remove_takes_the_definition_and_the_overlay_with_it() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
     assert!(
@@ -611,7 +631,7 @@ fn a_manual_model_can_be_disabled_and_enabled_again_at_the_recorded_tag() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
 
@@ -662,7 +682,7 @@ fn models_add_outside_a_project_says_so() {
     let port = Hub::new().start();
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .failure()
         .stderr(predicates::str::contains("not a chap-devops deployment"));
@@ -699,7 +719,11 @@ fn models_add_of_a_marketplace_image_pins_the_version_that_tag_is() {
     let dir = sandbox.project();
     sandbox.init(&["--models", "none"]).assert().success();
     sandbox
-        .models(&["add", "ghcr.io/chap-models/chapkit_ewars_model:sha-24d58c0"])
+        .models(&[
+            "add",
+            "--yes",
+            "ghcr.io/chap-models/chapkit_ewars_model:sha-24d58c0",
+        ])
         .assert()
         .success();
     let model = &state(&dir)["models"]["chapkit_ewars_model"];
@@ -713,13 +737,13 @@ fn models_add_with_id_auto_picks_a_free_id_beside_the_marketplace_one() {
     let (sandbox, dir, port) = added_sandbox(Hub::new());
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL, "--id", "auto"])
+        .args(["models", "add", "--yes", REPO_URL, "--id", "auto"])
         .assert()
         .success();
     // The first add took the plain id, so the second gets the suffix.
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL, "--id", "auto"])
+        .args(["models", "add", "--yes", REPO_URL, "--id", "auto"])
         .assert()
         .success();
     let manual = manual_models(&dir);
@@ -741,6 +765,7 @@ fn models_add_of_a_marketplace_repository_under_its_own_id_warns_it_may_not_regi
             "--json",
             "models",
             "add",
+            "--yes",
             "https://github.com/chap-models/chapkit_ewars_model",
             "--id",
             "auto",
@@ -789,7 +814,12 @@ fn models_add_reads_an_image_on_another_registry_through_its_token_challenge() {
     let (port, seen) = hub.start_seen();
     sandbox
         .online(port)
-        .args(["models", "add", "quay.io/someone/dengue_model:v1.2"])
+        .args([
+            "models",
+            "add",
+            "--yes",
+            "quay.io/someone/dengue_model:v1.2",
+        ])
         .assert()
         .success();
 
@@ -838,7 +868,14 @@ fn models_add_refuses_a_service_id_that_another_model_has_in_chap_core() {
     let port = Hub::new().start();
     sandbox
         .online(port)
-        .args(["models", "add", REPO_URL, "--service-id", HOST_RUN_MODEL])
+        .args([
+            "models",
+            "add",
+            "--yes",
+            REPO_URL,
+            "--service-id",
+            HOST_RUN_MODEL,
+        ])
         .assert()
         .failure()
         .stderr(predicates::str::contains(format!(
@@ -851,5 +888,52 @@ fn models_add_refuses_a_service_id_that_another_model_has_in_chap_core() {
             .project()
             .join(".chap-devops/models-manual.yaml")
             .exists()
+    );
+}
+
+/// An image the marketplace does not list ran on the deployment's network
+/// with no question. Without `--yes`, a run that cannot ask refuses, names
+/// the flag, and records nothing.
+#[test]
+fn models_add_of_an_image_nobody_reviewed_needs_yes_when_it_cannot_ask() {
+    let (sandbox, dir, _) = added_sandbox(Hub::new());
+    sandbox
+        .chap()
+        .current_dir(&dir)
+        .args(["models", "add", "quay.io/someone/dengue_model:v1.2"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "`quay.io/someone/dengue_model:v1.2` is not in the marketplace, so nobody reviewed it",
+        ))
+        .stderr(predicates::str::contains("there is no terminal to ask at"))
+        .stderr(predicates::str::contains("run it again with --yes"));
+    assert_eq!(manual_models(&dir), Json::Null);
+
+    sandbox
+        .chap()
+        .current_dir(&dir)
+        .args(["--json", "models", "add", REPO_URL])
+        .assert()
+        .code(2)
+        .stdout(predicates::str::contains("--json cannot ask"));
+    assert_eq!(manual_models(&dir), Json::Null);
+}
+
+/// `run` with an image nobody reviewed asks the same question, before it
+/// makes a group.
+#[test]
+fn run_of_an_image_nobody_reviewed_needs_yes_when_it_cannot_ask() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .chap()
+        .args(["run", "quay.io/someone/dengue_model:v1.2"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("nobody reviewed it"))
+        .stderr(predicates::str::contains("run it again with --yes"));
+    assert!(
+        !sandbox.cache.path().join("data").join("run").exists(),
+        "no group was made"
     );
 }

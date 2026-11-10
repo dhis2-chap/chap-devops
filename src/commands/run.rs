@@ -202,6 +202,10 @@ pub(crate) fn start_quietly(ctx: &Ctx, args: &ModelRunArgs) -> Result<Started> {
 fn start(ctx: &Ctx, args: &ModelRunArgs) -> Result<RunReport> {
     let Target { dir, group } = target(ctx, args.group.as_deref())?;
     check_known(ctx, &dir, &args.source)?;
+    // An image or a URL, not a model id: ask when nobody reviewed it.
+    if !args.yes && args.source.contains([':', '/', '@']) {
+        super::manual_models::check_reviewed(ctx, &args.source)?;
+    }
     if let Some(group) = &group {
         ensure_default(ctx, &dir, group)?;
     }
@@ -454,6 +458,8 @@ fn enable_source(
             user: None,
             runtime_amd64: false,
             allow_starter: args.allow_starter,
+            // Only `models add` asks; `add_in` does not read it.
+            yes: false,
         },
     )?;
     Ok(match added {

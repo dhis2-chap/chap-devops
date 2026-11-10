@@ -1098,6 +1098,27 @@ It is read from the local store rather than a registry, rendered with
 model is disabled. See
 [A model image you built yourself](./use-cases/local-model-image.md).
 
+### The question before an image nobody reviewed
+
+The marketplace reviews each model and pins a version of it. An image from
+anywhere else runs as a service of the deployment, on its network, and nobody
+reviewed it. So `chap-devops models add` asks first:
+
+```text
+`quay.io/my-org/dengue_model:v1.2` is not in the marketplace, so nobody reviewed it; it runs as a service of this deployment, on its network.
+Add it? [y/N]
+```
+
+- `y` adds it. Any other answer cancels, and nothing changes.
+- `--yes` (`-y`) adds it without the question. Use it in a script.
+- Without a terminal, or with `--json`, there is nobody to ask. The command
+  then stops with exit code 2 and names `--yes`.
+- There is no question for a repository or an image that the marketplace
+  lists (at any tag), and none for a local image: that is your own build.
+
+`chap-devops run` asks the same question for an image or a URL, before it
+makes or changes a group.
+
 The two forms differ in one thing, and it is the important one:
 
 - A **repository URL** follows the default branch. `chap-devops models add` asks

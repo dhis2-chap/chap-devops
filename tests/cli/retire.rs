@@ -146,7 +146,7 @@ fn remove_retires_unless_keep_in_chap() {
     let hub = Hub::new().start();
     sandbox
         .online(hub)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
 
@@ -167,7 +167,7 @@ fn remove_refuses_while_chap_core_does_not_answer() {
     let (sandbox, _dir, hub) = added_sandbox(Hub::new());
     sandbox
         .online(hub)
-        .args(["models", "add", REPO_URL])
+        .args(["models", "add", "--yes", REPO_URL])
         .assert()
         .success();
 

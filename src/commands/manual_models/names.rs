@@ -40,6 +40,25 @@ pub(super) fn marketplace_match(
     }
 }
 
+/// Whether the marketplace lists the image `source` runs: its repository, or
+/// its image at any tag. A local image is the person's own build, so it
+/// counts as reviewed too. Anything else nobody reviewed, and `models add`
+/// asks first.
+pub(super) fn reviewed(marketplace: &Registry, source: &crate::manual::source::Source) -> bool {
+    use crate::manual::source::Source;
+    match source {
+        Source::Local(_) => true,
+        Source::Repo(repo) => marketplace
+            .models
+            .iter()
+            .any(|m| same_repo(&m.source.repository, &repo.url())),
+        Source::Image(image) => marketplace
+            .models
+            .iter()
+            .any(|m| m.source.image.eq_ignore_ascii_case(&image.image)),
+    }
+}
+
 /// The id of the enabled marketplace model that `source` names: its
 /// repository, or its image at the tag of the enabled version. `None` when
 /// the source names no marketplace model, or one that is not enabled here,

@@ -356,6 +356,7 @@ Usage: chap-devops models add [OPTIONS] <SOURCE>
 | `--user <USER>` | User the container runs as, as user:group. |
 | `--runtime-amd64` | Record the image as published for amd64 only. |
 | `--allow-starter` | Enable a starter even though it is not a model. |
+| `-y, --yes` | Add an image that nobody reviewed without asking first. |
 
 Registry options: `--registry-url <URL>`, `--offline`, `--cache-dir <DIR>` (see [chap-devops](#chap-devops)).
 
@@ -780,6 +781,7 @@ Usage: chap-devops run [OPTIONS] <MODEL>
 | `--id <ID\|auto>` | Identifier to record an added model under, or auto for a free one. |
 | `--group <NAME>` | Group to start it in, outside a deployment; ps and stop take it too. |
 | `--allow-starter` | Start a marketplace starter, which is not a deployable model. |
+| `-y, --yes` | Run an image that nobody reviewed without asking first. |
 | `--no-wait` | Return once the container started, without waiting for it to answer. |
 | `-a, --attach, --foreground` | Run in the foreground and stream its log (Ctrl-C stops the model). |
 | `--rm` | With --attach, Ctrl-C also removes the model's data volume. |

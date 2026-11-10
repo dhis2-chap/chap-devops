@@ -101,7 +101,9 @@ telling the person what to type:
   a terminal it replaces the binary and does not ask, so ask the person before
   you run it. `chap-devops up --replace` stops another
   deployment holding the ports, `chap-devops down --volumes --yes` deletes data;
-  ask the person before either.
+  ask the person before either. `chap-devops models add --yes` and
+  `chap-devops run --yes` run an image that nobody reviewed; ask the person
+  before you add `--yes`.
 - Credentials go in the `.env` file in the folder. Ask the person to add them
   there themselves, and do not print or read that file.
 - Do not run `chap-devops ui` (an interactive screen), `chap-devops up --attach` or
@@ -541,6 +543,10 @@ chap-devops models add https://github.com/THEIR-ORG/THEIR-MODEL
 chap-devops up
 chap-devops status
 ```
+
+`chap-devops models add` asks `Add it? [y/N]` for a repository that the
+marketplace does not list, because nobody reviewed it. The person answers `y`.
+If you run the command yourself, ask the person first, then add `--yes`.
 
 It worked when `chap-devops status` shows the model as `up`, on the port in its
 REACH column. A repository the marketplace already lists is enabled as that

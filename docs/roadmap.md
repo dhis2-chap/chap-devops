@@ -18,12 +18,6 @@ dumps do. The plan:
 - A `chap-devops doctor` check that compares the limits with the memory that docker
   can give.
 
-### A confirmation for an image outside the marketplace
-
-`chap-admin install --image` needs `--accept-risk` each time, because nobody
-reviewed the image. `chap-devops models add` asks for no confirmation. Whether it
-should, and how (a flag, or a question at a terminal), is still open.
-
 ## Not planned
 
 ### Native Windows
