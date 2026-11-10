@@ -439,6 +439,63 @@ pub fn env_check(body: Option<&str>) -> Check {
     Check::from_verdict("env", ".env", env_verdict(body))
 }
 
+/// Whether chap-core can run the number of API workers `.env` asks for.
+///
+/// More than one worker needs chap-core newer than v2.7.0: older versions give
+/// the workers the database connections of the gunicorn main process, and
+/// requests fail just after a start (CLIM-1808). The same release added
+/// `WEB_CONCURRENCY` to chap-core's own compose file (CLIM-1809), so the base
+/// `compose.yml` of the deployment tells the two apart without the network,
+/// for a moving tag such as `latest` too.
+pub fn api_workers_verdict(
+    env: Option<&str>,
+    base_compose: Option<&str>,
+) -> (Status, String, Option<String>) {
+    let value = env.and_then(|body| crate::dotenv::non_empty(body, API_WORKERS_ENV_VAR));
+    let Some(value) = value else {
+        return (
+            Status::Ok,
+            format!("1 ({API_WORKERS_ENV_VAR} not set)"),
+            None,
+        );
+    };
+    let workers = match value.parse::<u32>() {
+        Ok(n) if n >= 1 => n,
+        _ => {
+            return (
+                Status::Warn,
+                format!("{API_WORKERS_ENV_VAR}={value} is not a number of 1 or more"),
+                Some(format!(
+                    "set {API_WORKERS_ENV_VAR} in `.env` to a whole number such as 2, then run `chap-devops up`"
+                )),
+            );
+        }
+    };
+    let supported = base_compose.is_none_or(|text| text.contains("WEB_CONCURRENCY"));
+    if workers == 1 || supported {
+        return (Status::Ok, workers.to_string(), None);
+    }
+    (
+        Status::Warn,
+        format!(
+            "{workers}, but this chap-core is v2.7.0 or older, so the workers share database connections"
+        ),
+        Some(format!(
+            "set {API_WORKERS_ENV_VAR}=1 in `.env`, or move to a newer chap-core with \
+             `chap-devops update --chap-tag master`; then run `chap-devops up`"
+        )),
+    )
+}
+
+/// The API workers line.
+pub fn api_workers_check(env: Option<&str>, base_compose: Option<&str>) -> Check {
+    Check::from_verdict(
+        "api-workers",
+        "api workers",
+        api_workers_verdict(env, base_compose),
+    )
+}
+
 /// Whether one host port the stack publishes is free to publish on.
 ///
 /// `busy` is injected so the verdict can be tested without binding anything,

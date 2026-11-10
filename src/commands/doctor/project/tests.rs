@@ -495,3 +495,54 @@ fn a_takeover_is_not_compared_with_the_age_of_the_directory() {
     let (status, ..) = volume_verdict(prefix, db, &older, compared_creation(&project), &[], None);
     assert_eq!(status, Status::Ok);
 }
+
+#[test]
+fn the_api_workers_check_warns_only_where_chap_core_cannot_take_them() {
+    // chap-core's compose file at a version that gives each worker its own
+    // database connections, and at one that does not.
+    let new =
+        "services:\n  chap:\n    environment:\n      WEB_CONCURRENCY: ${CHAP_API_WORKERS:-1}\n";
+    let old = "services:\n  chap:\n    environment:\n      REDIS_HOST: redis\n";
+
+    // Not set, or 1, is fine at every version.
+    let (status, detail, _) = api_workers_verdict(Some("# CHAP_API_WORKERS=1\n"), Some(old));
+    assert_eq!(status, Status::Ok);
+    assert_eq!(detail, "1 (CHAP_API_WORKERS not set)");
+    assert_eq!(api_workers_verdict(None, Some(old)).0, Status::Ok);
+    assert_eq!(
+        api_workers_verdict(Some("CHAP_API_WORKERS=1\n"), Some(old)),
+        (Status::Ok, "1".to_string(), None)
+    );
+
+    // More than 1 is fine where chap-core supports it.
+    assert_eq!(
+        api_workers_verdict(Some("CHAP_API_WORKERS=4\n"), Some(new)),
+        (Status::Ok, "4".to_string(), None)
+    );
+
+    // And a warning, with the way out, where it does not.
+    let (status, detail, fix) = api_workers_verdict(Some("CHAP_API_WORKERS=4\n"), Some(old));
+    assert_eq!(status, Status::Warn);
+    assert!(detail.contains("v2.7.0 or older"), "{detail}");
+    let fix = fix.unwrap();
+    assert!(fix.contains("CHAP_API_WORKERS=1"), "{fix}");
+    assert!(
+        fix.contains("chap-devops update --chap-tag master"),
+        "{fix}"
+    );
+
+    // Without a compose file to read, nothing is claimed.
+    assert_eq!(
+        api_workers_verdict(Some("CHAP_API_WORKERS=4\n"), None).0,
+        Status::Ok
+    );
+
+    // A value gunicorn cannot use.
+    for bad in ["0", "four", "-2"] {
+        let (status, detail, fix) =
+            api_workers_verdict(Some(&format!("CHAP_API_WORKERS={bad}\n")), Some(new));
+        assert_eq!(status, Status::Warn, "{bad}");
+        assert!(detail.contains("not a number of 1 or more"), "{detail}");
+        assert!(fix.unwrap().contains("chap-devops up"));
+    }
+}

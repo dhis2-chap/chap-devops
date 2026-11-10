@@ -30,8 +30,8 @@ use crate::github;
 use crate::output::Out;
 use crate::ports::{self, PortClaim};
 use crate::project::{
-    ApiPortSource, BASE_COMPOSE, CHAP_DEVOPS_COMPOSE, CHAP_DEVOPS_DIR, CHAP_TAG_ENV_VAR, ENV_FILE,
-    MARKETPLACE_COMPOSE, MODELS_FILE, PROJECT_FILE, Project,
+    API_WORKERS_ENV_VAR, ApiPortSource, BASE_COMPOSE, CHAP_DEVOPS_COMPOSE, CHAP_DEVOPS_DIR,
+    CHAP_TAG_ENV_VAR, ENV_FILE, MARKETPLACE_COMPOSE, MODELS_FILE, PROJECT_FILE, Project,
 };
 use crate::registry;
 use crate::selfupdate::{self, TARGET, VERSION};
@@ -479,21 +479,23 @@ fn project_checks(
         ..ctx.registry.clone()
     });
 
+    let env = std::fs::read_to_string(project.dir.join(ENV_FILE)).ok();
     let mut checks = vec![
         project_check(project, daemon),
         files_check(&project.dir, &project.state.components),
         components_check(project, &running),
         sync_check(project, &catalogue),
-        env_check(
-            std::fs::read_to_string(project.dir.join(ENV_FILE))
-                .ok()
-                .as_deref(),
-        ),
+        env_check(env.as_deref()),
         match daemon {
             true => volumes_check(project, &running),
             false => no_daemon("volumes"),
         },
     ];
+    // Without chap-core there is no API to give workers to.
+    if project.state.components.chap_core.enabled {
+        let base = std::fs::read_to_string(project.dir.join(BASE_COMPOSE)).ok();
+        checks.push(api_workers_check(env.as_deref(), base.as_deref()));
+    }
     checks.extend(manual_checks(ctx, project));
 
     let claims = ports::claims(project);
