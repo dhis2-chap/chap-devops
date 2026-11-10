@@ -588,6 +588,18 @@ fn chap_devops_says_first_what_chap_would_end_in_a_traceback_for() {
     .stderr(predicates::str::contains(
         "`./no_such_model` is not a directory here",
     ));
+    chap_with_docker(
+        &sandbox,
+        &work,
+        &bin,
+        &["chap", "eval", "--model-name", "no_such_model"],
+    )
+    .assert()
+    .code(2)
+    .stderr(predicates::str::contains(
+        "`no_such_model` is not a directory here and not a marketplace model id; give a model \
+         directory, a GitHub URL, or an id from `chap-devops models search no_such_model`",
+    ));
     chap_with_docker(&sandbox, &work, &bin, &["chap", "plot-dataset", "d.csv"])
         .assert()
         .code(2)

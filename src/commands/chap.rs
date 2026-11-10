@@ -331,6 +331,14 @@ fn resolve_model(
         // says whether it answers.
         return Ok((None, None));
     };
+    let registry = super::registry_for(ctx, place.deployment.as_ref())?;
+    if registry.get(&id).is_none() {
+        return Err(ChapError::Usage(format!(
+            "`{id}` is not a directory here and not a marketplace model id; give a model \
+             directory, a GitHub URL, or an id from `chap-devops models search {id}`"
+        ))
+        .into());
+    }
     if let Some(project) = &place.deployment {
         return Err(ChapError::Usage(format!(
             "`{id}` is not a model of the deployment at {}; `chap-devops models enable {id}` adds \

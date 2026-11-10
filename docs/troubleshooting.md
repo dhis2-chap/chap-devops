@@ -1137,6 +1137,13 @@ paused, so it does not answer; run `chap-devops up` to resume it ``.
 catalogue has no such id. `chap-devops models search <word>` finds the right one. A
 local image needs its tag: `chap-devops run my-model:dev`.
 
+## `... is not a directory here and not a marketplace model id`
+
+`chap-devops chap` was given a `--model-name` that is not a directory in the
+current directory and not a marketplace id. Find the id with `chap-devops models
+search <word>`, which is a chap-devops command and not a chap command.
+Alternatively, give the path of a model directory or a GitHub URL.
+
 ## `not ready after 300s`
 
 `chap-devops up --wait` gave up: the names after the colon are what never answered,
