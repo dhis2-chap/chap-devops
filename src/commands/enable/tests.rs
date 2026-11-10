@@ -1,4 +1,7 @@
+use super::port::{PortChange, choose_port, port_summary};
 use super::*;
+use crate::compose::ports::PortAllocator;
+use std::collections::BTreeSet;
 
 fn render(build: impl FnOnce(&mut Report)) -> String {
     let mut lines = Report::default();
