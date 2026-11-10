@@ -13,6 +13,33 @@ use std::time::{Duration, Instant};
 
 mod baselines;
 
+/// The chap-core a command talks to: `--url`, else this deployment's.
+pub(crate) struct Target {
+    pub base: String,
+    pub token: Option<String>,
+    /// Whether it is this deployment's own chap-core, so its logs are here.
+    pub local: bool,
+}
+
+/// [`Target`] for `command`, which names the command in the error a
+/// deployment without chap-core gets.
+pub(crate) fn chap_core(ctx: &Ctx, url: Option<&str>, command: &str) -> Result<Target> {
+    let (base, project, local) = match url {
+        Some(url) => (
+            url.trim().to_string(),
+            crate::project::Project::find(&ctx.project_dir).ok(),
+            false,
+        ),
+        None => {
+            let project = ctx.project()?;
+            crate::components::require_chap_core(&project.state.components, command)?;
+            (project.api_url(), Some(project), true)
+        }
+    };
+    let token = crate::api::token_for_url(&base, project.as_ref());
+    Ok(Target { base, token, local })
+}
+
 /// `POST path` with a JSON body, where a non-2xx is an error.
 pub(crate) fn post(api: &Api, path: &str, body: &serde_json::Value) -> Result<serde_json::Value> {
     let text = serde_json::to_string(body)?;

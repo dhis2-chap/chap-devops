@@ -14,6 +14,7 @@ mod cleanup;
 mod common;
 mod components;
 mod components_again;
+mod dataset;
 mod dhis2;
 mod dhis2_stand_in;
 mod digest;

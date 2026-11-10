@@ -8,6 +8,7 @@
 //! module and `main.rs` are complete: the command modules only read the arg
 //! structs.
 
+mod bench;
 mod chap;
 mod dhis2;
 mod lifecycle;
@@ -16,6 +17,7 @@ mod operate;
 mod project;
 mod run;
 
+pub use bench::*;
 pub use chap::*;
 pub use dhis2::*;
 pub use lifecycle::*;
@@ -323,7 +325,7 @@ pub enum Command {
     /// Send one authenticated request to chap-core's API
     Api(ApiArgs),
 
-    /// Time the chap-core requests the Modeling App makes for one evaluation
+    /// Time the requests of one evaluation, or run backtests under load
     Bench(BenchArgs),
 
     /// Run the chap CLI in a container, with no Python or uv installed

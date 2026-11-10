@@ -9,12 +9,12 @@
 
 mod measure;
 mod plan;
+mod write;
 
 use crate::api::Api;
 use crate::cli::BenchArgs;
 use crate::commands::Ctx;
 use crate::error::Result;
-use crate::project::Project;
 use measure::{RouteResult, Timing, human_bytes, human_ms};
 use plan::Route;
 use std::collections::VecDeque;
@@ -26,15 +26,14 @@ const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// `chap-devops bench [BACKTEST]`.
 pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
-    let (base, project) = match &args.url {
-        Some(url) => (url.trim().to_string(), Project::find(&ctx.project_dir).ok()),
-        None => {
-            let project = ctx.project()?;
-            crate::components::require_chap_core(&project.state.components, "`chap-devops bench`")?;
-            (project.api_url(), Some(project))
-        }
-    };
-    let token = crate::api::token_for_url(&base, project.as_ref());
+    if let Some(crate::cli::BenchSub::Dataset(dataset)) = &args.command {
+        return super::dataset::generate(ctx, dataset);
+    }
+    let chap = super::chap_jobs::chap_core(ctx, args.url.as_deref(), "`chap-devops bench`")?;
+    if args.write {
+        return write::run(ctx, args, &chap);
+    }
+    let (base, token) = (chap.base.clone(), chap.token.clone());
     let ask = Api::new(&base, token.clone(), DISCOVERY_TIMEOUT);
     ctx.out
         .verbose(&format!("asking chap-core at {}", ask.base()));
@@ -81,7 +80,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
         "seconds": seconds,
         "routes": results,
     });
-    let local = args.url.is_none();
+    let local = chap.local;
     ctx.out.report(&value, |lines| {
         lines.info(format!(
             "timed {} requests of backtest {id}, {}, {} at a time, in {}",

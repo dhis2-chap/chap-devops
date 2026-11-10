@@ -32,6 +32,7 @@ mod registry;
 mod scaffold;
 mod selfupdate;
 mod status;
+mod synthetic;
 mod top;
 mod tui;
 

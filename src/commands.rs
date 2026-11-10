@@ -11,6 +11,7 @@ pub mod cleanup;
 pub mod completions;
 pub mod components;
 pub mod configs;
+pub mod dataset;
 pub mod dhis2;
 pub mod docker;
 pub mod docs;

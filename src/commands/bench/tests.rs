@@ -1,5 +1,6 @@
 use super::measure::*;
 use super::plan::*;
+use super::write::*;
 use serde_json::json;
 
 #[test]
@@ -150,4 +151,45 @@ fn durations_and_sizes_read_well() {
 fn one_round_reads_once_each() {
     assert_eq!(times_each(1), "once each");
     assert_eq!(times_each(3), "3 times each");
+}
+
+#[test]
+fn a_backtest_has_one_forecast_for_each_org_unit_split_and_period() {
+    let row = json!({"orgUnits": ["a", "b", "c"], "splitPeriods": ["1", "2"], "nPeriods": 12});
+    assert_eq!(expected_forecasts(&row), Some(72));
+    assert_eq!(expected_forecasts(&json!({"orgUnits": []})), None);
+}
+
+#[test]
+fn a_backtest_fails_on_missing_or_wrong_forecasts_or_no_metrics() {
+    assert_eq!(check(Some(72), Some(72), 13), None);
+    assert!(check(None, Some(72), 13).unwrap().contains("did not give"));
+    assert!(
+        check(Some(0), Some(72), 13)
+            .unwrap()
+            .contains("no forecasts")
+    );
+    assert_eq!(
+        check(Some(70), Some(72), 13).unwrap(),
+        "it stored 70 forecasts, and its org units, splits and periods make 72"
+    );
+    assert!(
+        check(Some(72), Some(72), 0)
+            .unwrap()
+            .contains("no aggregate metrics")
+    );
+    // Without the row's own numbers, any forecasts at all will do.
+    assert_eq!(check(Some(5), None, 1), None);
+}
+
+#[test]
+fn the_cleanup_line_counts_each_backtest_once() {
+    assert_eq!(
+        deleted_line(Some(3), &[7, 7, 8]),
+        "deleted dataset 3 and the 2 backtests the run made; --keep keeps them"
+    );
+    assert_eq!(
+        deleted_line(None, &[7]),
+        "deleted the 1 backtest the run made; --keep keeps them"
+    );
 }

@@ -917,10 +917,11 @@ Usage: chap-devops api [OPTIONS] <METHOD> <PATH>
 
 ## chap-devops bench
 
-Time the chap-core requests the Modeling App makes for one evaluation.
+Time the requests of one evaluation, or run backtests under load.
 
 ```text
 Usage: chap-devops bench [OPTIONS] [BACKTEST]
+       chap-devops bench <COMMAND>
 ```
 
 | Argument | Description |
@@ -930,6 +931,42 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--parallel <N>` | How many requests to have open at the same time. Default: `1`. |
 | `--url <URL>` | Base URL of the chap-core API. |
 | `--timeout <SECONDS>` | Request timeout in seconds. Default: `120`. |
+| `--write` | Import a dataset and run backtests on it, instead of timing reads. |
+| `--model <MODEL>` | Configured model to backtest, by name or id. |
+| `--backtests <N>` | How many backtests to start at the same time. Default: `4`. |
+| `--dataset <ID>` | Backtest this dataset id instead of a new synthetic one. |
+| `--wait <SECONDS>` | Seconds to wait for the jobs to finish. Default: `3600`. |
+| `--keep` | Keep the dataset and the backtests that the run made. |
+| `--locations <N>` | Number of locations (org units). Default: `18`. |
+| `--periods <N>` | Number of periods for each location. Default: `104`. |
+| `--period-type <TYPE>` | Length of one period. Values: `week`, `month`. Default: `week`. |
+| `--cases <N>` | Typical number of cases in one location and period. Default: `100`. |
+| `--covariates <N>` | Number of covariates: rainfall, mean_temperature, population, then more. Default: `3`. |
+| `--seed <N>` | Seed for the random values; the same seed gives the same dataset. Default: `1`. |
+
+Subcommands: [`chap-devops bench dataset`](#chap-devops-bench-dataset)
+
+## chap-devops bench dataset
+
+Write a synthetic dataset as CSV and GeoJSON, or import it into chap-core.
+
+```text
+Usage: chap-devops bench dataset [OPTIONS]
+```
+
+| Argument | Description |
+| --- | --- |
+| `--out <DIR>` | Directory for the CSV and GeoJSON files; `.` when there is no --import. |
+| `--import` | Import the dataset into chap-core and wait until it is stored. |
+| `--name <NAME>` | Name of the dataset and of its files; made from the options if not given. |
+| `--url <URL>` | Base URL of the chap-core API to import into. |
+| `--timeout <SECONDS>` | Seconds to wait for chap-core to store the dataset. Default: `600`. |
+| `--locations <N>` | Number of locations (org units). Default: `18`. |
+| `--periods <N>` | Number of periods for each location. Default: `104`. |
+| `--period-type <TYPE>` | Length of one period. Values: `week`, `month`. Default: `week`. |
+| `--cases <N>` | Typical number of cases in one location and period. Default: `100`. |
+| `--covariates <N>` | Number of covariates: rainfall, mean_temperature, population, then more. Default: `3`. |
+| `--seed <N>` | Seed for the random values; the same seed gives the same dataset. Default: `1`. |
 
 ## chap-devops chap
 

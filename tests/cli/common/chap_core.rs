@@ -213,10 +213,16 @@ pub(crate) const TEST_CONFIG: &str = "01M3A4TSB2YHRPFBEFCT4TMX4A";
 
 pub(crate) const TEST_ARTIFACT: &str = "01M3A4TSB9WZ8V5XN0A4F4Y1M6";
 
-/// `GET /v1/crud/backtests/7`, cut to the field `models test` reads.
+/// `GET /v1/crud/backtests/7`, cut to the fields `models test` and `bench
+/// --write` read. Its 3 org units, 2 splits and 3 periods make the
+/// [`BACKTEST_FORECASTS`] forecasts.
 pub(crate) const BACKTEST_ROW: &str = r#"{"id":7,"datasetId":41,"modelId":"chapkit-ewars-model",
+  "orgUnits":["loc1","loc2","loc3"],"splitPeriods":["202401","202402"],"nPeriods":3,
   "aggregateMetrics":{"ratio_above_truth":0.45,"crps":20.04,"mae":28.96,"rmse":34.88,
   "mape":12.98,"coverage_10_90":0.6}}"#;
+
+/// How many entries `evaluation-entry` gives for backtest 7 at one quantile.
+pub(crate) const BACKTEST_FORECASTS: usize = 18;
 
 /// The configured model a backtest of the passing model has to name.
 pub(crate) const PASSING_CONFIGURED: i64 = 20;
@@ -479,13 +485,25 @@ pub(crate) fn analytics_route(
     match (method, route) {
         ("POST", "/v1/analytics/make-dataset") => {
             let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
-            recorded.observations = sent["providedData"].as_array().map(Vec::len).unwrap_or(0);
+            // One object for each value, or (chap-core v2.7.0) columns.
+            let columns = &sent["providedDataColumns"];
+            recorded.observations = sent["providedData"]
+                .as_array()
+                .map(Vec::len)
+                .or_else(|| columns["orgUnit"].as_array().map(Vec::len))
+                .unwrap_or(0);
             let name = sent["name"].as_str().unwrap_or_default().to_string();
             let mut features: Vec<String> = sent["providedData"]
                 .as_array()
                 .into_iter()
                 .flatten()
                 .filter_map(|o| o["featureName"].as_str().map(str::to_string))
+                .chain(
+                    columns["values"]
+                        .as_object()
+                        .into_iter()
+                        .flat_map(|v| v.keys().cloned()),
+                )
                 .collect();
             features.sort();
             features.dedup();
@@ -535,6 +553,9 @@ pub(crate) fn analytics_route(
         ("GET", "/v1/crud/configured-models") => Some((200, json, configured_models_payload())),
         ("GET", _) if route == format!("/v1/crud/backtests/{TEST_BACKTEST}") => {
             Some((200, json, BACKTEST_ROW.to_string()))
+        }
+        ("GET", _) if route == format!("/v1/crud/datasets/{TEST_DATASET}") => {
+            Some((200, json, format!(r#"{{"id":{TEST_DATASET}}}"#)))
         }
         _ => None,
     }
@@ -660,6 +681,14 @@ pub(crate) fn chap_core_route(
     }
     if let Some(answer) = analytics_route(method, route, body, recorded) {
         return answer;
+    }
+    if method == "GET"
+        && route == "/v1/analytics/evaluation-entry"
+        && query.contains(&format!("backtestId={TEST_BACKTEST}&"))
+    {
+        let entries =
+            vec![serde_json::json!({"orgUnit": "loc1", "value": 1.0}); BACKTEST_FORECASTS];
+        return (200, json, serde_json::to_string(&entries).expect("JSON"));
     }
     if let Some(answer) = bench_route(method, route) {
         return answer;

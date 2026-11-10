@@ -413,6 +413,49 @@ not delete its backtest yet.
 4. Run the `chap-devops api DELETE /v1/crud/datasets/N` command that the warning
    names.
 
+## `could not delete /v1/crud/backtests/N (chap-core at ... is not responding: io: Peer disconnected ...)`
+
+`chap-devops bench --write` or `chap-devops models test --backtest` deletes the
+backtests it made, and chap-core stopped the request. chap-core deletes the
+forecasts of a backtest one row at a time. For a backtest with tens of
+thousands of forecasts, this can take longer than the API worker may run. Then
+`chap-devops logs chap` shows `WORKER TIMEOUT`, and nothing was deleted. See
+`BUGS.md`. A large dataset gives the same message for
+`/v1/crud/datasets/N`, and it cannot be split.
+
+1. Run `chap-devops status`, and wait until chap-core is `up` again.
+2. Run the `chap-devops api DELETE /v1/crud/backtests/N` command that the
+   warning names. It deletes one backtest, which is shorter.
+3. If it stops again, the backtest is too large for one request. Leave it,
+   or remove the deployment's data with `chap-devops down --volumes` on a
+   test deployment.
+4. Then run the `chap-devops api DELETE /v1/crud/datasets/N` command.
+
+## `--write needs --model`
+
+`chap-devops bench --write` needs the configured model to backtest. The message
+lists the names that chap-core has. Give one with `--model`, for example
+`--model seasonal_median`. `--model` also takes the id of the configured
+model.
+
+## `it stored N forecasts, and its org units, splits and periods make M`
+
+A backtest of `chap-devops bench --write` ended with `SUCCESS`, but chap-core
+stored a different number of forecasts than the backtest row describes. This
+is the error that the write mode is there to find: two jobs that wrote to
+the same rows, or a job that stopped part of the way. Note the settings of
+the run (API workers, worker processes, `--backtests`), and run it again with
+`--backtests 1`. If one backtest at a time passes, the problem comes from
+jobs that run at the same time. Record it in `BUGS.md` with the versions.
+
+## `chap-core imported no location of`
+
+`chap-devops bench dataset --import` or `chap-devops bench --write` sent a
+dataset, and chap-core rejected all of its locations. The reason in brackets
+is chap-core's. A chap-core older than v2.7.0 does not read observations as
+columns and answers `No observation data provided`. Run `chap-devops status`
+to see the version, and run `chap-devops update` to move to a newer one.
+
 ## `chap-core has no configured model for`
 
 ```text
