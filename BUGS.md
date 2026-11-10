@@ -39,66 +39,10 @@ bug that is fixed leaves the file.
 
 ## chap-core (`master`)
 
-### The API answers one request at a time, so a slow plot holds up every page
-
-- Seen: chap-core `master` `sha256:d1c31a63198239f1f44037fc0e9b`, worker
-  `sha256:69c5363b7d14`, 2026-11-06, an evaluation of 18 org units and 72
-  months with Simple Multistep. Also on a shared server, v2.6.0 and master.
-- The image starts gunicorn with `--workers 1` (`Dockerfile`, since
-  `a0a1a544`), and handlers such as `evaluation-entry` and the backtest plots
-  compute in pandas inside that one process. `chap-devops bench --repeat 5`:
-  - one request at a time: 125 requests in 16.1 s; `backtests` p50 10 ms,
-    `configured-models` 12 ms, `predicted_vs_actual subplot` 674 ms;
-  - eight at a time, as a Modeling App page sends them: 14.9 s in total, so no
-    gain; `backtests` p50 737 ms, `configured-models` 748 ms,
-    `predicted_vs_actual subplot` 2.67 s.
-- On the shared server (proxy log, 7 days), small requests such as
-  `configured-models` and `alert-policies` have a mean of about 100 ms and a
-  max of 1.2 s; the `sample_bias_*` plots take 1.2 to 1.9 s.
-- Fix: make the number of worker processes a setting of the deployment
-  (gunicorn reads `WEB_CONCURRENCY` when `--workers` is not given), after the
-  fix in the next entry. The right number depends on the server, 2 or 16, and
-  on memory: one heavy request used 3.3 GB at 500 locations. Also move the
-  pandas work out of the request, or cache the plot and metric results per
-  backtest, which do not change after the backtest is stored.
-- Measured with `--workers 4` and the fix of the next entry, on a backtest of
-  500 locations, 8 at a time: 63 to 81 s for 75 requests instead of 174 s,
-  `backtests` p50 27 to 105 ms instead of 1239 ms, no `WORKER TIMEOUT`, 0 of
-  150 requests failed.
-
-### With more than one API worker, the workers share database connections
-
-- Seen: chap-core `master` as above, gunicorn `--workers 4` from a compose
-  override, `chap-devops bench 48 --repeat 3 --parallel 8`, 2026-11-06.
-- 10 of 225 requests failed, all in the first run after a start, with
-  `Unhandled exception` and:
-  - `psycopg2.OperationalError: lost synchronization with server: got message type "0", length 859373568`
-  - `psycopg2.OperationalError: unexpected field count in "D" message`
-  - `psycopg2.OperationalError: server closed the connection unexpectedly`
-- `database.py` makes the engine when it is imported, `on_starting` in
-  `gunicorn.conf.py` runs the migration with it in the gunicorn master, and
-  the workers fork with the open connections of its pool. Two workers then
-  read from one socket. This is likely the "potential bugs" of `a0a1a544`,
-  which set `--workers 1`: the errors come only just after a start, until the
-  pool drops the broken connections.
-- The same happens with `--workers 1` after gunicorn restarts the worker: on
-  chap-core v2.7.0, 2026-11-10, the first requests after a `WORKER TIMEOUT`
-  failed with `psycopg2.DatabaseError: error with status PGRES_TUPLES_OK and
-  no message from the libpq` and `Internal server error`.
-- Fix, tested: add to `gunicorn.conf.py`
-
-  ```python
-  def post_fork(server, worker):
-      from chap_core.database.database import engine
-      if engine is not None:
-          engine.dispose(close=False)
-  ```
-
-  With it, 0 of 150 requests failed and the log had no connection error.
-
 ### Plot requests grow with the locations, and from 500 they kill the API worker
 
-- Seen: chap-core `master` as above, 2026-11-06, synthetic monthly data, 60
+- Seen: chap-core `master` `sha256:d1c31a63198239f1f44037fc0e9b`, worker
+  `sha256:69c5363b7d14`, 2026-11-06, synthetic monthly data, 60
   months, 3 covariates, 7 splits, Simple Multistep, `chap-devops bench
   --repeat 3`. One request at a time, p50 in seconds:
 
