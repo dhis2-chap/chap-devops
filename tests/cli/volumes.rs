@@ -307,7 +307,7 @@ fn down_volumes_removes_the_database_volume_docker_holds() {
         .expect("init records a compose project name")
         .to_string();
     let volume = format!("{project}_chap-db");
-    let _created = Volume::create(&volume);
+    let _created = Volume::create_by_compose(&volume, &project, "chap-db");
     assert_eq!(
         docker_volumes(&format!("{project}_")),
         std::slice::from_ref(&volume)

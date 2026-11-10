@@ -529,6 +529,15 @@ impl Volume {
         Volume::create_with(name, &["--label", &label])
     }
 
+    /// Create it with both labels compose gives a volume it declares.
+    /// Compose 5 removes on `down -v` only a volume with these labels; it
+    /// skips any other as `Volume was not created by Docker Compose`.
+    pub(crate) fn create_by_compose(name: &str, project: &str, volume: &str) -> Volume {
+        let project = format!("com.docker.compose.project={project}");
+        let volume = format!("com.docker.compose.volume={volume}");
+        Volume::create_with(name, &["--label", &project, "--label", &volume])
+    }
+
     fn create_with(name: &str, flags: &[&str]) -> Volume {
         let out = std::process::Command::new("docker")
             .args(["volume", "create"])
