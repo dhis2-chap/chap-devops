@@ -1,6 +1,6 @@
 [package]
 name = "chap-devops"
-version = "0.119.0"
+version = "0.120.0"
 edition = "2024"
 rust-version = "1.91"
 description = "Deploy Chap (climate-informed disease forecasting) and its services with Docker Compose"
