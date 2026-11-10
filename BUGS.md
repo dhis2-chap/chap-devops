@@ -81,6 +81,10 @@ bug that is fixed leaves the file.
   read from one socket. This is likely the "potential bugs" of `a0a1a544`,
   which set `--workers 1`: the errors come only just after a start, until the
   pool drops the broken connections.
+- The same happens with `--workers 1` after gunicorn restarts the worker: on
+  chap-core v2.7.0, 2026-11-10, the first requests after a `WORKER TIMEOUT`
+  failed with `psycopg2.DatabaseError: error with status PGRES_TUPLES_OK and
+  no message from the libpq` and `Internal server error`.
 - Fix, tested: add to `gunicorn.conf.py`
 
   ```python
@@ -121,20 +125,35 @@ bug that is fixed leaves the file.
   thread pool; compute the plot data once per backtest and store it; send the
   Modeling App the data for one panel, not the whole set.
 
-### No index on `backtestforecast.backtest_id` or `observation.dataset_id`
+### Deleting a large backtest or dataset runs past the worker timeout and deletes nothing
 
-- Seen: chap-core `master` as above, 2026-11-06. The two foreign keys have no
-  index (Postgres does not make one for a foreign key), so every read of one
-  backtest or one dataset scans the whole table.
-- With 247k forecast rows (509 MB) and 871k observations in the database, a
-  backtest of 378 forecast rows took 36 ms to read (`Seq Scan`, `Rows Removed
-  by Filter: 82488` per worker). After `create index ... (backtest_id)` and
-  `... (dataset_id)`: 0.24 ms (`Index Scan`). `chap-devops bench 4 --repeat 5`
-  went from 22.4 to 16.4 s; `evaluation-entry adm0` from 76 to 37 ms, the
-  `evaluation_plot` subplot from 256 to 123 ms.
-- The cost grows with all the data in the database, not with the backtest
-  that is read, so a server with many evaluations gets slower on every page.
-- Fix: an Alembic migration that adds the two indexes.
+- Seen: chap-core v2.7.0 (`ghcr.io/dhis2-chap/chap-core:latest` on
+  2026-11-10), a deployment of its own, with `chap-devops bench --write
+  --model seasonal_median --locations 300 --periods 156 --backtests 8`.
+- The 8 backtests and the 4 backtests of the baselines had 25,200 forecasts
+  each, 302,400 rows in all. `DELETE /v1/crud/backtests?ids=22,...,33`
+  stopped with `WORKER TIMEOUT (pid:26)` and `Worker (pid:26) was sent
+  SIGABRT!` in the log, the client got `Peer disconnected`, and every
+  backtest was still there. The dataset could then not be deleted (409).
+  While the delete ran, the one API worker answered nothing else.
+- The dataset of that run (300 locations, 156 weeks, 4 features: 187,200
+  observations) does the same: `DELETE /v1/crud/datasets/4` ended with
+  `WORKER TIMEOUT (pid:574)`, and the dataset is still there.
+  `DataSet.observations` also has `cascade_delete=True`.
+- `delete_backtest` and `delete_backtest_batch` (`rest_api/v1/routers/crud.py`)
+  call `session.delete(backtest)`, and the dataset delete does the same with
+  its dataset. `Backtest.forecasts` has
+  `cascade_delete=True`, so SQLAlchemy loads every forecast row into memory
+  and deletes them one at a time. Both handlers are `async def`, so the work
+  also blocks the event loop.
+- Fix: delete the children with one statement each (`delete(BacktestForecast)
+  .where(BacktestForecast.backtest_id.in_(ids))`, the same for the metrics),
+  and `delete(Observation).where(Observation.dataset_id == id)` for a
+  dataset; or set `passive_deletes=True` with `ON DELETE CASCADE` on the
+  foreign keys;
+  and make the handlers plain `def`. chap-devops now deletes one backtest per
+  request, which keeps each request smaller, but one backtest of this size
+  still takes a long time.
 
 ### `facet-coords` of the sample bias plots takes 0.2 to 22 s to answer `{}`
 
