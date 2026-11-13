@@ -57,7 +57,11 @@ pub struct Answer {
     /// no canonical one.
     pub reason: String,
     pub content_type: String,
+    /// The body, unpacked when it came as gzip.
     pub body: Vec<u8>,
+    /// How many bytes came over the network: the gzip size when the body
+    /// came as gzip, else the length of `body`.
+    pub wire_bytes: usize,
 }
 
 impl Answer {
@@ -215,6 +219,9 @@ impl Api {
             // Never the value: a trace line ends up in bug reports.
             crate::output::verbose("  Authorization: Bearer <token>");
         }
+        // gzip, as the DHIS2 route asks chap-core for it. It is unpacked
+        // here and not by ureq, which would hide the size on the network.
+        request = request.header("Accept-Encoding", "gzip");
         if body.is_some() {
             request = request.header("Content-Type", JSON);
             crate::output::verbose(&format!("  Content-Type: {JSON}"));
@@ -253,12 +260,23 @@ impl Api {
             .and_then(|v| v.to_str().ok())
             .unwrap_or_default()
             .to_string();
+        let gzipped = response
+            .headers()
+            .get("content-encoding")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v.trim().eq_ignore_ascii_case("gzip"));
         let body = response
             .body_mut()
             .with_config()
             .limit(MAX_BODY)
             .read_to_vec()
             .map_err(|e| anyhow::anyhow!("reading the response body from {url}: {e}"))?;
+        let wire_bytes = body.len();
+        let body = if gzipped {
+            gunzip(&body).map_err(|e| anyhow::anyhow!("unpacking the gzip body from {url}: {e}"))?
+        } else {
+            body
+        };
         crate::output::debug(&format!(
             "  {}",
             crate::output::trace_body(&String::from_utf8_lossy(&body))
@@ -268,6 +286,7 @@ impl Api {
             reason: status.canonical_reason().unwrap_or_default().to_string(),
             content_type,
             body,
+            wire_bytes,
         })
     }
 
@@ -285,6 +304,21 @@ impl Api {
     fn bearer(&self) -> &str {
         self.token.as_deref().unwrap_or_default()
     }
+}
+
+/// `packed` unpacked, cut off at [`MAX_BODY`] like a plain body.
+pub fn gunzip(packed: &[u8]) -> std::io::Result<Vec<u8>> {
+    use std::io::Read;
+    let mut body = Vec::new();
+    flate2::read::MultiGzDecoder::new(packed)
+        .take(MAX_BODY + 1)
+        .read_to_end(&mut body)?;
+    if body.len() as u64 > MAX_BODY {
+        return Err(std::io::Error::other(format!(
+            "it is larger than {MAX_BODY} bytes"
+        )));
+    }
+    Ok(body)
 }
 
 /// The largest answer read: a backtest's full results or a dataset export

@@ -179,6 +179,7 @@ fn time_one(api: &Api, route: &Route) -> Timing {
             ms,
             status: Some(answer.status),
             bytes: answer.body.len(),
+            wire_bytes: answer.wire_bytes,
             error: (!answer.is_success())
                 .then(|| format!("{}: {}", answer.status_line(), answer.detail())),
         },
@@ -186,6 +187,7 @@ fn time_one(api: &Api, route: &Route) -> Timing {
             ms,
             status: None,
             bytes: 0,
+            wire_bytes: 0,
             error: Some(
                 e.to_string()
                     .lines()
@@ -210,11 +212,14 @@ fn table(ctx: &Ctx, results: &[RouteResult]) -> String {
                 human_ms(r.p95_ms),
                 human_ms(r.max_ms),
                 human_bytes(r.bytes),
+                human_bytes(r.wire_bytes),
             ]
         })
         .collect();
     ctx.out.table(
-        &["REQUEST", "N", "FAILED", "MIN", "P50", "P95", "MAX", "SIZE"],
+        &[
+            "REQUEST", "N", "FAILED", "MIN", "P50", "P95", "MAX", "SIZE", "GZIP",
+        ],
         &rows,
     )
 }

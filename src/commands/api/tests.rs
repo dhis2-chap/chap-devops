@@ -93,6 +93,7 @@ fn a_401_says_which_half_of_the_token_is_missing() {
         reason: "Unauthorized".to_string(),
         content_type: crate::api::JSON.to_string(),
         body: br#"{"detail":"Missing or invalid API token"}"#.to_vec(),
+        wire_bytes: 41,
     };
     assert!(
         next_step(&with, &answer(401))

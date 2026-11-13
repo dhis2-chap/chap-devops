@@ -30,6 +30,11 @@ fn bench_times_the_newest_backtest_and_warns_about_a_failed_request() {
     let stdout = String::from_utf8(output.stdout).expect("text");
     let stderr = String::from_utf8(output.stderr).expect("text");
     assert!(stdout.starts_with("REQUEST "), "{stdout}");
+    let header = stdout.lines().next().unwrap_or_default();
+    assert!(
+        header.contains(" SIZE ") && header.ends_with("GZIP"),
+        "{header}"
+    );
     for label in [
         "backtest info",
         "evaluation-entry adm0",
@@ -76,6 +81,11 @@ fn bench_json_has_a_row_per_request_with_its_numbers() {
     assert_eq!(subplot["requests"], 3);
     assert_eq!(subplot["failed"], 0);
     assert!(subplot["p95_ms"].as_f64().expect("a number") >= 0.0);
+    // Asked for gzip and unpacked: the size is the JSON, the wire size the
+    // gzip of it.
+    let body = r#"{"mark":"line"}"#;
+    assert_eq!(subplot["bytes"], body.len());
+    assert_eq!(subplot["wire_bytes"], gzipped(body).len());
     let failed = routes
         .iter()
         .find(|r| r["label"] == "compatible-backtests")

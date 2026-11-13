@@ -129,6 +129,7 @@ fn the_message_is_chap_cores_own_when_it_sent_one() {
         reason: "OK".to_string(),
         content_type: crate::api::JSON.to_string(),
         body: body.as_bytes().to_vec(),
+        wire_bytes: body.len(),
     };
     assert_eq!(
         message_of(&answer(r#"{"message":"Job cancelled"}"#), "cancelled"),

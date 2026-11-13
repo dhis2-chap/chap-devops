@@ -181,6 +181,7 @@ impl Dhis2 {
             status: status.as_u16(),
             reason: status.canonical_reason().unwrap_or_default().to_string(),
             content_type,
+            wire_bytes: body.len(),
             body,
         })
     }

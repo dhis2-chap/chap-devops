@@ -9,7 +9,11 @@ pub struct Timing {
     pub ms: f64,
     /// The HTTP status, or `None` when no answer came.
     pub status: Option<u16>,
+    /// The unpacked body size.
     pub bytes: usize,
+    /// The size that came over the network, the gzip size when chap-core
+    /// packed the answer.
+    pub wire_bytes: usize,
     /// Why it failed: no answer, or what chap-core said.
     pub error: Option<String>,
 }
@@ -32,8 +36,11 @@ pub struct RouteResult {
     pub p50_ms: f64,
     pub p95_ms: f64,
     pub max_ms: f64,
-    /// The body size of the last answer.
+    /// The unpacked body size of the last answer.
     pub bytes: usize,
+    /// The size of the last answer on the network: its gzip size when
+    /// chap-core packed it.
+    pub wire_bytes: usize,
     pub statuses: BTreeMap<String, usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
@@ -73,6 +80,7 @@ pub fn summarize(label: &str, method: &str, path: &str, timings: &[Timing]) -> R
         p95_ms: percentile(&ms, 95.0),
         max_ms: ms.last().copied().unwrap_or_default(),
         bytes: timings.last().map(|t| t.bytes).unwrap_or_default(),
+        wire_bytes: timings.last().map(|t| t.wire_bytes).unwrap_or_default(),
         statuses,
         error: timings.iter().find_map(|t| t.error.clone()),
     }

@@ -6,6 +6,7 @@ fn answer(status: u16, body: &str) -> Answer {
         reason: "Not Found".to_string(),
         content_type: JSON.to_string(),
         body: body.as_bytes().to_vec(),
+        wire_bytes: body.len(),
     }
 }
 
@@ -175,4 +176,16 @@ fn same_origin_compares_scheme_host_and_port() {
         "http://localhost:8700"
     ));
     assert!(!same_origin("not a url", "not a url"));
+}
+
+#[test]
+fn gunzip_unpacks_a_gzip_body_and_refuses_a_broken_one() {
+    use std::io::Write;
+    let text = r#"[{"orgUnit":"loc01","period":"2024W01","value":12}]"#.repeat(50);
+    let mut packer = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    packer.write_all(text.as_bytes()).expect("packed");
+    let packed = packer.finish().expect("packed");
+    assert!(packed.len() < text.len());
+    assert_eq!(gunzip(&packed).expect("unpacked"), text.as_bytes());
+    assert!(gunzip(b"not gzip").is_err());
 }

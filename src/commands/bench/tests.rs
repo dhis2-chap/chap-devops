@@ -115,6 +115,7 @@ fn a_summary_counts_the_failures_and_keeps_their_time() {
         ms,
         status: Some(200),
         bytes: 10,
+        wire_bytes: 4,
         error: None,
     };
     let timings = vec![
@@ -124,6 +125,7 @@ fn a_summary_counts_the_failures_and_keeps_their_time() {
             ms: 120_000.0,
             status: None,
             bytes: 0,
+            wire_bytes: 0,
             error: Some("no answer".to_string()),
         },
     ];

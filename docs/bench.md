@@ -36,6 +36,8 @@ sent two times in a row.
 
 ## The report
 
+This example is from a `bench` before the `GZIP` column:
+
 ```text
 REQUEST                                  N  FAILED  MIN     P50     P95     MAX     SIZE
 backtests                                5  0       8 ms    10 ms   11 ms   11 ms   3.9 kB
@@ -47,11 +49,27 @@ timed 25 requests of backtest 4, 5 times each, 1 at a time, in 16.12 s
 slowest: predicted_vs_actual subplot, p50 674 ms
 ```
 
-The times are the time until the whole answer came, as the browser sees it.
+The times are the time until the whole answer came and was unpacked.
 A failed request counts with the time it took, because a person waited that
 long. Each failed request adds a warning with what chap-core said. `--json`
-gives every row with `min_ms`, `p50_ms`, `p95_ms`, `max_ms`, `bytes` and the
-count of each HTTP status.
+gives every row with `min_ms`, `p50_ms`, `p95_ms`, `max_ms`, `bytes`,
+`wire_bytes` and the count of each HTTP status.
+
+## gzip
+
+`bench` asks chap-core for gzip, as the DHIS2 route asks for it. The route
+unpacks the answer, so the browser gets plain JSON. But chap-core packs every
+answer that goes to the route, and the times include that work. On a large
+answer, the time to pack can be more than the time to make the answer.
+
+- `SIZE` (`bytes` in `--json`) is the unpacked answer, which the browser
+  gets.
+- `GZIP` (`wire_bytes`) is the size on the network between chap-core and the
+  DHIS2 route. It is the same as `SIZE` if chap-core did not pack the answer.
+  chap-core does not pack answers under 1,000 bytes.
+
+All versions of `bench` ask for gzip. But to compare two chap-core versions,
+run the same `bench` version on both.
 
 ## One at a time and many at a time
 

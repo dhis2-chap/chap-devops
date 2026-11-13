@@ -180,16 +180,32 @@ fn serve(recorded: Recorded) -> u16 {
                 502 => "Bad Gateway",
                 _ => "Not Found",
             };
-            let response = format!(
-                "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\n\
-                 Content-Length: {}\r\nConnection: close\r\n\r\n{payload}",
+            // Packed when the client asks, as chap-core's GZipMiddleware
+            // does, so a test sees what a client that asks has to unpack.
+            let gzip = request.to_lowercase().contains("accept-encoding: gzip");
+            let (payload, encoding) = match gzip {
+                true => (gzipped(&payload), "Content-Encoding: gzip\r\n"),
+                false => (payload.into_bytes(), ""),
+            };
+            let head = format!(
+                "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\n{encoding}\
+                 Content-Length: {}\r\nConnection: close\r\n\r\n",
                 payload.len()
             );
-            let _ = stream.write_all(response.as_bytes());
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(&payload);
             let _ = stream.flush();
         }
     });
     port
+}
+
+/// `text` as gzip.
+pub(crate) fn gzipped(text: &str) -> Vec<u8> {
+    use std::io::Write;
+    let mut packer = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    packer.write_all(text.as_bytes()).expect("packed");
+    packer.finish().expect("packed")
 }
 
 /// The three models the `models test` stand-in knows, and what each one is
