@@ -933,6 +933,7 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--page <PAGE>` | Pages to time, comma-separated; all pages when not given. Values: `evaluation`, `compare`, `plots`, `benchmark`, `dataset`, `prediction`. |
 | `--prediction <ID>` | Prediction id for the prediction page; the newest when not given. |
 | `--workers <N,N>` | Run once for each API worker count, comma-separated, and compare. |
+| `--resources` | Record the CPU, memory, database and Valkey use of each phase. |
 | `--repeat <N>` | How many times to send each request. Default: `3`. |
 | `--parallel <N>` | How many requests to have open at the same time. Default: `1`. |
 | `--url <URL>` | Base URL of the chap-core API. |

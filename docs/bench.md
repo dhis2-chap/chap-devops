@@ -151,6 +151,45 @@ down. For one evaluation (18 org units, 72 months), on chap-core `master` of
 | `configured-models` p50 | 12 ms | 748 ms |
 | `predicted_vs_actual subplot` p50 | 674 ms | 2.67 s |
 
+## CPU, memory and the database: --resources
+
+`--resources` records what the services of this deployment used while
+`bench` ran, phase by phase. With `--write` the phases are `import`,
+`backtests` and `prediction` (with `--predict`). Without `--write` there is
+one phase, `requests`.
+
+```sh
+chap-devops bench --write --model seasonal_median --backtests 1 --predict --resources
+```
+
+For each phase it gives:
+
+- for `chap`, `worker`, `postgres` and `redis`: the CPU seconds, the
+  average and the peak cores, and the peak memory, from `docker stats`;
+- for Postgres: the counters of `pg_stat_database` that grew in the phase,
+  for example `xact_commit`, `tup_returned`, `tup_inserted` and
+  `temp_bytes`;
+- for Valkey: `total_commands_processed`, `total_net_input_bytes`,
+  `total_net_output_bytes`, and `used_memory_peak` at the end.
+
+```text
+import (8.58 s): chap 2.2 CPU s (peak 1.0 cores, 729.9 MB), worker 4.9 CPU s (peak 0.8 cores, 1.7 GB), postgres 1.4 CPU s (peak 0.3 cores, 198.3 MB), redis 0.0 CPU s (peak 0.0 cores, 303.6 MB); postgres read 187662 and wrote 187205 rows
+backtests (33.74 s): chap 8.2 CPU s (peak 1.0 cores, 784.8 MB), worker 77.3 CPU s (peak 7.8 cores, 3.8 GB), postgres 3.6 CPU s (peak 0.3 cores, 220.0 MB), redis 0.2 CPU s (peak 0.0 cores, 305.6 MB); postgres read 1385708 and wrote 131990 rows
+```
+
+`docker stats` measures for about a second each time, so that is the
+interval of the samples. A phase that is shorter than a second has few
+samples or none. The CPU seconds are the average cores times the length of
+the phase. The sampling itself uses some CPU, so compare runs that both
+used `--resources`, or both did not. `--json` gives each phase under
+`resources`.
+
+`--resources` needs docker to see chap-core, so it works only for the
+chap-core of this deployment, not with `--url`. chap-core's Postgres does
+not load `pg_stat_statements`, so there are no top statements. To get them,
+add `shared_preload_libraries=pg_stat_statements` to the `postgres`
+service, and run `create extension pg_stat_statements` in the database.
+
 ## API workers: --workers
 
 `--workers 1,4` runs the same `bench` once for each count of API worker

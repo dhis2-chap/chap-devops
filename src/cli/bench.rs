@@ -34,6 +34,10 @@ pub struct BenchArgs {
     #[arg(long, value_name = "N,N", value_delimiter = ',', value_parser = clap::value_parser!(u32).range(1..=64))]
     pub workers: Vec<u32>,
 
+    /// Record the CPU, memory, database and Valkey use of each phase
+    #[arg(long)]
+    pub resources: bool,
+
     /// How many times to send each request
     #[arg(long, value_name = "N", default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=1000))]
     pub repeat: u32,

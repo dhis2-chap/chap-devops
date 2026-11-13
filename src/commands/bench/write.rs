@@ -100,7 +100,15 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let wait = Duration::from_secs(args.wait);
     let started = Instant::now();
 
+    let mut recorder = super::recorder(ctx, args, target.local);
+    let mut phase = |name: &str| {
+        if let Some(r) = recorder.as_mut() {
+            r.phase(name);
+        }
+    };
+
     // --- the dataset ---
+    phase("import");
     let spec = args.synthetic.spec();
     let mut synthetic = None;
     let mut import_took = None;
@@ -131,6 +139,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let imported_in = started.elapsed().as_secs_f64();
 
     // --- the backtests, all started before any is polled ---
+    phase("backtests");
     crate::interrupt::install();
     crate::output::notice(&format!(
         "starting {} runs of {model} on dataset {dataset}",
@@ -150,6 +159,9 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let still_running = runs.iter().any(|r| r.job.is_some() && !r.ended);
 
     // --- the prediction, from the first backtest that passed ---
+    if args.predict {
+        phase("prediction");
+    }
     let first_passed = runs
         .iter()
         .find(|r| r.passed() && !r.baseline)
@@ -165,6 +177,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         )),
         _ => None,
     };
+    let phases = recorder.map(super::resources::Recorder::finish);
     let prediction_running = prediction
         .as_ref()
         .is_some_and(|p| p.job.is_some() && p.seconds.is_none());
@@ -201,12 +214,23 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         "backtest_request_seconds": runs.iter().filter_map(|r| r.request_seconds).fold(None, |m: Option<f64>, s| Some(m.map_or(s, |m| m.max(s)))),
         "backtests": runs,
         "prediction": prediction,
+        "resources": phases,
         "failed": failed,
         "seconds": started.elapsed().as_secs_f64(),
     });
     ctx.out.report(&value, |lines| {
         closing(&runs, &model, dataset, started.elapsed(), stopped, lines);
         lines.info(super::server::line(&server));
+        for line in phases
+            .as_deref()
+            .map(super::resources::lines)
+            .unwrap_or_default()
+        {
+            lines.info(line);
+        }
+        if args.resources && !target.local {
+            lines.warning(super::RESOURCES_NEED_A_DEPLOYMENT);
+        }
         match &prediction {
             Some(p) => {
                 let message = super::predict::line(p, args.keep);

@@ -534,3 +534,30 @@ fn bench_workers_refuses_more_than_one_on_an_old_chap_core_before_any_run() {
     let calls = std::fs::read_to_string(&log).unwrap_or_default();
     assert!(!calls.contains(" up "), "{calls}");
 }
+
+#[test]
+fn bench_resources_says_it_cannot_see_a_chap_core_elsewhere() {
+    let sandbox = Sandbox::new();
+    let port = chap_core_server();
+    let url = format!("http://localhost:{port}");
+
+    bench_in(
+        &sandbox,
+        sandbox.home.path(),
+        &[
+            "bench",
+            "--url",
+            &url,
+            "--resources",
+            "--page",
+            "benchmark",
+            "--repeat",
+            "1",
+        ],
+    )
+    .assert()
+    .success()
+    .stderr(predicates::str::contains(
+        "--resources reads docker, which cannot see a chap-core at --url",
+    ));
+}

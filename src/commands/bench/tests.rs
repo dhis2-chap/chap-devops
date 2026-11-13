@@ -534,3 +534,57 @@ fn the_comparison_has_a_row_for_each_measure_and_a_column_for_each_count() {
     );
     assert_eq!(find("whole run"), Some(vec![Some(3000.0), Some(2000.0)]));
 }
+
+#[test]
+fn docker_stats_numbers_read_as_cores_and_bytes() {
+    use super::resources::{parse_memory, parse_percent};
+    assert_eq!(parse_percent("32.25%"), Some(32.25));
+    assert_eq!(parse_memory("1.5GiB / 31.29GiB"), Some(1_610_612_736));
+    assert_eq!(parse_memory("370.4MiB / 31.29GiB"), Some(388_392_550));
+    assert_eq!(parse_memory("12kB / 1GB"), Some(12_000));
+    assert_eq!(parse_memory("--"), None);
+}
+
+#[test]
+fn a_phase_uses_the_samples_inside_it() {
+    use super::resources::{Sample, usage};
+    let sample = |at: f64, cores: f64, memory_bytes: u64| Sample {
+        at,
+        service: "worker".to_string(),
+        cores,
+        memory_bytes,
+    };
+    let samples = vec![
+        sample(0.5, 9.0, 9),
+        sample(1.0, 2.0, 100),
+        sample(2.0, 4.0, 300),
+        sample(3.0, 0.0, 200),
+        sample(9.0, 9.0, 999),
+    ];
+    let u = usage(&samples, "worker", 1.0, 3.0);
+    assert_eq!(u.samples, 3);
+    assert_eq!(u.average_cores, 2.0);
+    assert_eq!(u.cpu_seconds, 4.0);
+    assert_eq!(u.peak_cores, 4.0);
+    assert_eq!(u.peak_memory_bytes, 300);
+    assert_eq!(usage(&samples, "chap", 0.0, 9.0).samples, 0);
+}
+
+#[test]
+fn postgres_and_valkey_counters_give_what_grew_over_a_phase() {
+    use super::resources::{delta, parse_postgres, parse_valkey};
+    let before = parse_postgres("711|5057577|4715737|2989531|209|250326|59963|30486876|0\n");
+    let after = parse_postgres("720|5060000|4715737|3000000|209|250326|59963|30486900|4096\n");
+    let grew = delta(&before, &after);
+    assert_eq!(grew["xact_commit"], 9);
+    assert_eq!(grew["tup_inserted"], 10469);
+    assert_eq!(grew["temp_bytes"], 4096);
+
+    let info = "# Stats\r\ntotal_commands_processed:9510\r\nused_memory_peak:806966976\r\nredis_version:7.2.4\r\n";
+    let valkey = parse_valkey(info);
+    assert_eq!(valkey["total_commands_processed"], 9510);
+    assert_eq!(valkey["used_memory_peak"], 806966976);
+    assert!(!valkey.contains_key("redis_version"));
+    // The peak is a level, not a counter: it is not a difference.
+    assert!(!delta(&valkey, &valkey).contains_key("used_memory_peak"));
+}

@@ -12,6 +12,7 @@ mod compare;
 mod measure;
 mod plan;
 mod predict;
+mod resources;
 mod runs;
 pub(crate) mod server;
 mod write;
@@ -75,9 +76,14 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     }
 
     let timer = Api::new(&base, token, Duration::from_secs(args.timeout));
+    let mut recorder = recorder(ctx, args, chap.local);
+    if let Some(r) = recorder.as_mut() {
+        r.phase("requests");
+    }
     let start = Instant::now();
     let timings = time_all(&timer, &routes, args.repeat, args.parallel);
     let seconds = start.elapsed().as_secs_f64();
+    let phases = recorder.map(resources::Recorder::finish);
 
     let results: Vec<RouteResult> = routes
         .iter()
@@ -120,6 +126,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
         "seconds": seconds,
         "server": server,
         "pages": page_rows,
+        "resources": phases,
         "skipped": skipped.iter().map(|(p, why)| serde_json::json!({"page": p.name(), "reason": why})).collect::<Vec<_>>(),
         "routes": results,
     });
@@ -151,6 +158,12 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
             opens.join(", ")
         ));
         lines.info(server::line(&server));
+        for line in phases.as_deref().map(resources::lines).unwrap_or_default() {
+            lines.info(line);
+        }
+        if args.resources && !local {
+            lines.warning(RESOURCES_NEED_A_DEPLOYMENT);
+        }
         if let Some(slow) = results
             .iter()
             .filter(|r| r.failed < r.requests)
@@ -188,6 +201,20 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
             );
         }
     })
+}
+
+/// Why `--resources` gave nothing with `--url`.
+const RESOURCES_NEED_A_DEPLOYMENT: &str = "--resources reads docker, which cannot see a chap-core \
+     at --url; run `chap-devops bench --resources` in the deployment that runs chap-core";
+
+/// The resource recorder, when `--resources` asks for one and docker can
+/// see this deployment's services.
+fn recorder(ctx: &Ctx, args: &BenchArgs, local: bool) -> Option<resources::Recorder> {
+    if !args.resources || !local {
+        return None;
+    }
+    let project = ctx.project().ok()?;
+    resources::Recorder::start(&project)
 }
 
 /// What the pages need to know, asked untimed.
