@@ -47,6 +47,12 @@ With `-v`, a hint names the next command:
 hint: `chap-devops models info ID` describes one
 ```
 
+A model that the marketplace lists after the cache was written is unknown to
+chap-devops until the cache is older than 24 hours. If a command fails with
+`unknown model`, chap-devops fetches the catalogue once and refreshes the
+cache. If the catalogue lists the model now, the error says so; run the
+command again. `--offline` skips that fetch.
+
 `chap-devops registry update` forces a fetch and refreshes the cache, as does
 `chap-devops update`. Both say what changed against the cached copy: the new
 and removed models, and each changed model with its stable version before and

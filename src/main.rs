@@ -102,7 +102,7 @@ fn main() {
     let ctx = Ctx::from_cli(&cli);
 
     if let Err(err) = dispatch(&ctx, &cli) {
-        fail(&ctx.out, err);
+        fail(&ctx.out, registry::recheck::explain(&ctx.registry, err));
     }
 
     // Only after the command said what it did, and only when it worked: a

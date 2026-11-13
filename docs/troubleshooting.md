@@ -490,6 +490,22 @@ is chap-core's. A chap-core older than v2.7.0 does not read observations as
 columns and answers `No observation data provided`. Run `chap-devops status`
 to see the version, and run `chap-devops update` to move to a newer one.
 
+## `was not in the marketplace list chap-devops kept from ... ago`
+
+```text
+error: `deep_auto_regressive` was not in the marketplace list chap-devops kept from 3 hours ago; chap-devops updated the list, so run the command again
+```
+
+The marketplace listed the model after chap-devops cached the catalogue.
+chap-devops uses a cached catalogue for 24 hours without the network. When a
+command fails on an unknown model, chap-devops fetches the catalogue once and
+refreshes the cache. The cache now lists the model.
+
+Run the command again.
+
+If the error is `unknown model` without this text, the marketplace does not
+list the id. Run `chap-devops models list` to see the model ids.
+
 ## `chap-core has no configured model for`
 
 ```text

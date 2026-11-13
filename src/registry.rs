@@ -5,6 +5,7 @@ pub mod changes;
 pub mod embedded;
 pub mod fetch;
 pub mod model;
+pub mod recheck;
 
 pub use model::{
     AssessedStatus, Channel, Kind, Model, RegistryIndex, Version, VersionSelector, VersionStatus,
