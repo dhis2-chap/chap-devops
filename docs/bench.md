@@ -210,7 +210,9 @@ App does:
    each org unit and forecast period.
 
 `--predict` cannot be used with `--dataset`, because the run needs the
-values of the dataset. Without `--keep`, `bench` deletes the prediction, its
+values of the dataset. With weekly data, give at least 105 periods: chap-core
+refuses a prediction on 104 weeks (see
+[troubleshooting](./troubleshooting.md#training-data-must-cover-at-least-two-whole-years)). Without `--keep`, `bench` deletes the prediction, its
 dataset and the setup before the backtests. With `--keep`, it gives the
 command that times the prediction page:
 

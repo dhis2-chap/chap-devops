@@ -461,6 +461,17 @@ lists the names that chap-core has. Give one with `--model`, for example
 `--model seasonal_median`. `--model` also takes the id of the configured
 model.
 
+## `Training data must cover at least two whole years`
+
+The prediction of `chap-devops bench --write --predict` failed with this
+line from the job log. chap-core compares the dates of the first and the
+last period, and 104 weeks are 4 days short of two years by that count
+(`BUGS.md`). The backtest on the same data passes.
+
+- Give at least 105 periods: `--periods 105`, or `--periods 156` for three
+  years.
+- With `--period-type month`, give at least 24 periods.
+
 ## `it stored N forecasts, and its org units, splits and periods make M`
 
 A backtest of `chap-devops bench --write` ended with `SUCCESS`, but chap-core
