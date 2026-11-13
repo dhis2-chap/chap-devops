@@ -365,3 +365,15 @@ fn an_empty_list_names_the_hidden_baselines_and_the_way_out() {
     assert!(text.contains("seasonal_median"), "{text}");
     assert!(text.contains("`chap-devops bench ID`"), "{text}");
 }
+
+#[test]
+fn a_prediction_has_one_forecast_for_each_org_unit_and_period() {
+    use super::predict::{check, expected_entries};
+    let row = json!({"orgUnits": ["a", "b", "c"], "nPeriods": 4});
+    assert_eq!(expected_entries(&row), Some(12));
+    assert_eq!(check(Some(12), Some(12)), None);
+    assert!(check(Some(0), Some(12)).is_some_and(|p| p.contains("no forecasts")));
+    assert!(check(Some(10), Some(12)).is_some_and(|p| p.contains("make 12")));
+    assert!(check(None, Some(12)).is_some());
+    assert_eq!(check(Some(5), None), None);
+}

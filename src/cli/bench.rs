@@ -76,6 +76,15 @@ pub struct BenchArgs {
     #[arg(long, value_name = "SECONDS", default_value_t = 3600, value_parser = clap::value_parser!(u64).range(1..), help_heading = "Write options")]
     pub wait: u64,
 
+    /// Also make a prediction from the first backtest that passed
+    #[arg(
+        long,
+        requires = "write",
+        conflicts_with = "dataset",
+        help_heading = "Write options"
+    )]
+    pub predict: bool,
+
     /// Keep the dataset and the backtests that the run made
     #[arg(long, requires = "write", help_heading = "Write options")]
     pub keep: bool,

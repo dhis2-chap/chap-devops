@@ -21,7 +21,7 @@ use serde_json::Value;
 use std::time::{Duration, Instant};
 
 /// How often the running jobs are asked whether they have finished.
-const POLL: Duration = Duration::from_secs(3);
+pub(super) const POLL: Duration = Duration::from_secs(3);
 
 /// The exit code when a backtest failed.
 const EXIT_FAILED: i32 = 1;
@@ -83,6 +83,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
 
     // --- the dataset ---
     let spec = args.synthetic.spec();
+    let mut synthetic = None;
     let (dataset, dataset_job, made) = match args.dataset {
         Some(id) => {
             api.get_json(&format!("/v1/crud/datasets/{id}")).map_err(|e| {
@@ -102,6 +103,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
                 imported.dataset,
                 dataset::describe(&spec, data.rows())
             ));
+            synthetic = Some(data);
             (imported.dataset, Some(imported.job), true)
         }
     };
@@ -187,18 +189,40 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     }
     let still_running = runs.iter().any(|r| r.job.is_some() && r.seconds.is_none());
 
+    // --- the prediction, from the first backtest that passed ---
+    let first_passed = runs.iter().find(|r| r.passed()).and_then(|r| r.backtest_id);
+    let prediction = match (&synthetic, first_passed) {
+        (Some(data), Some(backtest)) if args.predict && !stopped => Some(super::predict::make(
+            ctx,
+            &api,
+            data,
+            backtest,
+            &format!("bench-{stamp}"),
+            Instant::now() + wait,
+        )),
+        _ => None,
+    };
+    let prediction_running = prediction
+        .as_ref()
+        .is_some_and(|p| p.job.is_some() && p.seconds.is_none());
+    let mut cleanup: Vec<Message> = match (&prediction, still_running || prediction_running) {
+        (Some(p), false) => super::predict::drop_rows(ctx, &api, p, args.keep),
+        _ => Vec::new(),
+    };
+
     // --- the cleanup, unless a job still uses the rows ---
     let made_backtests: Vec<i64> = runs.iter().filter_map(|r| r.backtest_id).collect();
-    let cleanup: Vec<Message> = match (still_running, &dataset_job) {
+    cleanup.extend(match (still_running || prediction_running, &dataset_job) {
         (true, _) => vec![Message::warning(format!(
             "kept dataset {dataset} and the backtests, because some jobs still run; \
              `chap-devops jobs` lists them"
         ))],
         (false, Some(job)) => drop_rows(ctx, &api, &made_backtests, Some(dataset), job, args.keep),
         (false, None) => drop_rows(ctx, &api, &made_backtests, None, "", args.keep),
-    };
+    });
 
-    let failed = runs.iter().filter(|r| !r.passed()).count();
+    let failed = runs.iter().filter(|r| !r.passed()).count()
+        + prediction.iter().filter(|p| p.problem.is_some()).count();
     if !ctx.out.json {
         print!("{}", table(ctx, &runs));
     }
@@ -209,11 +233,25 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         "dataset_imported": made,
         "import_seconds": made.then_some(imported_in),
         "backtests": runs,
+        "prediction": prediction,
         "failed": failed,
         "seconds": started.elapsed().as_secs_f64(),
     });
     ctx.out.report(&value, |lines| {
         closing(&runs, &model, dataset, started.elapsed(), stopped, lines);
+        match &prediction {
+            Some(p) => {
+                let message = super::predict::line(p, args.keep);
+                match message.level {
+                    Level::Warning => lines.warning(message.text),
+                    _ => lines.info(message.text),
+                };
+            }
+            None if args.predict && args.dataset.is_none() && !stopped => {
+                lines.warning("made no prediction, because no backtest passed");
+            }
+            None => {}
+        }
         if cleanup.is_empty() && !still_running {
             lines.info(deleted_line(made.then_some(dataset), &made_backtests));
         }

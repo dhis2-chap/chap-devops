@@ -10,6 +10,7 @@
 
 mod measure;
 mod plan;
+mod predict;
 mod write;
 
 use crate::api::Api;

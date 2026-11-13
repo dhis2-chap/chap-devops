@@ -254,6 +254,77 @@ fn bench_write_imports_a_dataset_runs_the_backtests_and_cleans_up() {
 }
 
 #[test]
+fn bench_write_predict_makes_a_prediction_as_the_modeling_app_and_cleans_up() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    let output = bench_write(
+        &sandbox,
+        &dir,
+        &[
+            "--model",
+            OLD_CHAPKIT_MODEL,
+            "--backtests",
+            "1",
+            "--predict",
+        ],
+    )
+    .assert()
+    .success()
+    .get_output()
+    .clone();
+    let stdout = String::from_utf8(output.stdout).expect("text");
+    assert!(
+        stdout.contains(&format!(
+            "prediction {WRITE_PREDICTION} from backtest {TEST_BACKTEST} stored 9 forecasts"
+        )),
+        "{stdout}"
+    );
+
+    let seen = recorded(&sandbox, &dir);
+    assert_eq!(seen["setups"][0]["backtestId"], TEST_BACKTEST);
+    // 3 locations by 12 months by the target and 3 covariates, one object each.
+    assert_eq!(seen["predicted"], 3 * 12 * 4);
+    // The prediction, its dataset and the setup go before the backtest the
+    // setup holds.
+    assert_eq!(
+        seen["deleted"],
+        serde_json::json!([
+            format!("/v1/crud/predictions/{WRITE_PREDICTION}"),
+            format!("/v1/crud/datasets/{WRITE_PREDICTION_DATASET}"),
+            format!("/v1/crud/prediction-setups/{WRITE_SETUP}"),
+            format!("/v1/crud/backtests/{TEST_BACKTEST}"),
+            format!("/v1/crud/datasets/{TEST_DATASET}"),
+        ])
+    );
+}
+
+#[test]
+fn bench_write_predict_keep_says_how_to_time_the_prediction_page() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    bench_write(
+        &sandbox,
+        &dir,
+        &[
+            "--model",
+            OLD_CHAPKIT_MODEL,
+            "--backtests",
+            "1",
+            "--predict",
+            "--keep",
+        ],
+    )
+    .assert()
+    .success()
+    .stdout(predicates::str::contains(format!(
+        "`chap-devops bench --page prediction --prediction {WRITE_PREDICTION}` times its page"
+    )));
+    assert_eq!(recorded(&sandbox, &dir)["deleted"], serde_json::json!([]));
+}
+
+#[test]
 fn bench_write_keeps_a_dataset_it_was_given() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);

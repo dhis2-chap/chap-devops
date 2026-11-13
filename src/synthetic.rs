@@ -9,7 +9,7 @@
 mod output;
 mod periods;
 
-pub use output::{csv, geojson, make_dataset_body};
+pub use output::{csv, geojson, make_dataset_body, observation_rows};
 pub use periods::{Period, PeriodType, periods};
 
 /// The column a model predicts.

@@ -539,6 +539,28 @@ pub(crate) fn analytics_route(
                 format!(r#"{{"id":"ds-{service}","importedCount":{imported},"rejected":[]}}"#),
             ))
         }
+        ("POST", "/v1/crud/prediction-setups") => {
+            let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
+            recorded.setups.push(sent);
+            Some((200, json, format!(r#"{{"id":{WRITE_SETUP}}}"#)))
+        }
+        ("POST", r) if r == format!("/v1/crud/prediction-setups/{WRITE_SETUP}/run") => {
+            let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
+            recorded.predicted = sent["providedData"].as_array().map_or(0, Vec::len);
+            Some((200, json, r#"{"id":"pr-run"}"#.to_string()))
+        }
+        ("GET", r) if r == format!("/v1/crud/predictions/{WRITE_PREDICTION}") => Some((
+            200,
+            json,
+            format!(
+                r#"{{"id":{WRITE_PREDICTION},"datasetId":{WRITE_PREDICTION_DATASET},
+                  "orgUnits":["loc1","loc2","loc3"],"nPeriods":3}}"#
+            ),
+        )),
+        ("GET", r) if r == format!("/v1/analytics/prediction-entry/{WRITE_PREDICTION}") => {
+            let entries = vec![serde_json::json!({"orgUnit": "loc1", "value": 1.0}); 9];
+            Some((200, json, serde_json::to_string(&entries).expect("JSON")))
+        }
         ("POST", "/v1/analytics/create-backtest") => {
             let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
             recorded.backtests.push(sent.clone());
@@ -556,6 +578,8 @@ pub(crate) fn analytics_route(
                 "features": recorded.features,
                 "sampled": recorded.sampled,
                 "backtests": recorded.backtests,
+                "setups": recorded.setups,
+                "predicted": recorded.predicted,
                 "templates": recorded.templates,
                 "configured_posts": recorded.configured_posts,
                 "retired": recorded.retired,
@@ -635,6 +659,10 @@ pub(crate) struct Recorded {
     pub(crate) features: Vec<Vec<String>>,
     /// The services whose sample data was fetched.
     pub(crate) sampled: Vec<String>,
+    /// Every prediction setup body, whole.
+    pub(crate) setups: Vec<Json>,
+    /// Observations in the last prediction run body.
+    pub(crate) predicted: usize,
     /// Every `create-backtest` body, whole.
     pub(crate) backtests: Vec<Json>,
     /// How many times the configs and the artifacts have been listed, so the
@@ -673,7 +701,9 @@ pub(crate) fn chap_core_route(
         // The backtest of the model whose prediction crashes is the one job
         // `chap-devops models test --backtest` has to report a reason for.
         id if id == format!("bt-{FAILING_MODEL}") => Some("FAILURE"),
-        id if id.starts_with("ds-") || id.starts_with("bt-") => Some("SUCCESS"),
+        id if id.starts_with("ds-") || id.starts_with("bt-") || id.starts_with("pr-") => {
+            Some("SUCCESS")
+        }
         _ => None,
     };
     if route == "/health" && method == "GET" {
@@ -762,6 +792,8 @@ pub(crate) fn chap_core_route(
                     TEST_DATASET
                 } else if id.starts_with("bt-") {
                     TEST_BACKTEST
+                } else if id.starts_with("pr-") {
+                    WRITE_PREDICTION
                 } else {
                     4
                 };
@@ -884,6 +916,14 @@ pub(crate) fn online_update(sandbox: &Sandbox, port: u16, bin: &Path, args: &[&s
 
 /// The backtest `chap-devops bench` times by default: the newest in the list.
 pub(crate) const BENCH_BACKTEST: i64 = 9;
+
+/// The prediction setup, the prediction and its dataset that
+/// `chap-devops bench --write --predict` makes.
+pub(crate) const WRITE_SETUP: i64 = 11;
+
+pub(crate) const WRITE_PREDICTION: i64 = 6;
+
+pub(crate) const WRITE_PREDICTION_DATASET: i64 = 44;
 
 /// The newest prediction the stand-in lists for `chap-devops bench`.
 pub(crate) const BENCH_PREDICTION: i64 = 5;

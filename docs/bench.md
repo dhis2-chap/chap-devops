@@ -194,6 +194,36 @@ and gives a warning with the reason from the job log. `--json` gives each
 backtest with its `status`, `seconds`, `backtest_id`, `forecasts`,
 `expected_forecasts`, `metrics` and `problem`.
 
+### A prediction: --predict
+
+`--predict` also makes one prediction, so the `prediction` page has
+something to show. It uses the first backtest that passed, as the Modeling
+App does:
+
+1. It makes a prediction setup on the backtest
+   (`POST /v1/crud/prediction-setups`).
+2. It runs the setup with the synthetic dataset, one object for each value
+   (`providedData`), with DHIS2 period ids such as `2024W7`
+   (`POST /v1/crud/prediction-setups/{id}/run`). chap-core stores these
+   values as a new dataset.
+3. It waits for the job, then checks that chap-core stored one forecast for
+   each org unit and forecast period.
+
+`--predict` cannot be used with `--dataset`, because the run needs the
+values of the dataset. Without `--keep`, `bench` deletes the prediction, its
+dataset and the setup before the backtests. With `--keep`, it gives the
+command that times the prediction page:
+
+```sh
+chap-devops bench --write --model seasonal_median --backtests 1 --predict --keep \
+  --locations 1500 --periods 365
+chap-devops bench --page prediction --prediction 7 --repeat 10
+```
+
+If the prediction fails, the command exits with status 1. `--json` gives it
+as `prediction`, with `setup_id`, `job`, `status`, `seconds`,
+`prediction_id`, `dataset_id`, `entries`, `expected_entries` and `problem`.
+
 To compare settings, run the same command before and after the change, for
 example with one worker process and then with four. Use the same seed (the
 default) to get the same data. If jobs are still running after `--wait`,

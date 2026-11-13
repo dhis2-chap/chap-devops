@@ -147,3 +147,21 @@ fn the_make_dataset_body_has_one_column_for_each_feature() {
 fn the_name_says_what_the_dataset_is_made_of() {
     assert_eq!(spec().name(), "synthetic-3x10m-c50-k4-s7");
 }
+
+#[test]
+fn the_rows_have_one_object_for_each_value_with_a_dhis2_period() {
+    let data = generate(&Spec {
+        period_type: PeriodType::Week,
+        ..spec()
+    });
+    let rows = observation_rows(&data);
+    assert_eq!(rows.len(), data.rows() * data.columns.len());
+    let first = &rows[0];
+    assert_eq!(first["orgUnit"], data.locations[0]);
+    assert_eq!(first["period"], data.periods[0].api());
+    assert_eq!(first["featureName"], TARGET);
+    assert_eq!(first["value"], data.columns[0].1[0]);
+    // The second object is the first covariate of the same row.
+    assert_eq!(rows[1]["featureName"], data.columns[1].0);
+    assert_eq!(rows[1]["period"], first["period"]);
+}

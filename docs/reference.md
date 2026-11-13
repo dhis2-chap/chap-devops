@@ -940,6 +940,7 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--backtests <N>` | How many backtests to start at the same time. Default: `4`. |
 | `--dataset <ID>` | Backtest this dataset id instead of a new synthetic one. |
 | `--wait <SECONDS>` | Seconds to wait for the jobs to finish. Default: `3600`. |
+| `--predict` | Also make a prediction from the first backtest that passed. |
 | `--keep` | Keep the dataset and the backtests that the run made. |
 | `--locations <N>` | Number of locations (org units). Default: `18`. |
 | `--periods <N>` | Number of periods for each location. Default: `104`. |

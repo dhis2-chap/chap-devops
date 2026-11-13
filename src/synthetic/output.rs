@@ -96,6 +96,28 @@ pub fn make_dataset_body(data: &Dataset, name: &str) -> Value {
     })
 }
 
+/// The observations one object each (`providedData`), as the Modeling App
+/// sends them: org unit, DHIS2 period id, feature name and value.
+pub fn observation_rows(data: &Dataset) -> Vec<Value> {
+    let mut rows = Vec::with_capacity(data.rows() * data.columns.len());
+    let mut row = 0;
+    for location in &data.locations {
+        for period in &data.periods {
+            let period = period.api();
+            for (name, values) in &data.columns {
+                rows.push(json!({
+                    "orgUnit": location,
+                    "period": period,
+                    "featureName": name,
+                    "value": values[row],
+                }));
+            }
+            row += 1;
+        }
+    }
+    rows
+}
+
 /// `12` for a whole number, else the shortest form that reads back the same.
 fn number(value: f64) -> String {
     if value.fract() == 0.0 && value.abs() < 1e15 {
