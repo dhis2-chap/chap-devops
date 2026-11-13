@@ -120,6 +120,12 @@ pub fn sync(project: &mut Project, registry: &Registry, check: bool) -> Result<S
                 ComposeSource::Checkout { path } => Some(path.clone()),
                 _ => None,
             },
+            checkout_platform: match &project.state.chap_compose_source {
+                ComposeSource::Checkout { .. } => {
+                    Some(crate::compose::spec::native_platform().to_string())
+                }
+                _ => None,
+            },
             group: group.clone(),
             ..ChapDevopsOverlaySpec::new(project.state.api_port)
         };

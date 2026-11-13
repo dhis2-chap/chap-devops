@@ -39,6 +39,9 @@ pub struct ChapDevopsOverlaySpec {
     pub project_name: Option<String>,
     /// A chap-core checkout chap and the worker are built from.
     pub checkout: Option<String>,
+    /// The platform the `chap` image of a checkout is built for. The worker
+    /// stays `linux/amd64`: its base image has no other platform.
+    pub checkout_platform: Option<String>,
     /// Every service the base `compose.yml` defines, in its order: each one
     /// gets the chap-core labels, and none that is not there may be named,
     /// since compose would read it as a service with no image.
@@ -54,9 +57,23 @@ impl ChapDevopsOverlaySpec {
             api_port,
             project_name: None,
             checkout: None,
+            checkout_platform: None,
             services: UPSTREAM_SERVICES.iter().map(|s| s.to_string()).collect(),
             group: None,
         }
+    }
+}
+
+/// The docker platform of this machine: `linux/arm64` on Apple Silicon and
+/// ARM servers, else `linux/amd64`.
+///
+/// A `chap` image built from a checkout uses it, so that the API runs
+/// without emulation, as it does on a server. Its base image has both
+/// platforms.
+pub fn native_platform() -> &'static str {
+    match std::env::consts::ARCH {
+        "aarch64" | "arm64" => "linux/arm64",
+        _ => "linux/amd64",
     }
 }
 

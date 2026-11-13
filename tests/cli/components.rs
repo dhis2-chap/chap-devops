@@ -907,6 +907,18 @@ fn init_source_builds_chap_core_from_a_checkout() {
         "{chap_devops}"
     );
     assert!(chap_devops.contains("pull_policy: build"), "{chap_devops}");
+    // The API image is built for this machine, so it runs without
+    // emulation. The worker's base image is amd64 only.
+    let native = match std::env::consts::ARCH {
+        "aarch64" => "linux/arm64",
+        _ => "linux/amd64",
+    };
+    let doc: serde_yaml_ng::Value = serde_yaml_ng::from_str(&chap_devops).expect("YAML");
+    assert_eq!(doc["services"]["chap"]["platform"].as_str(), Some(native));
+    assert!(
+        doc["services"]["worker"].get("platform").is_none(),
+        "{chap_devops}"
+    );
 
     let mut update = sandbox.chap();
     update

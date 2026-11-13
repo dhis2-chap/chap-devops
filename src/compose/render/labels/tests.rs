@@ -174,3 +174,29 @@ fn every_component_service_carries_its_role() {
         ],
     );
 }
+
+#[test]
+fn a_checkout_builds_the_api_for_the_platform_it_is_given_and_not_the_worker() {
+    let text = render_chap_devops_overlay(&ChapDevopsOverlaySpec {
+        checkout: Some("/src/chap-core".into()),
+        checkout_platform: Some("linux/arm64".into()),
+        ..ChapDevopsOverlaySpec::new(8000)
+    });
+    let doc: serde_yaml_ng::Value = serde_yaml_ng::from_str(&text).expect("YAML");
+    assert_eq!(
+        doc["services"]["chap"]["platform"].as_str(),
+        Some("linux/arm64")
+    );
+    assert_eq!(
+        doc["services"]["chap"]["build"]["context"].as_str(),
+        Some("/src/chap-core")
+    );
+    assert!(
+        doc["services"]["worker"].get("platform").is_none(),
+        "{text}"
+    );
+
+    // Without a checkout there is nothing to build, so no platform.
+    let text = render_chap_devops_overlay(&ChapDevopsOverlaySpec::new(8000));
+    assert!(!text.contains("platform:"), "{text}");
+}

@@ -14,8 +14,15 @@ chap-devops up                     # builds both images from the checkout, then 
 chap-devops status
 ```
 
-The images are `linux/amd64`, so on an Apple Silicon Mac the build runs under
-emulation. The first `chap-devops up` pulls the base images and builds both images,
+The API image (`chap`) is built for the platform of this machine:
+`linux/arm64` on an Apple Silicon Mac, `linux/amd64` on most servers. Its base
+image has both, so the API runs without emulation, and its times are like
+the times on a server. Use this when you time a change with
+[`chap-devops bench`](../bench.md). The worker image stays `linux/amd64`,
+because its base image (`chap-worker-with-inla`) has no other platform. On an
+Apple Silicon Mac, the worker runs under emulation.
+
+The first `chap-devops up` pulls the base images and builds both images,
 which took two to five minutes on an Apple Silicon Mac. It prints the full
 docker build log, and ends with the services it started:
 

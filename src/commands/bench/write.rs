@@ -98,8 +98,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         None => {
             let data = crate::synthetic::generate(&spec);
             let name = format!("{}-bench-{stamp}", spec.name());
-            let imported =
-                dataset::import(ctx, &api, &data, &name, args.synthetic.format, wait)?;
+            let imported = dataset::import(ctx, &api, &data, &name, args.synthetic.format, wait)?;
             ctx.out.verbose(&format!(
                 "dataset {} from {}",
                 imported.dataset,
