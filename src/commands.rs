@@ -33,6 +33,7 @@ pub mod sync;
 pub mod top;
 pub mod tui;
 pub mod update;
+pub mod workers;
 
 use crate::cli::Cli;
 use crate::error::Result;

@@ -117,6 +117,10 @@ pub struct RestartArgs {
     #[arg(long)]
     pub all: bool,
 
+    /// Set CHAP_API_WORKERS to N and recreate only the chap service
+    #[arg(long, value_name = "N", value_parser = clap::value_parser!(u32).range(1..=64), conflicts_with_all = ["all", "services"])]
+    pub api_workers: Option<u32>,
+
     /// Services to restart; the whole deployment when omitted
     #[arg(value_name = "SERVICE")]
     pub services: Vec<String>,

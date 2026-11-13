@@ -233,6 +233,7 @@ fn restart(all: bool, services: &[&str]) -> DockerCmd {
     DockerCmd::Restart(crate::cli::RestartArgs {
         all,
         services: services.iter().map(|s| s.to_string()).collect(),
+        api_workers: None,
     })
 }
 

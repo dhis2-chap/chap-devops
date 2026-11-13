@@ -713,6 +713,7 @@ Usage: chap-devops restart [OPTIONS] [SERVICE]...
 | Argument | Description |
 | --- | --- |
 | `--all` | Recreate the named services even when nothing changed. |
+| `--api-workers <N>` | Set CHAP_API_WORKERS to N and recreate only the chap service. |
 | `<SERVICE>...` | Services to restart; the whole deployment when omitted. |
 
 ## chap-devops status

@@ -12,7 +12,7 @@ mod measure;
 mod plan;
 mod predict;
 mod runs;
-mod server;
+pub(crate) mod server;
 mod write;
 
 use crate::api::Api;

@@ -182,7 +182,10 @@ fn dispatch(ctx: &Ctx, cli: &Cli) -> error::Result<()> {
         Command::Up(args) => commands::docker::run(ctx, &DockerCmd::Up(args.clone())),
         Command::Down(args) => commands::docker::run(ctx, &DockerCmd::Down(args.clone())),
         Command::Logs(args) => commands::docker::run(ctx, &DockerCmd::Logs(args.clone())),
-        Command::Restart(args) => commands::docker::run(ctx, &DockerCmd::Restart(args.clone())),
+        Command::Restart(args) => match args.api_workers {
+            Some(count) => commands::workers::run(ctx, count),
+            None => commands::docker::run(ctx, &DockerCmd::Restart(args.clone())),
+        },
         Command::Docker(d) => commands::docker::run(ctx, &DockerCmd::from(&d.command)),
 
         Command::Backup(b) => match &b.command {
