@@ -619,3 +619,41 @@ fn bench_fresh_database_needs_sizes_and_this_deployment() {
     .failure()
     .stderr(predicates::str::contains("cannot be used with --url"));
 }
+
+#[test]
+fn bench_write_second_user_reports_each_phase() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    let value: Json = json_of(&mut bench_in(
+        &sandbox,
+        &dir,
+        &[
+            "--json",
+            "bench",
+            "--write",
+            "--locations",
+            "3",
+            "--periods",
+            "12",
+            "--period-type",
+            "month",
+            "--model",
+            OLD_CHAPKIT_MODEL,
+            "--backtests",
+            "1",
+            "--second-user",
+        ],
+    ));
+    let phases: Vec<&str> = value["second_user"]
+        .as_array()
+        .expect("the second user")
+        .iter()
+        .filter_map(|p| p["phase"].as_str())
+        .collect();
+    assert_eq!(phases, ["import", "backtests"], "{value}");
+    assert!(
+        value["second_user"][0]["requests"].as_u64() >= Some(1),
+        "{value}"
+    );
+}

@@ -14,6 +14,7 @@ mod plan;
 mod predict;
 mod resources;
 mod runs;
+mod second_user;
 pub(crate) mod server;
 mod sizes;
 mod write;

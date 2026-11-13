@@ -190,6 +190,24 @@ not load `pg_stat_statements`, so there are no top statements. To get them,
 add `shared_preload_libraries=pg_stat_statements` to the `postgres`
 service, and run `create extension pg_stat_statements` in the database.
 
+## A second user: --second-user
+
+`--second-user` shows what the run does to the other people on the server.
+During `--write`, a thread asks for `GET /v1/crud/configured-models` every
+half second, the list that most pages of the Modeling App ask for first.
+Each phase of the run gets the p50, p95 and longest time of the requests
+that started in it:
+
+```text
+second user, import: 74 requests of configured-models, p50 13 ms, p95 115 ms, max 4.12 s
+second user, backtests: 290 requests of configured-models, p50 18 ms, p95 164 ms, max 647 ms
+```
+
+That run imported 1,500 locations and 156 weeks on chap-core `master` with
+one API worker. While chap-core read the import, the second user waited up
+to 4.12 s for a list that otherwise takes 13 ms. Compare it with more API
+workers (`--workers 1,4`). `--json` gives the phases under `second_user`.
+
 ## API workers: --workers
 
 `--workers 1,4` runs the same `bench` once for each count of API worker

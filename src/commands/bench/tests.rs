@@ -639,3 +639,25 @@ fn a_child_run_leaves_out_the_options_of_the_series() {
         ["bench", "--write", "--model", "m", "--json"]
     );
 }
+
+#[test]
+fn the_second_user_sees_each_phase_from_the_requests_that_started_in_it() {
+    use super::second_user::{Request, line, summarize};
+    let request = |at: f64, ms: f64, ok: bool| Request { at, ms, ok };
+    let requests = vec![
+        request(0.0, 10.0, true),
+        request(0.5, 4000.0, true),
+        request(1.0, 20.0, false),
+        request(5.0, 15.0, true),
+    ];
+    let phases = vec![("import".to_string(), 0.0), ("backtests".to_string(), 2.0)];
+    let seen = summarize(&requests, &phases);
+    assert_eq!(seen[0].requests, 3);
+    assert_eq!(seen[0].failed, 1);
+    assert_eq!(seen[0].max_ms, 4000.0);
+    assert_eq!(seen[1].requests, 1);
+    assert_eq!(
+        line(&seen[0]),
+        "second user, import: 3 requests of configured-models, p50 20 ms, p95 4.00 s, max 4.00 s, 1 failed"
+    );
+}

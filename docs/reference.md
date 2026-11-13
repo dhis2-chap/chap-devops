@@ -935,6 +935,7 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--workers <N,N>` | Run once for each API worker count, comma-separated, and compare. |
 | `--sizes <SIZES>` | Run --write once for each size, such as 500x520w,3000x120m. |
 | `--fresh-database` | Empty chap-core's database before each size; deletes all its data. |
+| `--second-user` | Load a small page every 0.5 s during --write, as a second user. |
 | `--resources` | Record the CPU, memory, database and Valkey use of each phase. |
 | `--repeat <N>` | How many times to send each request. Default: `3`. |
 | `--parallel <N>` | How many requests to have open at the same time. Default: `1`. |

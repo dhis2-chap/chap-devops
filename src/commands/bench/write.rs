@@ -101,10 +101,15 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let started = Instant::now();
 
     let mut recorder = super::recorder(ctx, args, target.local);
+    let second_user = args
+        .second_user
+        .then(|| super::second_user::SecondUser::start(api.clone(), started));
+    let mut marks: Vec<(String, f64)> = Vec::new();
     let mut phase = |name: &str| {
         if let Some(r) = recorder.as_mut() {
             r.phase(name);
         }
+        marks.push((name.to_string(), started.elapsed().as_secs_f64()));
     };
 
     // --- the dataset ---
@@ -178,6 +183,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         _ => None,
     };
     let phases = recorder.map(super::resources::Recorder::finish);
+    let seen = second_user.map(|u| u.finish(&marks));
     let prediction_running = prediction
         .as_ref()
         .is_some_and(|p| p.job.is_some() && p.seconds.is_none());
@@ -215,6 +221,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         "backtests": runs,
         "prediction": prediction,
         "resources": phases,
+        "second_user": seen,
         "failed": failed,
         "seconds": started.elapsed().as_secs_f64(),
     });
@@ -230,6 +237,9 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         }
         if args.resources && !target.local {
             lines.warning(super::RESOURCES_NEED_A_DEPLOYMENT);
+        }
+        for phase in seen.as_deref().unwrap_or_default() {
+            lines.info(super::second_user::line(phase));
         }
         match &prediction {
             Some(p) => {

@@ -42,6 +42,10 @@ pub struct BenchArgs {
     #[arg(long, requires = "sizes")]
     pub fresh_database: bool,
 
+    /// Load a small page every 0.5 s during --write, as a second user
+    #[arg(long, requires = "write")]
+    pub second_user: bool,
+
     /// Record the CPU, memory, database and Valkey use of each phase
     #[arg(long)]
     pub resources: bool,
