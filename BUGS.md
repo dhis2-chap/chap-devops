@@ -353,6 +353,24 @@ bug that is fixed leaves the file.
 - Fix: the model clips its quantiles at 0, or chap-core does when it stores
   them.
 
+### `deep_auto_regressive` scores two to four times better on arm64 than on amd64
+
+- Seen: deep_auto_regressive 0.1.0 (`sha-89fe6a9`, index
+  `sha256:c97ada641018`), chap-core v2.7.0, `chap-devops models test
+  --backtest` with `[monthly]`, Apple silicon (Docker 29.9.3, Compose 5.7.0),
+  2026-11-13. The amd64 image ran under Rosetta on the same Mac.
+- Three runs each. CRPS on linux/arm64: 7.2, 17.3, 15.2. CRPS on linux/amd64:
+  31.1, 34.1, 29.5. On the same runs `chapkit_simple_multistep_model` 0.1.5
+  overlaps (arm64 4.9 to 8.5, amd64 5.1 to 5.8), so the dataset and the test
+  are not the cause.
+- Both variants have the same Python 3.13.18, jax and jaxlib 0.12.0.1, numpy
+  2.5.4 and scipy 1.18.1, so the difference may come from the XLA CPU code
+  paths of each architecture, or from Rosetta. It is not known which variant
+  is correct; a native amd64 host may score as arm64 does.
+- Fix: run the backtest on a native amd64 host. If the scores still differ,
+  find the step whose result depends on the architecture (for example the
+  random seeds, or the float precision of the XLA CPU backend).
+
 - IMPA-TECH-SARIMA fails in chap itself (`NoPredictionsError`).
 - rwanda_random_forest fails at train when served with `mlproject run`.
 - chap_pymc needs the packages of its `uv_env`, which a `-cli` image does not
