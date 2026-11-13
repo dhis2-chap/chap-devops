@@ -180,6 +180,7 @@ fn a_checkout_builds_the_api_for_the_platform_it_is_given_and_not_the_worker() {
     let text = render_chap_devops_overlay(&ChapDevopsOverlaySpec {
         checkout: Some("/src/chap-core".into()),
         checkout_platform: Some("linux/arm64".into()),
+        checkout_revision: Some("94e16246-dirty".into()),
         ..ChapDevopsOverlaySpec::new(8000)
     });
     let doc: serde_yaml_ng::Value = serde_yaml_ng::from_str(&text).expect("YAML");
@@ -194,6 +195,10 @@ fn a_checkout_builds_the_api_for_the_platform_it_is_given_and_not_the_worker() {
     assert!(
         doc["services"]["worker"].get("platform").is_none(),
         "{text}"
+    );
+    assert_eq!(
+        doc["services"]["chap"]["build"]["args"]["GIT_REVISION"].as_str(),
+        Some("94e16246-dirty")
     );
 
     // Without a checkout there is nothing to build, so no platform.

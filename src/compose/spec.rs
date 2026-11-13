@@ -42,6 +42,9 @@ pub struct ChapDevopsOverlaySpec {
     /// The platform the `chap` image of a checkout is built for. The worker
     /// stays `linux/amd64`: its base image has no other platform.
     pub checkout_platform: Option<String>,
+    /// The git revision of the checkout, which the `chap` image reports on
+    /// `/system/info`: the commit, with `-dirty` when files differ from it.
+    pub checkout_revision: Option<String>,
     /// Every service the base `compose.yml` defines, in its order: each one
     /// gets the chap-core labels, and none that is not there may be named,
     /// since compose would read it as a service with no image.
@@ -58,6 +61,7 @@ impl ChapDevopsOverlaySpec {
             project_name: None,
             checkout: None,
             checkout_platform: None,
+            checkout_revision: None,
             services: UPSTREAM_SERVICES.iter().map(|s| s.to_string()).collect(),
             group: None,
         }
@@ -75,6 +79,27 @@ pub fn native_platform() -> &'static str {
         "aarch64" | "arm64" => "linux/arm64",
         _ => "linux/amd64",
     }
+}
+
+/// The git revision of the checkout at `path`: `HEAD`, with `-dirty` when a
+/// tracked file differs from it. `None` when git cannot say, for example
+/// when git is not installed.
+pub fn checkout_revision(path: &std::path::Path) -> Option<String> {
+    let git = |args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(path)
+            .args(args)
+            .output()
+            .ok()?;
+        out.status
+            .success()
+            .then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
+    };
+    let head = git(&["rev-parse", "HEAD"]).filter(|h| !h.is_empty())?;
+    let dirty =
+        git(&["status", "--porcelain", "--untracked-files=no"]).is_some_and(|s| !s.is_empty());
+    Some(if dirty { format!("{head}-dirty") } else { head })
 }
 
 /// The service names a compose file defines, in its order, or `None` for a

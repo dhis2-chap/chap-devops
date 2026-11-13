@@ -22,6 +22,11 @@ the times on a server. Use this when you time a change with
 because its base image (`chap-worker-with-inla`) has no other platform. On an
 Apple Silicon Mac, the worker runs under emulation.
 
+The build gives chap-core the commit of the checkout (`GIT_REVISION`), with
+`-dirty` if a tracked file has changes. chap-core reports it as `revision`
+on `/system/info`, and `chap-devops bench` shows it in its `measured on`
+line.
+
 The first `chap-devops up` pulls the base images and builds both images,
 which took two to five minutes on an Apple Silicon Mac. It prints the full
 docker build log, and ends with the services it started:

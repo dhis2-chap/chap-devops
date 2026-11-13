@@ -130,3 +130,44 @@ fn from_enabled_replays_the_recorded_state() {
     assert_eq!(spec.repository, m.source.repository);
     assert_eq!(spec.tag_env_var, "CHAPKIT_EWARS_MODEL_IMAGE_TAG");
 }
+
+#[test]
+fn a_checkout_revision_is_head_and_says_when_files_differ() {
+    let dir = tempfile::tempdir().expect("a temp dir");
+    // Not a git checkout: no revision.
+    assert_eq!(checkout_revision(dir.path()), None);
+
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir.path())
+            .args(args)
+            .output()
+            .is_ok_and(|o| o.status.success())
+    };
+    // Without git on this machine there is nothing more to check.
+    if !git(&["init", "-q"]) {
+        return;
+    }
+    std::fs::write(dir.path().join("a"), "1").expect("a file");
+    assert!(git(&["add", "a"]));
+    assert!(git(&[
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@example.org",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "x"
+    ]));
+    let clean = checkout_revision(dir.path()).expect("a revision");
+    assert_eq!(clean.len(), 40, "{clean}");
+    std::fs::write(dir.path().join("a"), "2").expect("a change");
+    assert_eq!(
+        checkout_revision(dir.path()),
+        Some(format!("{clean}-dirty"))
+    );
+}

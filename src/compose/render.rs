@@ -132,7 +132,9 @@ pub fn render_base(spec: &BaseSpec) -> String {
 /// from instead of pulled (`chap-devops init --source`). The `chap` image is
 /// built for `checkout_platform`, this machine's platform, because chap-core's
 /// `compose.ghcr.yml` pins `linux/amd64`, and under emulation the API is
-/// several times slower. The worker keeps `linux/amd64`. `pull_policy: build` makes
+/// several times slower. The worker keeps `linux/amd64`. `GIT_REVISION` is
+/// the commit of the checkout, which chap-core reports on `/system/info`, so
+/// `chap-devops bench` can say what it measured. `pull_policy: build` makes
 /// every `chap-devops up` build the checkout as it is now, which Docker's layer
 /// cache keeps cheap when nothing changed, and makes `compose pull` skip them.
 ///
@@ -151,11 +153,17 @@ pub fn render_chap_devops_overlay(spec: &ChapDevopsOverlaySpec) -> String {
                 .as_deref()
                 .map(|p| format!("\x20   platform: {p}\n"))
                 .unwrap_or_default();
+            let args = spec
+                .checkout_revision
+                .as_deref()
+                .map(|r| format!("\x20     args:\n\x20       GIT_REVISION: \"{r}\"\n"))
+                .unwrap_or_default();
             format!(
                 "\x20   image: {chap_image}\n\
                  {platform}\
                  \x20   build:\n\
                  \x20     context: {path}\n\
+                 {args}\
                  \x20   pull_policy: build\n"
             )
         }

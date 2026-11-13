@@ -126,6 +126,12 @@ pub fn sync(project: &mut Project, registry: &Registry, check: bool) -> Result<S
                 }
                 _ => None,
             },
+            checkout_revision: match &project.state.chap_compose_source {
+                ComposeSource::Checkout { path } => {
+                    crate::compose::spec::checkout_revision(std::path::Path::new(path))
+                }
+                _ => None,
+            },
             group: group.clone(),
             ..ChapDevopsOverlaySpec::new(project.state.api_port)
         };
