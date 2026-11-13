@@ -5,7 +5,7 @@
 use crate::api::Api;
 use crate::cli::DatasetArgs;
 use crate::commands::Ctx;
-use crate::commands::chap_jobs::{self, database_result, job_failure, post, wait};
+use crate::commands::chap_jobs::{self, database_result, job_failure, post_text, wait};
 use crate::error::{ChapError, Result};
 use crate::jobs;
 use crate::synthetic::{self, Dataset, Spec};
@@ -52,6 +52,7 @@ pub fn generate(ctx: &Ctx, args: &DatasetArgs) -> Result<()> {
                 &api,
                 &data,
                 &name,
+                args.synthetic.format,
                 Duration::from_secs(args.timeout),
             )?)
         }
@@ -70,6 +71,9 @@ pub fn generate(ctx: &Ctx, args: &DatasetArgs) -> Result<()> {
         "files": files.as_ref().map(|(csv, geo)| [csv, geo]),
         "dataset_id": imported.as_ref().map(|i| i.dataset),
         "job_id": imported.as_ref().map(|i| i.job.clone()),
+        "format": format!("{:?}", args.synthetic.format).to_lowercase(),
+        "request_seconds": imported.as_ref().map(|i| i.request_seconds),
+        "import_seconds": imported.as_ref().map(|i| i.seconds),
     });
     ctx.out.report(&value, |lines| {
         let what = describe(&spec, data.rows());
@@ -86,8 +90,9 @@ pub fn generate(ctx: &Ctx, args: &DatasetArgs) -> Result<()> {
                     lines.info(format!("made {what}"));
                 }
                 lines.info(format!(
-                    "chap-core stored it as dataset {} (`{name}`) in {:.1} s",
-                    imported.dataset, imported.seconds
+                    "chap-core stored it as dataset {} (`{name}`) in {}",
+                    imported.dataset,
+                    imported.took()
                 ));
                 lines.hint(format!(
                     "`chap-devops bench --write --dataset {} --model MODEL` backtests it",
@@ -149,7 +154,24 @@ fn write_files(dir: &Path, name: &str, data: &Dataset) -> Result<(PathBuf, PathB
 pub(crate) struct Imported {
     pub dataset: i64,
     pub job: String,
+    /// From the start of the request to its answer: chap-core reads and
+    /// checks the observations, then starts the job.
+    pub request_seconds: f64,
+    /// From the start of the request to the end of the job.
     pub seconds: f64,
+}
+
+impl Imported {
+    /// `12.31 s (request 4.10 s, job 8.21 s)`.
+    pub fn took(&self) -> String {
+        let ms = |s: f64| crate::commands::bench::human_ms(s * 1000.0);
+        format!(
+            "{} (request {}, job {})",
+            ms(self.seconds),
+            ms(self.request_seconds),
+            ms(self.seconds - self.request_seconds)
+        )
+    }
 }
 
 /// Send `data` to `make-dataset` as `name`, and wait until chap-core has
@@ -159,6 +181,7 @@ pub(crate) fn import(
     api: &Api,
     data: &Dataset,
     name: &str,
+    format: synthetic::Format,
     timeout: Duration,
 ) -> Result<Imported> {
     let started = Instant::now();
@@ -168,8 +191,14 @@ pub(crate) fn import(
         data.rows(),
         api.base()
     ));
-    let body = synthetic::make_dataset_body(data, name);
-    let answer = post(api, "/v1/analytics/make-dataset", &body)?;
+    let body = synthetic::make_dataset_body(data, name, format);
+    ctx.out.verbose(&format!(
+        "make-dataset body: {}",
+        crate::commands::bench::human_bytes(body.len())
+    ));
+    let answer = post_text(api, "/v1/analytics/make-dataset", &body)?;
+    drop(body);
+    let request_seconds = started.elapsed().as_secs_f64();
     if answer.get("importedCount").and_then(|c| c.as_i64()) == Some(0) {
         let why = answer["rejected"][0]["reason"]
             .as_str()
@@ -212,6 +241,7 @@ pub(crate) fn import(
     Ok(Imported {
         dataset,
         job,
+        request_seconds,
         seconds: started.elapsed().as_secs_f64(),
     })
 }

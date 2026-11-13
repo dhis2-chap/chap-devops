@@ -80,12 +80,15 @@ fn generate_import_stores_the_dataset_in_chap_core() {
     assert_eq!(value["dataset_id"], TEST_DATASET);
     assert_eq!(value["files"], Json::Null);
     assert_eq!(value["rows"], 40);
+    assert_eq!(value["format"], "rows");
+    assert!(value["request_seconds"].as_f64().is_some(), "{value}");
     let seen = recorded(&sandbox, &dir);
     assert_eq!(
         seen["datasets"],
         serde_json::json!(["chap-devops-test-five"])
     );
-    assert_eq!(seen["observations"], 40);
+    // One object for each of the 40 rows and 4 columns.
+    assert_eq!(seen["observations"], 160);
     assert_eq!(
         seen["features"][0],
         serde_json::json!([
@@ -97,6 +100,39 @@ fn generate_import_stores_the_dataset_in_chap_core() {
     );
     // Nothing was written next to the deployment.
     assert!(!dir.join("chap-devops-test-five.csv").exists());
+}
+
+#[test]
+fn generate_import_in_columns_sends_one_list_for_each_column() {
+    let sandbox = Sandbox::new();
+    let port = chap_core_server();
+    sandbox
+        .init(&["--models", "none", "--api-port", &port.to_string()])
+        .assert()
+        .success();
+    let dir = sandbox.project();
+
+    let value: Json = json_of(&mut chap_in(
+        &sandbox,
+        &dir,
+        &[
+            "--json",
+            "bench",
+            "dataset",
+            "--import",
+            "--format",
+            "columns",
+            "--locations",
+            "5",
+            "--periods",
+            "8",
+            "--name",
+            "chap-devops-test-columns",
+        ],
+    ));
+    assert_eq!(value["format"], "columns");
+    // The stand-in counts the rows of the columns.
+    assert_eq!(recorded(&sandbox, &dir)["observations"], 40);
 }
 
 #[test]

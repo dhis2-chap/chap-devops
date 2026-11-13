@@ -270,6 +270,7 @@ chap-devops bench dataset --import --period-type month --periods 72
 | `--cases N` | 100 | the typical number of cases in one location and period |
 | `--covariates N` | 3 | `rainfall`, `mean_temperature`, `population`, then `covariate_4` and more |
 | `--seed N` | 1 | the start of the random values |
+| `--format` | `rows` | how `--import` and `--write` send the values: `rows` or `columns` |
 
 The periods always end with the last week or month of 2024. Each location
 has its own size, season and population. The cases follow the season and the
@@ -290,8 +291,19 @@ The GeoJSON has one square for each location, on a grid in the sea west of
 Africa, so no one mistakes it for a real place.
 
 With `--import`, it sends the dataset to chap-core's `make-dataset`, waits
-until chap-core has stored it, and gives the dataset id. It sends the
-observations as columns (`providedDataColumns`), which needs chap-core v2.7.0
-or later. `--name` sets the name. The default name says what the dataset is
+until chap-core has stored it, and gives the dataset id. `--format` selects
+how it sends the values:
+
+- `rows` (the default) sends one object for each value (`providedData`),
+  with DHIS2 period ids such as `2024W7` and `202407`. The Modeling App
+  sends a dataset this way, so the import takes the same path in chap-core.
+- `columns` sends one list for each column (`providedDataColumns`). The body
+  is about four times smaller. This needs chap-core v2.7.0 or later.
+
+The closing line gives the time of the import, split in two: the request,
+in which chap-core reads and checks the values, and the job, in which the
+worker stores them. `--json` gives `request_seconds` and `import_seconds`.
+
+`--name` sets the name. The default name says what the dataset is
 made of: `synthetic-18x104w-c100-k3-s1` is 18 locations, 104 weeks, 100
 cases, 3 covariates and seed 1. `bench --write` adds `-bench-<time>` to it.

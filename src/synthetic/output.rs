@@ -67,10 +67,78 @@ pub fn geojson(data: &Dataset) -> Value {
     json!({"type": "FeatureCollection", "features": features})
 }
 
-/// The body of `POST /v1/analytics/make-dataset`, with the observations in
-/// columns (`providedDataColumns`, chap-core v2.7.0 and later): much
-/// smaller than one object for each value.
-pub fn make_dataset_body(data: &Dataset, name: &str) -> Value {
+/// How the observations go to chap-core.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum Format {
+    // One object for each value (`providedData`), as the Modeling App sends
+    // them. Not doc comments: clap would make them a long help.
+    Rows,
+    // One list for each column (`providedDataColumns`, chap-core v2.7.0 and
+    // later): much smaller.
+    Columns,
+}
+
+/// The body of `POST /v1/analytics/make-dataset`, as JSON text: the
+/// observations of a large dataset are too many for a [`Value`].
+pub fn make_dataset_body(data: &Dataset, name: &str, format: Format) -> String {
+    let observations = match format {
+        Format::Rows => format!(r#""providedData":{}"#, rows_text(data)),
+        Format::Columns => format!(r#""providedDataColumns":{}"#, columns_text(data)),
+    };
+    format!(
+        r#"{{"name":{},"geojson":{},{observations},"dataToBeFetched":[]}}"#,
+        Value::String(name.to_string()),
+        geojson(data)
+    )
+}
+
+/// The body of `POST /v1/crud/prediction-setups/{id}/run`, as JSON text:
+/// the observations one object each, as the Modeling App sends them.
+pub fn prediction_run_body(data: &Dataset, name: &str) -> String {
+    format!(
+        r#"{{"name":{},"geojson":{},"providedData":{}}}"#,
+        Value::String(name.to_string()),
+        geojson(data),
+        rows_text(data)
+    )
+}
+
+/// The observations one object each: org unit, DHIS2 period id, feature
+/// name and value, row by row.
+pub fn rows_text(data: &Dataset) -> String {
+    use std::fmt::Write;
+    let names: Vec<String> = data
+        .columns
+        .iter()
+        .map(|(name, _)| Value::String(name.clone()).to_string())
+        .collect();
+    let mut out = String::with_capacity(data.rows() * data.columns.len() * 72);
+    out.push('[');
+    let mut row = 0;
+    let mut first = true;
+    for location in &data.locations {
+        let location = Value::String(location.clone()).to_string();
+        for period in &data.periods {
+            let period = period.api();
+            for ((_, values), name) in data.columns.iter().zip(&names) {
+                if !first {
+                    out.push(',');
+                }
+                first = false;
+                let _ = write!(
+                    out,
+                    r#"{{"orgUnit":{location},"period":"{period}","featureName":{name},"value":{}}}"#,
+                    number(values[row])
+                );
+            }
+            row += 1;
+        }
+    }
+    out.push(']');
+    out
+}
+
+fn columns_text(data: &Dataset) -> String {
     let mut org_units = Vec::with_capacity(data.rows());
     let mut periods = Vec::with_capacity(data.rows());
     for location in &data.locations {
@@ -84,38 +152,7 @@ pub fn make_dataset_body(data: &Dataset, name: &str) -> Value {
         .iter()
         .map(|(name, values)| (name.clone(), json!(values)))
         .collect();
-    json!({
-        "name": name,
-        "geojson": geojson(data),
-        "providedDataColumns": {
-            "orgUnit": org_units,
-            "period": periods,
-            "values": values,
-        },
-        "dataToBeFetched": [],
-    })
-}
-
-/// The observations one object each (`providedData`), as the Modeling App
-/// sends them: org unit, DHIS2 period id, feature name and value.
-pub fn observation_rows(data: &Dataset) -> Vec<Value> {
-    let mut rows = Vec::with_capacity(data.rows() * data.columns.len());
-    let mut row = 0;
-    for location in &data.locations {
-        for period in &data.periods {
-            let period = period.api();
-            for (name, values) in &data.columns {
-                rows.push(json!({
-                    "orgUnit": location,
-                    "period": period,
-                    "featureName": name,
-                    "value": values[row],
-                }));
-            }
-            row += 1;
-        }
-    }
-    rows
+    json!({"orgUnit": org_units, "period": periods, "values": values}).to_string()
 }
 
 /// `12` for a whole number, else the shortest form that reads back the same.

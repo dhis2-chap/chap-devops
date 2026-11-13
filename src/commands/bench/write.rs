@@ -84,6 +84,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     // --- the dataset ---
     let spec = args.synthetic.spec();
     let mut synthetic = None;
+    let mut import_took = None;
     let (dataset, dataset_job, made) = match args.dataset {
         Some(id) => {
             api.get_json(&format!("/v1/crud/datasets/{id}")).map_err(|e| {
@@ -97,12 +98,14 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         None => {
             let data = crate::synthetic::generate(&spec);
             let name = format!("{}-bench-{stamp}", spec.name());
-            let imported = dataset::import(ctx, &api, &data, &name, wait)?;
+            let imported =
+                dataset::import(ctx, &api, &data, &name, args.synthetic.format, wait)?;
             ctx.out.verbose(&format!(
                 "dataset {} from {}",
                 imported.dataset,
                 dataset::describe(&spec, data.rows())
             ));
+            import_took = Some((imported.request_seconds, imported.took()));
             synthetic = Some(data);
             (imported.dataset, Some(imported.job), true)
         }
@@ -234,6 +237,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         "dataset": dataset,
         "dataset_imported": made,
         "import_seconds": made.then_some(imported_in),
+        "import_request_seconds": import_took.as_ref().map(|t| t.0),
         "backtests": runs,
         "prediction": prediction,
         "failed": failed,
@@ -264,11 +268,8 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
                 _ => lines.info(message.text.as_str()),
             };
         }
-        if made {
-            lines.hint(format!(
-                "the import took {}",
-                human_ms(imported_in * 1000.0)
-            ));
+        if let Some((_, took)) = &import_took {
+            lines.hint(format!("the import took {took}"));
         }
         if target.local && failed > 0 {
             lines.hint("`chap-devops logs worker` shows what the worker did");

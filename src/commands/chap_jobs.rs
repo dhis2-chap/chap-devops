@@ -51,8 +51,13 @@ pub(crate) fn chap_core(ctx: &Ctx, url: Option<&str>, command: &str) -> Result<T
 
 /// `POST path` with a JSON body, where a non-2xx is an error.
 pub(crate) fn post(api: &Api, path: &str, body: &serde_json::Value) -> Result<serde_json::Value> {
-    let text = serde_json::to_string(body)?;
-    let answer = api.send_json("POST", path, Some(&text))?;
+    post_text(api, path, &serde_json::to_string(body)?)
+}
+
+/// [`post`] with a body that is already JSON text, for a body too large to
+/// build as a [`serde_json::Value`].
+pub(crate) fn post_text(api: &Api, path: &str, text: &str) -> Result<serde_json::Value> {
+    let answer = api.send_json("POST", path, Some(text))?;
     if !answer.is_success() {
         return Err(api.status_error(path, &answer));
     }

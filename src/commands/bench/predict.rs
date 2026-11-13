@@ -11,7 +11,7 @@
 use super::write::POLL;
 use crate::api::Api;
 use crate::commands::Ctx;
-use crate::commands::chap_jobs::{database_result, job_failure, job_status, post};
+use crate::commands::chap_jobs::{database_result, job_failure, job_status, post, post_text};
 use crate::commands::modeltest::first_line;
 use crate::jobs::Outcome;
 use crate::output::Message;
@@ -44,15 +44,6 @@ pub fn expected_entries(row: &Value) -> Option<usize> {
     let units = row.get("orgUnits")?.as_array()?.len();
     let periods = row.get("nPeriods")?.as_u64()? as usize;
     Some(units * periods)
-}
-
-/// The body of `POST /v1/crud/prediction-setups/{id}/run`.
-pub fn run_body(data: &Dataset, name: &str) -> Value {
-    serde_json::json!({
-        "name": name,
-        "geojson": crate::synthetic::geojson(data),
-        "providedData": crate::synthetic::observation_rows(data),
-    })
 }
 
 /// Make the prediction from `backtest`, and wait until `until` for it.
@@ -92,7 +83,8 @@ pub fn make(
     ));
     let started = Instant::now();
     let path = format!("/v1/crud/prediction-setups/{setup}/run");
-    let job = match post(api, &path, &run_body(data, name)) {
+    let body = crate::synthetic::prediction_run_body(data, name);
+    let job = match post_text(api, &path, &body) {
         Ok(answer) => answer.get("id").and_then(Value::as_str).map(str::to_string),
         Err(e) => {
             made.problem = Some(first_line(&e.to_string()));

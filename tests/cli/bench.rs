@@ -248,8 +248,9 @@ fn bench_write_imports_a_dataset_runs_the_backtests_and_cleans_up() {
     );
 
     let seen = recorded(&sandbox, &dir);
-    // 3 locations by 12 months, sent as columns.
-    assert_eq!(seen["observations"], 36);
+    // 3 locations by 12 months by the target and 3 covariates, one object
+    // each, as the Modeling App sends them.
+    assert_eq!(seen["observations"], 3 * 12 * 4);
     assert_eq!(seen["backtests"].as_array().expect("backtests").len(), 2);
     assert_eq!(seen["backtests"][0]["modelId"], OLD_CHAPKIT_MODEL);
     assert_eq!(seen["backtests"][0]["datasetId"], TEST_DATASET);

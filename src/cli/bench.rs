@@ -1,7 +1,7 @@
 //! `chap-devops bench` and `chap-devops bench dataset`: load on chap-core,
 //! and the synthetic data for it.
 
-use crate::synthetic::{PeriodType, Spec};
+use crate::synthetic::{Format, PeriodType, Spec};
 use clap::{Args, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
@@ -156,6 +156,10 @@ pub struct SyntheticArgs {
     /// Number of covariates: rainfall, mean_temperature, population, then more
     #[arg(long, value_name = "N", default_value_t = 3, value_parser = clap::value_parser!(u64).range(0..=100))]
     pub covariates: u64,
+
+    /// How to send the observations: rows as the Modeling App, or columns
+    #[arg(long, value_name = "FORMAT", value_enum, default_value_t = Format::Rows)]
+    pub format: Format,
 
     /// Seed for the random values; the same seed gives the same dataset
     #[arg(long, value_name = "N", default_value_t = 1)]

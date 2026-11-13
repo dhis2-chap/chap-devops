@@ -947,6 +947,7 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--period-type <TYPE>` | Length of one period. Values: `week`, `month`. Default: `week`. |
 | `--cases <N>` | Typical number of cases in one location and period. Default: `100`. |
 | `--covariates <N>` | Number of covariates: rainfall, mean_temperature, population, then more. Default: `3`. |
+| `--format <FORMAT>` | How to send the observations: rows as the Modeling App, or columns. Values: `rows`, `columns`. Default: `rows`. |
 | `--seed <N>` | Seed for the random values; the same seed gives the same dataset. Default: `1`. |
 
 Subcommands: [`chap-devops bench dataset`](#chap-devops-bench-dataset)
@@ -971,6 +972,7 @@ Usage: chap-devops bench dataset [OPTIONS]
 | `--period-type <TYPE>` | Length of one period. Values: `week`, `month`. Default: `week`. |
 | `--cases <N>` | Typical number of cases in one location and period. Default: `100`. |
 | `--covariates <N>` | Number of covariates: rainfall, mean_temperature, population, then more. Default: `3`. |
+| `--format <FORMAT>` | How to send the observations: rows as the Modeling App, or columns. Values: `rows`, `columns`. Default: `rows`. |
 | `--seed <N>` | Seed for the random values; the same seed gives the same dataset. Default: `1`. |
 
 ## chap-devops chap

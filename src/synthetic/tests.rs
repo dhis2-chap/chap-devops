@@ -126,10 +126,14 @@ fn every_location_is_a_closed_square_with_its_id() {
     }
 }
 
+fn parse(text: &str) -> serde_json::Value {
+    serde_json::from_str(text).expect("the body is JSON")
+}
+
 #[test]
-fn the_make_dataset_body_has_one_column_for_each_feature() {
+fn the_make_dataset_body_in_columns_has_one_column_for_each_feature() {
     let data = generate(&spec());
-    let body = make_dataset_body(&data, "x");
+    let body = parse(&make_dataset_body(&data, "x", Format::Columns));
     let columns = &body["providedDataColumns"];
     assert_eq!(columns["orgUnit"].as_array().unwrap().len(), 30);
     assert_eq!(columns["period"][0], "202403");
@@ -141,6 +145,7 @@ fn the_make_dataset_body_has_one_column_for_each_feature() {
     );
     assert_eq!(body["name"], "x");
     assert!(body.get("providedData").is_none());
+    assert_eq!(body["dataToBeFetched"], serde_json::json!([]));
 }
 
 #[test]
@@ -154,14 +159,36 @@ fn the_rows_have_one_object_for_each_value_with_a_dhis2_period() {
         period_type: PeriodType::Week,
         ..spec()
     });
-    let rows = observation_rows(&data);
+    let body = parse(&make_dataset_body(&data, "a \"quoted\" name", Format::Rows));
+    assert_eq!(body["name"], "a \"quoted\" name");
+    assert!(body.get("providedDataColumns").is_none());
+    let rows = body["providedData"].as_array().expect("rows");
     assert_eq!(rows.len(), data.rows() * data.columns.len());
     let first = &rows[0];
-    assert_eq!(first["orgUnit"], data.locations[0]);
+    assert_eq!(first["orgUnit"], data.locations[0].as_str());
     assert_eq!(first["period"], data.periods[0].api());
     assert_eq!(first["featureName"], TARGET);
-    assert_eq!(first["value"], data.columns[0].1[0]);
+    assert_eq!(first["value"].as_f64(), Some(data.columns[0].1[0]));
     // The second object is the first covariate of the same row.
-    assert_eq!(rows[1]["featureName"], data.columns[1].0);
+    assert_eq!(rows[1]["featureName"], data.columns[1].0.as_str());
     assert_eq!(rows[1]["period"], first["period"]);
+    // The last object is the last column of the last row.
+    let last = rows.last().expect("a last row");
+    let (name, values) = data.columns.last().expect("a column");
+    assert_eq!(last["featureName"], name.as_str());
+    assert_eq!(last["value"].as_f64(), values.last().copied());
+}
+
+#[test]
+fn the_prediction_run_body_sends_the_rows() {
+    let data = generate(&spec());
+    let body = parse(&prediction_run_body(&data, "run"));
+    assert_eq!(body["name"], "run");
+    assert_eq!(
+        body["providedData"].as_array().map(Vec::len),
+        Some(data.rows() * data.columns.len())
+    );
+    assert_eq!(body["geojson"]["type"], "FeatureCollection");
+    // The run takes no other field: chap-core refuses unknown ones.
+    assert_eq!(body.as_object().map(|o| o.len()), Some(3));
 }
