@@ -34,6 +34,14 @@ pub struct BenchArgs {
     #[arg(long, value_name = "N,N", value_delimiter = ',', value_parser = clap::value_parser!(u32).range(1..=64))]
     pub workers: Vec<u32>,
 
+    /// Run --write once for each size, such as 500x520w,3000x120m
+    #[arg(long, value_name = "SIZES", value_delimiter = ',', requires = "write", conflicts_with_all = ["workers", "dataset"])]
+    pub sizes: Vec<Size>,
+
+    /// Empty chap-core's database before each size; deletes all its data
+    #[arg(long, requires = "sizes")]
+    pub fresh_database: bool,
+
     /// Record the CPU, memory, database and Valkey use of each phase
     #[arg(long)]
     pub resources: bool,
@@ -99,6 +107,49 @@ pub struct BenchArgs {
 
     #[command(flatten)]
     pub synthetic: SyntheticArgs,
+}
+
+/// One size of a `--sizes` series: `1500x365w` is 1,500 locations and 365
+/// weeks, `3000x120m` is 3,000 locations and 120 months.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Size {
+    pub locations: u64,
+    pub periods: u64,
+    pub period_type: PeriodType,
+}
+
+impl std::str::FromStr for Size {
+    type Err = String;
+
+    fn from_str(text: &str) -> Result<Size, String> {
+        let wrong = || format!("`{text}` is not a size such as 1500x365w or 3000x120m");
+        let (locations, rest) = text.trim().split_once(['x', 'X']).ok_or_else(wrong)?;
+        let period_type = match rest.chars().last() {
+            Some('w' | 'W') => PeriodType::Week,
+            Some('m' | 'M') => PeriodType::Month,
+            _ => return Err(wrong()),
+        };
+        let periods = &rest[..rest.len() - 1];
+        let size = Size {
+            locations: locations.parse().map_err(|_| wrong())?,
+            periods: periods.parse().map_err(|_| wrong())?,
+            period_type,
+        };
+        if size.locations == 0 || size.periods < 2 {
+            return Err(wrong());
+        }
+        Ok(size)
+    }
+}
+
+impl std::fmt::Display for Size {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let unit = match self.period_type {
+            PeriodType::Week => 'w',
+            PeriodType::Month => 'm',
+        };
+        write!(f, "{}x{}{unit}", self.locations, self.periods)
+    }
 }
 
 /// A Modeling App page that `chap-devops bench` times.

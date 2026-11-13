@@ -561,3 +561,61 @@ fn bench_resources_says_it_cannot_see_a_chap_core_elsewhere() {
         "--resources reads docker, which cannot see a chap-core at --url",
     ));
 }
+
+#[test]
+fn bench_sizes_runs_once_for_each_size_side_by_side() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    bench_in(
+        &sandbox,
+        &dir,
+        &[
+            "bench",
+            "--write",
+            "--model",
+            OLD_CHAPKIT_MODEL,
+            "--backtests",
+            "1",
+            "--sizes",
+            "3x12m,4x10m",
+        ],
+    )
+    .assert()
+    .success()
+    .stdout(predicates::str::is_match(r"(?m)^MEASURE +3x12m +4x10m").expect("a regex"))
+    .stdout(predicates::str::contains("ran 2 of 2 sizes (3x12m, 4x10m)"));
+}
+
+#[test]
+fn bench_fresh_database_needs_sizes_and_this_deployment() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    bench_in(
+        &sandbox,
+        &dir,
+        &["bench", "--write", "--model", "m", "--fresh-database"],
+    )
+    .assert()
+    .code(2)
+    .stderr(predicates::str::contains("--sizes"));
+    bench_in(
+        &sandbox,
+        &dir,
+        &[
+            "bench",
+            "--write",
+            "--model",
+            "m",
+            "--sizes",
+            "3x12m",
+            "--fresh-database",
+            "--url",
+            "http://localhost:18998",
+        ],
+    )
+    .assert()
+    .failure()
+    .stderr(predicates::str::contains("cannot be used with --url"));
+}

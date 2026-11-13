@@ -226,6 +226,43 @@ The rows are the time per page and the p50 of each request, and with
 run whole under `runs`. `--workers` changes this deployment's chap-core, so
 it cannot be used with `--url`.
 
+## Dataset sizes: --sizes
+
+`--sizes` runs `--write` once for each dataset size, and puts the numbers
+side by side. A size is the locations, an `x`, and the periods with `w` for
+weeks or `m` for months:
+
+```sh
+chap-devops bench --write --model seasonal_median --backtests 1 \
+  --sizes 500x520w,1500x520w,3000x520w,1500x120m --fresh-database --resources
+```
+
+Each size runs as `bench --write` with its `--locations`, `--periods` and
+`--period-type`, and with the other options of the command. The other
+dataset options, such as `--covariates` and `--format`, are the same for
+every size.
+
+`--fresh-database` empties chap-core's database before each size, so a run
+does not find the rows of the run before it. It stops `chap` and `worker`,
+drops the database and makes it again, and starts them. chap-core makes its
+tables and its configured models again when it starts. **This deletes all
+the data in chap-core's database:** use it only on a deployment of its own.
+It does not work with `--url`.
+
+This run is from chap-core `master` (2.8.0.dev0) on an Apple Silicon Mac:
+
+```text
+MEASURE           50x156w  100x60m
+import            4.72 s   4.54 s
+import request    562 ms   438 ms
+backtest request  409 ms   361 ms
+slowest job       4.81 s   3.59 s
+whole run         17.84 s  14.87 s
+ran 2 of 2 sizes (50x156w, 100x60m), each on an empty database
+```
+
+`--json` gives each run whole under `runs`, with its `size`.
+
 ## Before and after a change
 
 To see what a change in chap-core does, time the same page before and

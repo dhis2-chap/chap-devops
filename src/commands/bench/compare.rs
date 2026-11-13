@@ -1,5 +1,6 @@
 //! `chap-devops bench --workers 1,4`: the same measurement once for each
-//! API worker count, side by side.
+//! API worker count, side by side. The child runs and the table are shared
+//! with `--sizes` (`sizes.rs`).
 //!
 //! Each count is set with the code of `restart --api-workers`, which
 //! recreates only the `chap` service. Then the same `bench` command runs as
@@ -13,7 +14,20 @@ use serde_json::Value;
 
 use super::measure::human_ms;
 
-/// The arguments of this process without `--workers`, and with `--json`.
+/// The options a series sets for each of its runs, with a value.
+const SERIES_VALUES: &[&str] = &[
+    "--workers",
+    "--sizes",
+    "--locations",
+    "--periods",
+    "--period-type",
+];
+
+/// The options a series sets for each of its runs, without a value.
+const SERIES_FLAGS: &[&str] = &["--fresh-database", "--json"];
+
+/// The arguments of this process without the options of the series, and
+/// with `--json`.
 pub fn child_args(args: &[String]) -> Vec<String> {
     let mut out = Vec::new();
     let mut skip = false;
@@ -22,17 +36,40 @@ pub fn child_args(args: &[String]) -> Vec<String> {
             skip = false;
             continue;
         }
-        if arg == "--workers" {
+        if SERIES_VALUES.contains(&arg.as_str()) {
             skip = true;
             continue;
         }
-        if arg.starts_with("--workers=") || arg == "--json" {
+        let with_value = SERIES_VALUES
+            .iter()
+            .any(|o| arg.starts_with(&format!("{o}=")));
+        if with_value || SERIES_FLAGS.contains(&arg.as_str()) {
             continue;
         }
         out.push(arg.clone());
     }
     out.push("--json".to_string());
     out
+}
+
+/// Run this `bench` again with `extra`, and give its `--json` result.
+pub fn child(extra: &[String]) -> std::result::Result<Value, String> {
+    let exe = std::env::current_exe()
+        .map_err(|e| format!("could not find this chap-devops binary to run again: {e}"))?;
+    let argv: Vec<String> = std::env::args().skip(1).collect();
+    let mut args = child_args(&argv);
+    args.extend_from_slice(extra);
+    let out = std::process::Command::new(&exe)
+        .args(&args)
+        .stderr(std::process::Stdio::inherit())
+        .output()
+        .map_err(|e| format!("could not run `chap-devops bench` again: {e}"))?;
+    serde_json::from_slice::<Value>(&out.stdout).map_err(|_| {
+        format!(
+            "it gave no result (exit code {})",
+            out.status.code().unwrap_or(-1)
+        )
+    })
 }
 
 pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
@@ -49,10 +86,6 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
         super::super::workers::check(&project, count)?;
     }
     let before = super::super::workers::configured(&project);
-    let exe = std::env::current_exe()
-        .map_err(|e| anyhow::anyhow!("could not find this chap-devops binary to run again: {e}"))?;
-    let argv: Vec<String> = std::env::args().skip(1).collect();
-    let child = child_args(&argv);
 
     let mut runs: Vec<(u32, usize, Value)> = Vec::new();
     let mut failed = None;
@@ -68,19 +101,12 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
             "timing with {running} API worker{}",
             super::super::workers::plural(running)
         ));
-        let out = std::process::Command::new(&exe)
-            .args(&child)
-            .current_dir(std::env::current_dir().unwrap_or_default())
-            .stderr(std::process::Stdio::inherit())
-            .output()
-            .map_err(|e| anyhow::anyhow!("could not run `chap-devops bench` again: {e}"))?;
-        match serde_json::from_slice::<Value>(&out.stdout) {
+        match child(&[]) {
             Ok(value) => runs.push((count, running, value)),
-            Err(_) => {
+            Err(why) => {
                 failed = Some(anyhow::anyhow!(
-                    "the run with {count} API workers gave no result (exit code {}); run it alone \
-                     with `chap-devops restart --api-workers {count}` and `chap-devops bench`",
-                    out.status.code().unwrap_or(-1)
+                    "the run with {count} API workers failed: {why}; run it alone with \
+                     `chap-devops restart --api-workers {count}` and `chap-devops bench`"
                 ));
                 break;
             }
@@ -92,7 +118,9 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
     let restored = super::super::workers::set_workers(ctx, &project, before);
 
     if !ctx.out.json && !runs.is_empty() {
-        print!("{}", table(ctx, &runs));
+        let headers: Vec<String> = runs.iter().map(|(c, ..)| format!("{c} WORKERS")).collect();
+        let values: Vec<Value> = runs.iter().map(|(.., v)| v.clone()).collect();
+        print!("{}", table(ctx, &headers, &values));
     }
     let value = serde_json::json!({
         "runs": runs.iter().map(|(count, running, value)| serde_json::json!({
@@ -123,8 +151,8 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
     Ok(())
 }
 
-/// One row for each number the runs share, one column for each count.
-pub fn rows(runs: &[(u32, usize, Value)]) -> Vec<(String, Vec<Option<f64>>)> {
+/// One row for each number the runs share, one column for each run.
+pub fn rows(runs: &[Value]) -> Vec<(String, Vec<Option<f64>>)> {
     let mut rows: Vec<(String, Vec<Option<f64>>)> = Vec::new();
     let mut add = |label: String, at: usize, ms: Option<f64>| match rows
         .iter_mut()
@@ -137,7 +165,7 @@ pub fn rows(runs: &[(u32, usize, Value)]) -> Vec<(String, Vec<Option<f64>>)> {
             rows.push((label, cells));
         }
     };
-    for (at, (_, _, value)) in runs.iter().enumerate() {
+    for (at, value) in runs.iter().enumerate() {
         for page in value["pages"].as_array().into_iter().flatten() {
             let name = page["page"].as_str().unwrap_or_default();
             add(format!("{name} page"), at, page["ms"].as_f64());
@@ -176,9 +204,10 @@ pub fn rows(runs: &[(u32, usize, Value)]) -> Vec<(String, Vec<Option<f64>>)> {
     rows
 }
 
-fn table(ctx: &Ctx, runs: &[(u32, usize, Value)]) -> String {
+/// The rows of [`rows`] under `headers`, one for each run.
+pub fn table(ctx: &Ctx, headers: &[String], runs: &[Value]) -> String {
     let mut header = vec!["MEASURE".to_string()];
-    header.extend(runs.iter().map(|(c, ..)| format!("{c} WORKERS")));
+    header.extend(headers.iter().cloned());
     let header: Vec<&str> = header.iter().map(String::as_str).collect();
     let body: Vec<Vec<String>> = rows(runs)
         .into_iter()

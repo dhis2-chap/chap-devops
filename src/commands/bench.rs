@@ -15,6 +15,7 @@ mod predict;
 mod resources;
 mod runs;
 pub(crate) mod server;
+mod sizes;
 mod write;
 
 use crate::api::Api;
@@ -39,6 +40,9 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     let chap = super::chap_jobs::chap_core(ctx, args.url.as_deref(), "`chap-devops bench`")?;
     if !args.workers.is_empty() {
         return compare::run(ctx, args, chap.local);
+    }
+    if !args.sizes.is_empty() {
+        return sizes::run(ctx, args, chap.local);
     }
     if args.write {
         return write::run(ctx, args, &chap);

@@ -326,7 +326,7 @@ pub enum Command {
     Api(ApiArgs),
 
     /// Time the Modeling App's pages, or run backtests under load
-    Bench(BenchArgs),
+    Bench(Box<BenchArgs>),
 
     /// Run the chap CLI in a container, with no Python or uv installed
     Chap(ChapArgs),

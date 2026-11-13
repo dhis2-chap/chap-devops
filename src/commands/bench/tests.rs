@@ -518,7 +518,7 @@ fn the_comparison_has_a_row_for_each_measure_and_a_column_for_each_count() {
         "seconds": 3.0});
     let four =
         json!({"pages": [{"page": "prediction", "ms": 500.0}], "routes": [], "seconds": 2.0});
-    let rows = rows(&[(1, 1, one), (4, 4, four)]);
+    let rows = rows(&[one, four]);
     let find = |label: &str| {
         rows.iter()
             .find(|(l, _)| l == label)
@@ -587,4 +587,55 @@ fn postgres_and_valkey_counters_give_what_grew_over_a_phase() {
     assert!(!valkey.contains_key("redis_version"));
     // The peak is a level, not a counter: it is not a difference.
     assert!(!delta(&valkey, &valkey).contains_key("used_memory_peak"));
+}
+
+#[test]
+fn a_size_reads_as_locations_periods_and_a_period_type() {
+    use crate::cli::Size;
+    use crate::synthetic::PeriodType;
+    let size: Size = "1500x365w".parse().expect("a size");
+    assert_eq!(
+        (size.locations, size.periods, size.period_type),
+        (1500, 365, PeriodType::Week)
+    );
+    assert_eq!(size.to_string(), "1500x365w");
+    let size: Size = "3000X120m".parse().expect("a size");
+    assert_eq!(size.period_type, PeriodType::Month);
+    for wrong in ["1500x365", "x10w", "10x1w", "0x10w", "big"] {
+        assert!(wrong.parse::<Size>().is_err(), "{wrong}");
+    }
+    assert_eq!(
+        super::sizes::size_args(&"20x30m".parse().expect("a size")),
+        [
+            "--locations",
+            "20",
+            "--periods",
+            "30",
+            "--period-type",
+            "month"
+        ]
+    );
+}
+
+#[test]
+fn a_child_run_leaves_out_the_options_of_the_series() {
+    use super::compare::child_args;
+    let args: Vec<String> = [
+        "bench",
+        "--write",
+        "--sizes",
+        "1x2w,3x4m",
+        "--fresh-database",
+        "--locations=9",
+        "--periods",
+        "8",
+        "--model",
+        "m",
+    ]
+    .map(str::to_string)
+    .to_vec();
+    assert_eq!(
+        child_args(&args),
+        ["bench", "--write", "--model", "m", "--json"]
+    );
 }
