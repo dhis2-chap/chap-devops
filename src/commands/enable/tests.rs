@@ -27,6 +27,7 @@ fn project_with_ewars(host_port: Option<u16>) -> Project {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: Some("linux/amd64".into()),
+        multi_arch: false,
         compose_file: "compose.chapkit-ewars-model.yml".into(),
     };
     Project {

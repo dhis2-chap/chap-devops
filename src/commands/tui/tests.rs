@@ -18,6 +18,7 @@ fn model(port: Option<u16>) -> EnabledModel {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: Some("linux/amd64".into()),
+        multi_arch: false,
         compose_file: "compose.chapkit-ewars-model.yml".into(),
     }
 }

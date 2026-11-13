@@ -1958,9 +1958,29 @@ is added, and carries its answers in `.chap-devops/models-manual.yaml`. See
 
 ## The amd64 pin, and why
 
-The overlay of every marketplace model pins `platform: linux/amd64`, and the
-overlay of a model added with `chap-devops models add` pins it only when its image is
-published for amd64 alone (or `--runtime-amd64` says so). The marketplace images are
-published for amd64, as is chap-core itself, so an arm64 host such as Apple
-silicon pulls that variant and runs it under emulation instead of failing with
-`no matching manifest for linux/arm64`.
+Most model images are published for amd64 alone, as is chap-core itself. An
+arm64 host such as Apple silicon that asks for its own architecture fails with
+`no matching manifest for linux/arm64`. So the overlay pins
+`platform: linux/amd64`, and Docker runs the image under emulation.
+
+The pin is left out when the image has an arm64 build too:
+
+- For a marketplace model, `chap-devops models enable` and `chap-devops update`
+  read the index of the tag on its registry. If the index lists
+  `linux/arm64`, the overlay pins the host's own platform: `linux/arm64` on
+  Apple silicon, `linux/amd64` on other hosts. Compose then pulls the image
+  for that platform, also when this machine has an amd64 copy already. An
+  R-INLA model keeps the amd64 pin, as INLA has no arm64 build.
+- For a model added with `chap-devops models add`, the overlay pins amd64 only
+  when the image is published for amd64 alone, or when `--runtime-amd64` says
+  so.
+
+Without the registry, for example under `--offline`, nothing says that an
+arm64 build exists, so the pin stays. `.chap-devops/models.yaml` records the
+answer as `multi_arch: true`. `chap-devops sync` renders the platform of the
+host it runs on, and `chap-devops up` syncs first. So a deployment that is
+copied to another host gets that host's platform.
+
+An arm64 build of a model is a different build from the amd64 one that the
+marketplace verified. Its numeric libraries can give slightly different
+results. Run `chap-devops models test --backtest` on the host to check it.

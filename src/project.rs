@@ -355,8 +355,16 @@ pub struct EnabledModel {
     /// [`user`]: EnabledModel::user
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub reads_port: bool,
-    /// `Some("linux/amd64")` for R-INLA services.
+    /// `Some("linux/amd64")` for a marketplace model.
     pub platform: Option<String>,
+    /// Whether the registry lists a `linux/arm64` image next to the amd64
+    /// one, read when the model was enabled or updated. The overlay then pins
+    /// the host's own platform in place of [`platform`]; see
+    /// [`crate::compose::spec::host_platform`].
+    ///
+    /// [`platform`]: EnabledModel::platform
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub multi_arch: bool,
     /// Overlay file name, relative to the project directory.
     pub compose_file: String,
     /// The pin before `chap-devops update` moved it. It stays until chap-core
@@ -378,6 +386,8 @@ pub struct PreviousPin {
     pub user_from: UserSource,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub reads_port: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub multi_arch: bool,
 }
 
 /// A project directory plus its parsed state.

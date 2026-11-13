@@ -81,6 +81,11 @@ pub(crate) struct Hub {
     /// chap-core tags other than releases and moving tags that ghcr has both
     /// images for.
     pub(crate) built: Vec<String>,
+    /// Whether the model's index lists a `linux/arm64` image next to the
+    /// amd64 one.
+    pub(crate) arm64: bool,
+    /// The `runtime_image` of the served marketplace entry.
+    pub(crate) runtime: String,
 }
 
 /// The chap-core releases the hub publishes by default: two of them, so a
@@ -141,6 +146,24 @@ impl Hub {
             denied: false,
             unbuilt: Vec::new(),
             built: Vec::new(),
+            arm64: false,
+            runtime: R_INLA_RUNTIME.to_string(),
+        }
+    }
+
+    /// The same, with the served marketplace entry built on `runtime`.
+    pub(crate) fn on_runtime(self, runtime: &str) -> Hub {
+        Hub {
+            runtime: runtime.to_string(),
+            ..self
+        }
+    }
+
+    /// The same, with the model's image published for linux/arm64 too.
+    pub(crate) fn multi_arch(self) -> Hub {
+        Hub {
+            arm64: true,
+            ..self
         }
     }
 
@@ -196,6 +219,7 @@ impl Hub {
             None => String::new(),
         };
         MARKETPLACE_MODEL
+            .replace(R_INLA_RUNTIME, &self.runtime)
             .replace(
                 &format!("commit: {MARKETPLACE_SHA}"),
                 &format!("commit: {}", self.pinned),
@@ -360,7 +384,7 @@ impl Hub {
             // A digest pin asks for the index by digest; a tag pin asks for
             // it by tag, and an unpublished tag is a 404.
             if reference.starts_with("sha256:") || self.published.iter().any(|t| t == reference) {
-                return (200, json, index());
+                return (200, json, model_index(self.arm64));
             }
             return (
                 404,
@@ -463,9 +487,22 @@ pub(crate) fn dated_commit(sha: &str, date: &str) -> String {
 
 /// An OCI index with the attestation entry ghcr adds to every one of them.
 pub(crate) fn index() -> String {
+    model_index(false)
+}
+
+/// [`index`], with a linux/arm64 entry too when `arm64` is set.
+pub(crate) fn model_index(arm64: bool) -> String {
+    let arm64 = match arm64 {
+        true => {
+            r#"{"digest":"sha256:4444444444444444444444444444444444444444444444444444444444444444",
+            "platform":{"architecture":"arm64","os":"linux"}},"#
+        }
+        false => "",
+    };
     format!(
         r#"{{"schemaVersion":2,"mediaType":"application/vnd.oci.image.index.v1+json","manifests":[
           {{"digest":"{AMD64_DIGEST}","platform":{{"architecture":"amd64","os":"linux"}}}},
+          {arm64}
           {{"digest":"sha256:2222222222222222222222222222222222222222222222222222222222222222",
             "platform":{{"architecture":"unknown","os":"unknown"}}}}]}}"#
     )
@@ -489,6 +526,9 @@ review_policy:
 models:
   - models/chapkit_ewars_model.yaml
 ";
+
+/// The runtime the served marketplace entry is built on by default.
+pub(crate) const R_INLA_RUNTIME: &str = "ghcr.io/dhis2-chap/chapkit-r-inla";
 
 pub(crate) const MARKETPLACE_MODEL: &str = "\
 schema_version: 2

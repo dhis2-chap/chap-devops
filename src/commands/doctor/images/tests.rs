@@ -107,6 +107,7 @@ fn the_user_checks_cover_every_enabled_model() {
         user: "1000:1000".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.chapkit-ewars-model.yml".into(),
     };
     let mut project = Project {
@@ -472,6 +473,7 @@ fn an_env_tag_override_is_the_reference_checked() {
         user: "1000:1000".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.m.yml".into(),
     };
     let var = crate::compose::tag_env_var("m");

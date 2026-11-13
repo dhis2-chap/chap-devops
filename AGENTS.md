@@ -94,9 +94,11 @@ This file holds the rules that are not derivable from the code.
 - Upstream's `compose.yml` is kept byte for byte at the pinned chap-core tag;
   chap-devops changes behaviour through `compose.chap-devops.yml` (`!override`, needs
   Compose 2.24.4) and per-model overlays.
-- Marketplace model images are amd64-only, and so is chap-core, so every
-  model overlay pins `platform: linux/amd64` (`src/compose/spec.rs`), a model
-  added by URL or image too. The service user comes from the image config
+- Most marketplace model images are amd64-only, and so is chap-core, so a
+  model overlay pins `platform: linux/amd64` (`src/compose/spec.rs`). When
+  the registry lists a `linux/arm64` image for the tag too, the state records
+  `multi_arch` and the overlay pins the host's platform instead
+  (`host_platform`); an R-INLA model keeps amd64. The service user comes from the image config
   (`src/compose/resolve.rs`),
   not from assumptions; a root image gets no `user:` line, and its init
   container chowns to `0:0` like every other model's.

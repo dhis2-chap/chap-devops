@@ -33,6 +33,7 @@ mod models_configs_update;
 mod models_new;
 mod models_test;
 mod models_test_config;
+mod platform;
 mod preflight;
 mod retire;
 mod run;

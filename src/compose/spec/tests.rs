@@ -104,6 +104,7 @@ fn from_enabled_replays_the_recorded_state() {
         user: "1000:1000".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.chapkit-ewars-model.yml".into(),
     };
     let spec = OverlaySpec::from_enabled("chapkit_ewars_model", &enabled, m);

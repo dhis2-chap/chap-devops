@@ -316,6 +316,7 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
         entry.user = change.new_user.clone();
         entry.user_from = change.user_from;
         entry.reads_port = change.reads_port;
+        entry.multi_arch = change.multi_arch;
         refresh_env_pin(&project.dir, &tag_env_var(&change.id), &change.new_pin())?;
     }
     let synced = sync(&mut project, &registry, false)?;
@@ -383,6 +384,7 @@ fn record_previous(entry: &mut crate::project::EnabledModel, new_pin: &str, manu
         user: entry.user.clone(),
         user_from: entry.user_from,
         reads_port: entry.reads_port,
+        multi_arch: entry.multi_arch,
     });
 }
 

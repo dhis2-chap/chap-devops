@@ -24,6 +24,7 @@ fn a_model_opens_its_docs_on_its_port_or_through_chap_core() {
         user: String::new(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: String::new(),
     };
     let url = |project: &Project, model: &crate::project::EnabledModel| {

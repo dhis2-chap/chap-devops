@@ -11,6 +11,7 @@ fn enabled(previous: bool) -> EnabledModel {
             user: "chapkit:chapkit".to_string(),
             user_from: Default::default(),
             reads_port: false,
+            multi_arch: false,
         }),
         reads_port: false,
         service_id: "m".to_string(),
@@ -25,6 +26,7 @@ fn enabled(previous: bool) -> EnabledModel {
         user: "chapkit:chapkit".to_string(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.m.yml".to_string(),
     }
 }

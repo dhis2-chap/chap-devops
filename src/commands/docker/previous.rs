@@ -82,6 +82,7 @@ pub(super) fn settle(ctx: &Ctx, project: &mut Project, configured: &Folded) -> V
                 enabled.user = previous.user;
                 enabled.user_from = previous.user_from;
                 enabled.reads_port = previous.reads_port;
+                enabled.multi_arch = previous.multi_arch;
                 restored.push((id.clone(), enabled.service_id.clone()));
             }
         }

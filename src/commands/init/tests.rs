@@ -557,6 +557,7 @@ fn model_record() -> crate::project::EnabledModel {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.x.yml".into(),
     }
 }

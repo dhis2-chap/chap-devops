@@ -72,6 +72,7 @@ fn enabled(service_id: &str, port: Option<u16>) -> EnabledModel {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: format!("compose.{service_id}.yml"),
     }
 }

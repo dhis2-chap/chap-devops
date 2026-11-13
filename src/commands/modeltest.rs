@@ -336,6 +336,7 @@ fn unmanaged(service_id: &str) -> EnabledModel {
         user: String::new(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: String::new(),
     }
 }

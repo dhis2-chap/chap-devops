@@ -33,6 +33,7 @@ fn state(registry: &Registry, chap_core: bool) -> ProjectState {
             user: "chapkit:chapkit".to_string(),
             user_from: Default::default(),
             platform: None,
+            multi_arch: false,
             compose_file: format!("compose.{}.yml", model.service_id),
         },
     );

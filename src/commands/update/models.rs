@@ -46,6 +46,9 @@ pub struct ModelUpdate {
     pub user_from: UserSource,
     /// Whether the image at the new tag reads its port from `PORT`.
     pub reads_port: bool,
+    /// Whether the registry lists a `linux/arm64` image for the new tag too.
+    #[serde(skip)]
+    pub multi_arch: bool,
 }
 
 impl ModelUpdate {
@@ -74,6 +77,7 @@ impl ModelUpdate {
             new_user: entry.user.clone(),
             user_from: entry.user_from,
             reads_port: entry.reads_port,
+            multi_arch: entry.multi_arch,
         }
     }
 
@@ -174,6 +178,7 @@ pub(super) fn resolve_users(
         update.new_user = resolution.user;
         update.user_from = resolution.user_from;
         update.reads_port = resolution.reads_port;
+        update.multi_arch = resolution.arm64;
     }
 }
 

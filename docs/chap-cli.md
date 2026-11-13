@@ -264,7 +264,7 @@ rm -rf ~/.local/share/chap-devops/chap
 
 ## Limits
 
-- chap-devops runs the amd64 images. On Apple silicon, Docker runs them under
-  emulation, which is slower.
+- chap-devops runs the amd64 images of chap-core. On Apple silicon, Docker runs
+  them under emulation, which is slower.
 - `chap ui` is not part of chap-core yet, so `chap-devops chap ui` does not work.
 - On Windows, use WSL with the Linux binary, as for the rest of chap-devops.

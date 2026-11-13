@@ -58,6 +58,7 @@ fn model(service: &str, port: Option<u16>) -> EnabledModel {
         user: "1000:1000".to_string(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: format!("compose.{service}.yml"),
     }
 }

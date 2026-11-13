@@ -439,7 +439,8 @@ pub struct OverlaySpec {
     /// The host address [`OverlaySpec::host_port`] is published on, or `None`
     /// for every address the host has.
     pub bind: Option<std::net::IpAddr>,
-    /// `Some("linux/amd64")` for R-INLA services.
+    /// `Some("linux/amd64")`, or [`host_platform`] for an image the
+    /// registry lists for `linux/arm64` too.
     pub platform: Option<String>,
     pub data_dir: String,
     /// What the service runs as: `root`, a numeric `uid:gid`, or an account
@@ -477,6 +478,21 @@ pub struct ExternalRegistration {
     pub models_host: String,
 }
 
+/// The platform of a multi-arch model on this host: `linux/arm64` on an
+/// arm64 host, else `linux/amd64`.
+///
+/// The overlay names it rather than leaving `platform:` out. Without the
+/// line, compose starts any local copy of the image, and a copy pulled
+/// earlier for amd64 alone then runs under emulation. With it, compose pulls
+/// the host's own image when the local copy has none. `chap-devops up` renders
+/// the files again first, so a deployment moved to another host follows.
+pub fn host_platform() -> &'static str {
+    match std::env::consts::ARCH {
+        "aarch64" => "linux/arm64",
+        _ => AMD64_PLATFORM,
+    }
+}
+
 impl OverlaySpec {
     /// Build a spec for a freshly enabled model.
     ///
@@ -504,12 +520,10 @@ impl OverlaySpec {
             tag_env_var: tag_env_var(&m.id),
             host_port,
             bind: None,
-            // Every model image the marketplace publishes today is amd64-only
-            // (checked with `docker manifest inspect`; only the simple multistep
-            // model also ships arm64), and chap-core itself is amd64-only, so
-            // the whole stack already runs as linux/amd64. Pinning every
-            // overlay makes an arm64 host pull the right variant instead of
-            // failing with "no matching manifest".
+            // Most model images are published for amd64 only, and an arm64
+            // host asked for its own architecture fails with "no matching
+            // manifest". So the pin is the default; a multi-arch image gets
+            // the host's own platform in `from_enabled_without_registry`.
             platform: Some(AMD64_PLATFORM.to_string()),
             data_dir: data_dir
                 .map(str::to_string)
@@ -555,7 +569,10 @@ impl OverlaySpec {
             tag_env_var: tag_env_var(id),
             host_port: e.host_port,
             bind: e.bind,
-            platform: e.platform.clone(),
+            platform: match e.multi_arch {
+                true => Some(host_platform().to_string()),
+                false => e.platform.clone(),
+            },
             data_dir: e.data_dir.clone(),
             user: e.user.clone(),
             volume_name: volume_name(id),

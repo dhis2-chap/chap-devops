@@ -296,6 +296,7 @@ fn allocator_for_seeds_from_the_state_and_the_directory() {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.m.yml".into(),
     };
     let project = Project {

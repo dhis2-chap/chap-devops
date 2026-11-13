@@ -156,6 +156,7 @@ fn state_with_ewars(registry: &Registry, host_port: Option<u16>) -> ProjectState
             user: "chapkit:chapkit".into(),
             user_from: Default::default(),
             platform: Some("linux/amd64".into()),
+            multi_arch: false,
             compose_file: "compose.chapkit-ewars-model.yml".into(),
         },
     );

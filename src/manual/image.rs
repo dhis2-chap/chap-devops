@@ -26,6 +26,7 @@ pub(super) fn image_config(
                 user,
                 working_dir,
                 amd64_only: false,
+                arm64: false,
                 command: crate::docker::image_command(reference).unwrap_or_default(),
             })),
             None => Err(anyhow::anyhow!(
@@ -55,6 +56,7 @@ pub(super) fn image_config(
             user,
             working_dir,
             amd64_only: false,
+            arm64: false,
             command: crate::docker::image_command(reference).unwrap_or_default(),
         })),
         None if endpoints.offline => Err(anyhow::anyhow!(

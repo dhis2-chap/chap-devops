@@ -94,6 +94,9 @@ pub struct Resolution {
     /// Whether the image reads its port from `PORT`, which decides the port
     /// mapping for a chap-core elsewhere. See [`reads_port_env`].
     pub reads_port: bool,
+    /// Whether the registry lists a `linux/arm64` image next to the amd64
+    /// one. Only the registry can say so; every other answer is `false`.
+    pub arm64: bool,
     pub notes: Vec<String>,
 }
 
@@ -184,6 +187,7 @@ pub fn from_image_with(
                 user,
                 working_dir,
                 amd64_only: false,
+                arm64: false,
                 command: command(&reference).unwrap_or_default(),
             },
             UserSource::DockerProbe,
@@ -236,11 +240,15 @@ pub fn from_image_with(
     let reads_port = declared
         .as_ref()
         .is_some_and(|(config, _)| reads_port_env(&config.command));
+    let arm64 = declared
+        .as_ref()
+        .is_some_and(|(config, from)| *from == UserSource::ImageConfig && config.arm64);
     Resolution {
         data_dir,
         user: normalize(&user),
         user_from,
         reads_port,
+        arm64,
         notes,
     }
 }
@@ -268,6 +276,7 @@ pub fn from_table(req: &Request) -> Resolution {
         user: normalize(&user),
         user_from,
         reads_port: false,
+        arm64: false,
         notes: Vec::new(),
     }
 }

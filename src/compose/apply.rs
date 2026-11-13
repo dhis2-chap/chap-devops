@@ -320,6 +320,7 @@ pub(crate) fn plan_with(
             }
             _ => None,
         };
+        let arm64 = resolved.as_ref().is_some_and(|r| r.arm64);
         let (data_dir, user, user_from, reads_port) = match &resolved {
             Some(resolution) => {
                 report.warnings.extend(resolution.notes.iter().cloned());
@@ -397,6 +398,8 @@ pub(crate) fn plan_with(
                     user,
                     user_from,
                     platform: spec.platform.clone(),
+                    // INLA has no arm64 build, whatever the index lists.
+                    multi_arch: arm64 && !model.needs_amd64(),
                     compose_file: overlay_filename(&model.service_id),
                 }
             }

@@ -24,6 +24,8 @@ const ACCEPT: &str = "application/vnd.oci.image.index.v1+json, \
 
 /// The architecture a Chap model image is published for.
 pub const AMD64: &str = "amd64";
+/// The architecture of Apple Silicon and other arm64 hosts.
+pub const ARM64: &str = "arm64";
 
 /// What an image says about how it runs.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -34,6 +36,9 @@ pub struct ImageConfig {
     pub working_dir: String,
     /// Whether the image is published for amd64 and nothing else.
     pub amd64_only: bool,
+    /// Whether the index also lists a `linux/arm64` image, so that an arm64
+    /// host can run the model without emulation.
+    pub arm64: bool,
     /// `config.Entrypoint` then `config.Cmd`: what the container starts. It
     /// says whether the model's port is fixed or read from `PORT`.
     pub command: Vec<String>,
@@ -148,6 +153,9 @@ impl Client {
             && platforms
                 .iter()
                 .all(|p| p.architecture == AMD64 && p.os == "linux");
+        let arm64 = platforms
+            .iter()
+            .any(|p| p.architecture == ARM64 && p.os == "linux");
         let (manifest, amd64_only) = match amd64_manifest(&top) {
             Some(digest) => match self.manifest(&digest)? {
                 Some(body) => (body, amd64_only),
@@ -172,6 +180,7 @@ impl Client {
         let blob = self.blob(&digest)?;
         Ok(Some(ImageConfig {
             amd64_only,
+            arm64,
             ..parse_config(&blob)
         }))
     }
@@ -301,6 +310,7 @@ pub fn parse_config(body: &str) -> ImageConfig {
         user: config.user.trim().to_string(),
         working_dir: config.working_dir.trim().to_string(),
         amd64_only: false,
+        arm64: false,
         command: config
             .entrypoint
             .unwrap_or_default()

@@ -27,6 +27,7 @@ fn config(user: &str, working_dir: &str) -> ghcr::ImageConfig {
         user: user.to_string(),
         working_dir: working_dir.to_string(),
         amd64_only: false,
+        arm64: false,
         command: Vec::new(),
     }
 }
@@ -276,4 +277,36 @@ fn a_digest_is_what_the_lookups_ask_for() {
     );
     assert_eq!(asked.into_inner(), vec![digest.clone()]);
     assert_eq!(req.reference(), format!("{IMAGE}:{TAG}@{digest}"));
+}
+
+/// Only the registry lists the platforms, so only its answer can drop the
+/// amd64 pin.
+#[test]
+fn arm64_comes_from_the_registry_alone() {
+    let multi = ghcr::ImageConfig {
+        arm64: true,
+        ..config("chapkit", "/app")
+    };
+    let resolution = resolve(
+        &request("chapkit_ewars_model", None),
+        &endpoints(),
+        Some(multi),
+    );
+    assert!(resolution.arm64);
+
+    // A local image has no index to read, so it says nothing about arm64.
+    let local = from_image_with(
+        &request("chapkit_ewars_model", None),
+        &Endpoints {
+            offline: true,
+            ..Endpoints::default()
+        },
+        &|_, _| panic!("offline asks no registry"),
+        &|_| Some(("chapkit".to_string(), "/app".to_string())),
+        &|_| None,
+        &|_| true,
+        &|_, _| None,
+    );
+    assert_eq!(local.user_from, UserSource::DockerProbe);
+    assert!(!local.arm64);
 }

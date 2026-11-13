@@ -435,6 +435,7 @@ fn row(id: &str) -> ModelUpdate {
             user: "chapkit:chapkit".into(),
             user_from: Default::default(),
             platform: None,
+            multi_arch: false,
             compose_file: format!("compose.{id}.yml"),
         },
     )
@@ -1231,6 +1232,7 @@ fn a_moved_pin_keeps_the_one_before_it() {
         user: "chapkit:chapkit".into(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: "compose.m.yml".into(),
     };
 

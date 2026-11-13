@@ -214,6 +214,7 @@ fn a_revision_that_is_not_the_pin_is_named() {
         user: "chapkit:chapkit".to_string(),
         user_from: Default::default(),
         platform: None,
+        multi_arch: false,
         compose_file: format!("compose.{service_id}.yml"),
         reads_port: false,
     };
