@@ -108,14 +108,16 @@ pub fn times_each(repeat: u32) -> String {
     }
 }
 
-/// `512 B`, `12.3 kB`, `4.5 MB`.
+/// `512 B`, `12.3 kB`, `4.5 MB`, `7.7 GB`.
 pub fn human_bytes(bytes: usize) -> String {
     let b = bytes as f64;
     if b < 1000.0 {
         format!("{bytes} B")
     } else if b < 1e6 {
         format!("{:.1} kB", b / 1e3)
-    } else {
+    } else if b < 1e9 {
         format!("{:.1} MB", b / 1e6)
+    } else {
+        format!("{:.1} GB", b / 1e9)
     }
 }

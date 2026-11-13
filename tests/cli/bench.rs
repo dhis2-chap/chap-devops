@@ -60,6 +60,12 @@ fn bench_times_the_newest_backtest_and_warns_about_a_failed_request() {
     );
     assert!(stdout.contains("slowest: "), "{stdout}");
     assert!(
+        stdout.contains(&format!(
+            "measured on chap-core {CHAP_CORE_VERSION} ({CHAP_CORE_REVISION})"
+        )),
+        "{stdout}"
+    );
+    assert!(
         stderr.contains("`compare compatible-backtests` failed 2 of 2 times: HTTP 500"),
         "{stderr}"
     );
@@ -79,6 +85,10 @@ fn bench_json_has_a_row_per_request_with_its_numbers() {
     ));
     assert_eq!(value["backtest"], 9);
     assert_eq!(value["parallel"], 1);
+    assert_eq!(value["server"]["chap_core_version"], CHAP_CORE_VERSION);
+    assert_eq!(value["server"]["revision"], CHAP_CORE_REVISION);
+    // The sandbox has no docker, so the process counts are not known.
+    assert_eq!(value["server"]["api_workers"], Json::Null);
     let routes = value["routes"].as_array().expect("routes");
     let subplot = routes
         .iter()

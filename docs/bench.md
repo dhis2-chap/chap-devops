@@ -74,6 +74,8 @@ count `N`, `FAILED`, then `MIN`, `P50`, `P95` and `MAX`, then `SIZE` and
   request in each step, added up over the steps. This is an estimate of
   how long the page takes to open with one person on the server.
 - `slowest`: the request with the highest p50.
+- `measured on`: what the numbers are from. See
+  [What was measured](#what-was-measured).
 
 The times are the time until the whole answer came and was unpacked.
 A failed request counts with the time it took, because a person waited that
@@ -98,6 +100,24 @@ answer, the time to pack can be more than the time to make the answer.
 
 All versions of `bench` ask for gzip. But to compare two chap-core versions,
 run the same `bench` version on both.
+
+## What was measured
+
+Two runs can only be compared if they ran on the same setup. `bench`, also
+with `--write`, gives a `measured on` line and `server` in `--json`:
+
+- `chap_core_version` and `revision`, from chap-core's `/system/info`.
+- `api_workers`: the gunicorn worker processes of the `chap` service.
+- `worker_processes`: the celery worker processes of the `worker` service.
+  Celery starts one for each CPU it sees (`BUGS.md`).
+- `docker_cpus` and `docker_memory_bytes`: what the docker engine has. On
+  macOS and Windows this is the docker VM.
+- `machine` and `cpus`: the machine that chap-devops runs on.
+
+`bench` counts the processes that run, with `docker compose top`. It does
+not read the settings, because chap-core can ignore a setting. It counts
+them only for a chap-core that this deployment runs, so with `--url` the
+counts and the docker values are not known.
 
 ## One at a time and many at a time
 

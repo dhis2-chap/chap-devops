@@ -11,6 +11,7 @@
 mod measure;
 mod plan;
 mod predict;
+mod server;
 mod write;
 
 use crate::api::Api;
@@ -101,6 +102,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     if !ctx.out.json {
         print!("{}", table(ctx, &results));
     }
+    let server = server::describe(ctx, &ask, chap.local);
     let backtest = facts.backtest.as_ref().map(|b| b.id);
     let prediction = facts.prediction.as_ref().map(|p| p.id);
     let value = serde_json::json!({
@@ -110,6 +112,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
         "repeat": args.repeat,
         "parallel": args.parallel,
         "seconds": seconds,
+        "server": server,
         "pages": page_rows,
         "skipped": skipped.iter().map(|(p, why)| serde_json::json!({"page": p.name(), "reason": why})).collect::<Vec<_>>(),
         "routes": results,
@@ -138,6 +141,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
             .map(|&p| format!("{} {}", p.name(), human_ms(plan::page_ms(&routes, &p50, p))))
             .collect();
         lines.info(format!("time to open, from the p50s: {}", opens.join(", ")));
+        lines.info(server::line(&server));
         if let Some(slow) = results
             .iter()
             .filter(|r| r.failed < r.requests)

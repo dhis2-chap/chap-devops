@@ -777,3 +777,14 @@ fn the_published_host_ports_are_read_once_each() {
     assert!(found[1].published.is_empty());
     assert!(found[2].published.is_empty());
 }
+
+#[test]
+fn docker_info_gives_the_cpus_and_the_memory_of_the_engine() {
+    use super::stats::parse_engine_resources;
+    assert_eq!(
+        parse_engine_resources("12 33598132224\n"),
+        Some((12, 33598132224))
+    );
+    assert_eq!(parse_engine_resources(""), None);
+    assert_eq!(parse_engine_resources("x 1"), None);
+}

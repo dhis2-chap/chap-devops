@@ -43,3 +43,16 @@ pub(super) fn parse_stats(text: &str) -> BTreeMap<String, Usage> {
         })
         .collect()
 }
+
+/// The CPUs and the memory in bytes that the docker engine has, from
+/// `docker info`. On macOS and Windows this is the docker VM, not the
+/// machine.
+pub fn engine_resources() -> Option<(u64, u64)> {
+    let args = ["info", "--format", "{{.NCPU}} {{.MemTotal}}"].map(str::to_string);
+    parse_engine_resources(&docker_capture(&args)?)
+}
+
+pub(super) fn parse_engine_resources(text: &str) -> Option<(u64, u64)> {
+    let mut parts = text.split_whitespace();
+    Some((parts.next()?.parse().ok()?, parts.next()?.parse().ok()?))
+}

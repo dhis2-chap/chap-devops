@@ -39,7 +39,7 @@ pub use query::{
     compose_ls_dirs, compose_ls_json, config_hashes, config_services, container_publishing,
     dhis2_seed_mark, image_count, service_images, service_logs,
 };
-pub use stats::{Usage, container_usage};
+pub use stats::{Usage, container_usage, engine_resources};
 pub use version::{check_compose_version, compose_version};
 pub use volumes::{
     Removal, copy_volume, ocs_data_bytes, remove_volume, volume_exists, volume_names_of_project,

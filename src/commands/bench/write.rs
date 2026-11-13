@@ -226,8 +226,10 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     if !ctx.out.json {
         print!("{}", table(ctx, &runs));
     }
+    let server = super::server::describe(ctx, &api, target.local);
     let value = serde_json::json!({
         "url": api.base(),
+        "server": server,
         "model": model,
         "dataset": dataset,
         "dataset_imported": made,
@@ -239,6 +241,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     });
     ctx.out.report(&value, |lines| {
         closing(&runs, &model, dataset, started.elapsed(), stopped, lines);
+        lines.info(super::server::line(&server));
         match &prediction {
             Some(p) => {
                 let message = super::predict::line(p, args.keep);

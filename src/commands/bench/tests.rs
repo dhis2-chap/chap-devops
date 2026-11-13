@@ -377,3 +377,60 @@ fn a_prediction_has_one_forecast_for_each_org_unit_and_period() {
     assert!(check(None, Some(12)).is_some());
     assert_eq!(check(Some(5), None), None);
 }
+
+/// `docker compose top chap worker`, cut down from chap-core v2.7.0 on
+/// Apple Silicon: gunicorn with one worker, celery with three.
+const TOP: &str = "\
+SERVICE  #   UID   PID   PPID  C   STIME  TTY  TIME      CMD
+chap     1   1000  3481  3458  0   11:01  ?    00:00:00  /sbin/docker-init -- gunicorn -c gunicorn.conf.py --workers 1
+chap     1   1000  3512  3481  3   11:01  ?    00:00:06  /run/rosetta/rosetta /app/.venv/bin/python /app/.venv/bin/gunicorn -c gunicorn.conf.py
+chap     1   1000  3601  3512  14  11:01  ?    00:00:26  /run/rosetta/rosetta /app/.venv/bin/python /app/.venv/bin/gunicorn -c gunicorn.conf.py
+worker   1   1002  3424  3399  0   11:01  ?    00:00:00  /sbin/docker-init -- /app/.venv/bin/celery -A chap_core.rest_api.celery_tasks worker
+worker   1   1002  3449  3424  7   11:01  ?    00:00:14  /app/.venv/bin/python /app/.venv/bin/celery -A chap_core.rest_api.celery_tasks worker
+worker   1   1002  3592  3449  0   11:01  ?    00:00:00  /app/.venv/bin/python /app/.venv/bin/celery -A chap_core.rest_api.celery_tasks worker
+worker   1   1002  3593  3449  0   11:01  ?    00:00:00  /app/.venv/bin/python /app/.venv/bin/celery -A chap_core.rest_api.celery_tasks worker
+worker   1   1002  5046  3449  0   11:03  ?    00:00:00  /app/.venv/bin/python /app/.venv/bin/celery -A chap_core.rest_api.celery_tasks worker
+";
+
+#[test]
+fn the_workers_are_the_children_of_the_main_process() {
+    use super::server::workers;
+    assert_eq!(workers(TOP, "chap"), Some(1));
+    assert_eq!(workers(TOP, "worker"), Some(3));
+    assert_eq!(workers(TOP, "postgres"), None);
+    // Without docker's init, the main process is the one whose parent is
+    // not in the service.
+    let no_init: String = TOP
+        .lines()
+        .filter(|l| !l.contains("docker-init"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_eq!(workers(&no_init, "worker"), Some(3));
+    assert_eq!(workers("", "chap"), None);
+}
+
+#[test]
+fn the_server_line_says_what_was_measured() {
+    use super::server::{Server, line};
+    let full = Server {
+        chap_core_version: Some("2.7.0".to_string()),
+        revision: Some("62bae69ca9350f06".to_string()),
+        api_workers: Some(1),
+        worker_processes: Some(12),
+        machine: "macos aarch64".to_string(),
+        cpus: Some(12),
+        docker_cpus: Some(12),
+        docker_memory_bytes: Some(33_598_132_224),
+    };
+    assert_eq!(
+        line(&full),
+        "measured on chap-core 2.7.0 (62bae69c), 1 API worker, 12 worker processes, \
+         docker with 12 CPUs and 33.6 GB, macos aarch64 with 12 CPUs"
+    );
+    let remote = Server {
+        chap_core_version: Some("2.8.0".to_string()),
+        machine: "linux x86_64".to_string(),
+        ..Server::default()
+    };
+    assert_eq!(line(&remote), "measured on chap-core 2.8.0, linux x86_64");
+}
