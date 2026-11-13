@@ -187,9 +187,15 @@ bug that is fixed leaves the file.
   (pid:25)` and `Worker (pid:25) was sent SIGABRT!`, and the client gets
   `Peer disconnected` after 19 s. The same data as `providedDataColumns`
   (`--format columns`) was stored in 92.9 s: request 12.6 s, job 80.3 s.
-- Fix: read and check the observations without holding the worker for the
-  whole body, for example in the job instead of the request. Or answer
-  with a job id first, then read the body.
+- Cause (found in the chap-core session): FastAPI parses and checks the
+  body on the event loop, and `get_job_request` parses it a second time.
+  The uvicorn worker sends gunicorn a heartbeat only while the loop runs,
+  so a loop that is blocked long enough gets the worker killed.
+- `chap-devops bench --write --predict` sends the prediction run
+  (`POST /v1/crud/prediction-setups/{id}/run`) as rows too, so it has the
+  same risk at this size.
+- Fix: parse and check large bodies off the event loop, and parse them once.
+  CLIM-1889.
 
 ### A prediction refuses two whole years of weekly data
 
@@ -205,6 +211,7 @@ bug that is fixed leaves the file.
   weeks pass.
 - Fix: compare whole periods (104 weeks or 24 months) instead of timestamps,
   and say in the message how many periods the data has and how many it needs.
+  CLIM-1887.
 
 ## DHIS2 routes (hosted DHIS2 2.43.2)
 
