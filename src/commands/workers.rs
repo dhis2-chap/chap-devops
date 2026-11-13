@@ -39,8 +39,17 @@ pub fn run(ctx: &Ctx, count: u32) -> Result<()> {
     })
 }
 
-fn plural(n: usize) -> &'static str {
+pub fn plural(n: usize) -> &'static str {
     if n == 1 { "" } else { "s" }
+}
+
+/// `CHAP_API_WORKERS` in `.env`, or 1.
+pub fn configured(project: &Project) -> u32 {
+    std::fs::read_to_string(project.dir.join(ENV_FILE))
+        .ok()
+        .and_then(|body| crate::dotenv::non_empty(&body, API_WORKERS_ENV_VAR))
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(1)
 }
 
 /// The API worker processes that run now, or `None` when chap-core does
@@ -53,26 +62,38 @@ pub fn running(project: &Project) -> Option<usize> {
     }
 }
 
-/// Set the API workers to `count`, recreate `chap`, wait until it answers,
-/// and give the worker processes that run then.
-pub fn set_workers(ctx: &Ctx, project: &Project, count: u32) -> Result<usize> {
+/// Whether this chap-core can run `count` API workers. More than one needs
+/// a chap-core that maps `WEB_CONCURRENCY` in its own compose file (newer
+/// than v2.7.0), as `chap-devops doctor` checks.
+pub fn check(project: &Project, count: u32) -> Result<()> {
     if count == 0 {
         return Err(ChapError::Usage("give `--api-workers` a number of 1 or more".into()).into());
     }
-    // More than one worker needs a chap-core that maps WEB_CONCURRENCY in
-    // its own compose file (newer than v2.7.0), as `chap-devops doctor`
-    // checks.
     let base = std::fs::read_to_string(project.dir.join(BASE_COMPOSE)).ok();
     let line = format!("{API_WORKERS_ENV_VAR}={count}\n");
     let (status, _, next) =
         crate::commands::doctor::api_workers_verdict(Some(&line), base.as_deref());
     if status != crate::commands::doctor::Status::Ok {
         return Err(anyhow::anyhow!(
-            "this chap-core is v2.7.0 or older, and its API workers would share database connections; {}",
+            "this chap-core is v2.7.0 or older, and {count} API workers would share database \
+             connections; {}",
             next.unwrap_or_default()
         ));
     }
+    Ok(())
+}
 
+/// Set the API workers to `count`, recreate `chap`, wait until it answers,
+/// and give the worker processes that run then.
+pub fn set_workers(ctx: &Ctx, project: &Project, count: u32) -> Result<usize> {
+    check(project, count)?;
+    // Nothing to change: chap-core already runs what was asked for.
+    if configured(project) == count
+        && let Some(n) = running(project)
+        && n == count as usize
+    {
+        return Ok(n);
+    }
     let path = project.dir.join(ENV_FILE);
     let body = std::fs::read_to_string(&path).map_err(|e| {
         anyhow::anyhow!(

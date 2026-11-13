@@ -495,3 +495,42 @@ fn bench_outside_a_deployment_names_url() {
         .stderr(predicates::str::contains("run `chap-devops bench` in one"))
         .stderr(predicates::str::contains("`--url URL`"));
 }
+
+#[test]
+fn bench_workers_refuses_a_chap_core_elsewhere() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    bench_in(
+        &sandbox,
+        &dir,
+        &[
+            "bench",
+            "--url",
+            "http://localhost:18999",
+            "--workers",
+            "1,2",
+        ],
+    )
+    .assert()
+    .failure()
+    .stderr(predicates::str::contains("cannot be used with --url"));
+}
+
+#[test]
+fn bench_workers_refuses_more_than_one_on_an_old_chap_core_before_any_run() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+    let (_temp, bin, log) = quiet_docker();
+
+    chap_with_docker(&sandbox, &dir, &bin, &["bench", "--workers", "1,4"])
+        .env("CHAP_DEVOPS_NO_DOCKER_PROBE", "1")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "4 API workers would share database connections",
+        ));
+    // Nothing was recreated and nothing was timed.
+    let calls = std::fs::read_to_string(&log).unwrap_or_default();
+    assert!(!calls.contains(" up "), "{calls}");
+}

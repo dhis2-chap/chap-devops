@@ -151,6 +151,42 @@ down. For one evaluation (18 org units, 72 months), on chap-core `master` of
 | `configured-models` p50 | 12 ms | 748 ms |
 | `predicted_vs_actual subplot` p50 | 674 ms | 2.67 s |
 
+## API workers: --workers
+
+`--workers 1,4` runs the same `bench` once for each count of API worker
+processes, and puts the numbers side by side. It works with and without
+`--write`:
+
+```sh
+chap-devops bench --page prediction --parallel 8 --workers 1,4
+chap-devops bench --write --model seasonal_median --backtests 2 --workers 1,2
+```
+
+For each count, it sets the count as `chap-devops restart --api-workers N`
+does: it writes `CHAP_API_WORKERS` to `.env`, recreates only the `chap`
+service, and waits until chap-core answers. Then it runs the same `bench`
+command again with `--json`. At the end it sets the count back to what it
+was. It checks every count before the first run: more than one worker needs
+a chap-core newer than v2.7.0.
+
+This run is from chap-core `master` (2.8.0.dev0) on an Apple Silicon Mac,
+with 100 org units and 156 weeks:
+
+```text
+MEASURE           1 WORKERS  2 WORKERS
+import            2.80 s     2.79 s
+import request    768 ms     720 ms
+backtest request  982 ms     948 ms
+slowest job       6.67 s     6.41 s
+whole run         28.79 s    28.06 s
+ran the same bench with 2 of 2 API worker counts (1, 2); set back to 1
+```
+
+The rows are the time per page and the p50 of each request, and with
+`--write` the import, the requests and the slowest job. `--json` gives each
+run whole under `runs`. `--workers` changes this deployment's chap-core, so
+it cannot be used with `--url`.
+
 ## Before and after a change
 
 To see what a change in chap-core does, time the same page before and

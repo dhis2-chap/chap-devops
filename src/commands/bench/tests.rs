@@ -486,3 +486,51 @@ fn a_job_runs_from_its_start_to_its_end_to_the_millisecond() {
     let queued = crate::jobs::Job::default();
     assert_eq!(job_times(&queued), (None, None));
 }
+
+#[test]
+fn a_child_run_has_the_same_arguments_without_workers_and_with_json() {
+    use super::compare::child_args;
+    let args: Vec<String> = [
+        "bench",
+        "--workers",
+        "1,4",
+        "--page",
+        "prediction",
+        "--json",
+    ]
+    .map(str::to_string)
+    .to_vec();
+    assert_eq!(
+        child_args(&args),
+        ["bench", "--page", "prediction", "--json"]
+    );
+    let args: Vec<String> = ["-C", "x", "bench", "--workers=1,2"]
+        .map(str::to_string)
+        .to_vec();
+    assert_eq!(child_args(&args), ["-C", "x", "bench", "--json"]);
+}
+
+#[test]
+fn the_comparison_has_a_row_for_each_measure_and_a_column_for_each_count() {
+    use super::compare::rows;
+    let one = json!({"pages": [{"page": "prediction", "ms": 900.0}],
+        "routes": [{"page": "prediction", "label": "prediction-entry", "p50_ms": 400.0}],
+        "seconds": 3.0});
+    let four =
+        json!({"pages": [{"page": "prediction", "ms": 500.0}], "routes": [], "seconds": 2.0});
+    let rows = rows(&[(1, 1, one), (4, 4, four)]);
+    let find = |label: &str| {
+        rows.iter()
+            .find(|(l, _)| l == label)
+            .map(|(_, c)| c.clone())
+    };
+    assert_eq!(
+        find("prediction page"),
+        Some(vec![Some(900.0), Some(500.0)])
+    );
+    assert_eq!(
+        find("prediction prediction-entry p50"),
+        Some(vec![Some(400.0), None])
+    );
+    assert_eq!(find("whole run"), Some(vec![Some(3000.0), Some(2000.0)]));
+}

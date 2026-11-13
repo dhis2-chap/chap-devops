@@ -30,6 +30,10 @@ pub struct BenchArgs {
     #[arg(long, value_name = "ID", conflicts_with = "write")]
     pub prediction: Option<i64>,
 
+    /// Run once for each API worker count, comma-separated, and compare
+    #[arg(long, value_name = "N,N", value_delimiter = ',', value_parser = clap::value_parser!(u32).range(1..=64))]
+    pub workers: Vec<u32>,
+
     /// How many times to send each request
     #[arg(long, value_name = "N", default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=1000))]
     pub repeat: u32,

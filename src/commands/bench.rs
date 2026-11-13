@@ -8,6 +8,7 @@
 //! to open. With `--parallel` above one, a slow request that holds up the
 //! others shows as a high p95 on requests that are fast alone.
 
+mod compare;
 mod measure;
 mod plan;
 mod predict;
@@ -35,6 +36,9 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
         return super::dataset::generate(ctx, dataset);
     }
     let chap = super::chap_jobs::chap_core(ctx, args.url.as_deref(), "`chap-devops bench`")?;
+    if !args.workers.is_empty() {
+        return compare::run(ctx, args, chap.local);
+    }
     if args.write {
         return write::run(ctx, args, &chap);
     }
