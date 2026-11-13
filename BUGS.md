@@ -171,6 +171,26 @@ bug that is fixed leaves the file.
   Helm chart, with a low default, and document how to size it by the memory
   of one job.
 
+### A facility-scale import as rows holds the API worker for 28 of its 30 s
+
+- Seen: chap-core `master` (2.8.0.dev0, `94e16246`), built natively for
+  arm64 with `chap-devops init --source`, 2026-11-13; and chap-core v2.7.0
+  (`62bae69c`), amd64 under emulation on Apple Silicon.
+- `chap-devops bench dataset --import --locations 1500 --periods 365
+  --covariates 4` sends `make-dataset` with `providedData`: one object for
+  each value, 2,737,500 objects, 227 MB. This is how the Modeling App sends a
+  dataset.
+- Native `master`: the request answered after 28.3 s, and the job took
+  76.4 s more. gunicorn stops an API worker that does not answer it for
+  30 s, so this is 2 s from a failure.
+- v2.7.0 under emulation: the API log has `[CRITICAL] WORKER TIMEOUT
+  (pid:25)` and `Worker (pid:25) was sent SIGABRT!`, and the client gets
+  `Peer disconnected` after 19 s. The same data as `providedDataColumns`
+  (`--format columns`) was stored in 92.9 s: request 12.6 s, job 80.3 s.
+- Fix: read and check the observations without holding the worker for the
+  whole body, for example in the job instead of the request. Or answer
+  with a job id first, then read the body.
+
 ### A prediction refuses two whole years of weekly data
 
 - Seen: chap-core v2.7.0 (revision `62bae69c`), 2026-11-13, a synthetic
