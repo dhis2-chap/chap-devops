@@ -885,6 +885,9 @@ pub(crate) fn online_update(sandbox: &Sandbox, port: u16, bin: &Path, args: &[&s
 /// The backtest `chap-devops bench` times by default: the newest in the list.
 pub(crate) const BENCH_BACKTEST: i64 = 9;
 
+/// The newest prediction the stand-in lists for `chap-devops bench`.
+pub(crate) const BENCH_PREDICTION: i64 = 5;
+
 /// The requests `chap-devops bench` makes about one backtest. Every one of them
 /// answers, except `compatible-backtests`, which fails the way a chap-core
 /// error does, so the test sees the warning.
@@ -902,6 +905,21 @@ fn bench_route(method: &str, route: &str) -> Option<(u16, &'static str, String)>
         ("GET", "/v1/visualization/backtest-plots/") => r#"[{"id":"bias"}]"#.to_string(),
         ("GET", r) if r == format!("{plot}/facet-coords") => r#"{"horizon":[1,2]}"#.to_string(),
         ("POST", r) if r == format!("{plot}/subplot") => r#"{"mark":"line"}"#.to_string(),
+        // A backtest of a chap-core from before backtest specifications.
+        ("GET", "/v1/crud/backtests/7/info") => {
+            r#"{"id":7,"datasetId":3,"orgUnits":["ou1"]}"#.to_string()
+        }
+        ("GET", "/v1/crud/backtest-specifications/2") => {
+            r#"{"id":2,"metrics":null,"backtests":[{"id":9}],
+              "baselines":[{"backtestId":8,"status":"done"}]}"#
+                .to_string()
+        }
+        ("GET", "/v1/crud/predictions") => format!(r#"[{{"id":2}},{{"id":{BENCH_PREDICTION}}}]"#),
+        ("GET", r) if r == format!("/v1/crud/predictions/{BENCH_PREDICTION}") => format!(
+            r#"{{"id":{BENCH_PREDICTION},"orgUnits":[],
+              "dataset":{{"id":3,"orgUnits":["ou1","ou2","ou3"]}}}}"#
+        ),
+        ("GET", "/v1/crud/alerts" | "/v1/crud/alert-policies") => "[]".to_string(),
         ("GET", r) if r == compatible => {
             return Some((500, json, r#"{"detail":"database is gone"}"#.to_string()));
         }

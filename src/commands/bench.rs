@@ -1,10 +1,11 @@
-//! `chap-devops bench`: time the chap-core requests the Modeling App makes
-//! when a person opens one evaluation, and say which are slow.
+//! `chap-devops bench`: time the chap-core requests the Modeling App sends
+//! when a person opens a page, and say which are slow.
 //!
-//! It first asks chap-core about the backtest (its org units, its dataset, the
-//! plots it has), untimed. Then it sends each request `--repeat` times, with
-//! `--parallel` of them open at once, and reports min, p50, p95 and max per
-//! request. With `--parallel` above one, a slow request that holds up the
+//! It first asks chap-core about the backtest and the prediction (their org
+//! units, dataset, specification, the plots), untimed. Then it sends each
+//! request `--repeat` times, with `--parallel` of them open at once, and
+//! reports min, p50, p95 and max per request, and the time each page takes
+//! to open. With `--parallel` above one, a slow request that holds up the
 //! others shows as a high p95 on requests that are fast alone.
 
 mod measure;
@@ -12,11 +13,11 @@ mod plan;
 mod write;
 
 use crate::api::Api;
-use crate::cli::BenchArgs;
+use crate::cli::{BenchArgs, BenchPage};
 use crate::commands::Ctx;
 use crate::error::Result;
 use measure::{RouteResult, Timing, human_bytes, human_ms};
-use plan::Route;
+use plan::{Facts, Route};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -38,21 +39,32 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     ctx.out
         .verbose(&format!("asking chap-core at {}", ask.base()));
 
-    let id = match args.backtest {
-        Some(id) => id,
-        None => plan::newest_backtest(&ask.get_json("/v1/crud/backtests")?)
-            .ok_or_else(|| anyhow::anyhow!(plan::no_backtest(ask.base())))?,
+    let asked = !args.page.is_empty();
+    let pages: Vec<BenchPage> = match asked {
+        true => {
+            let mut pages = args.page.clone();
+            pages.sort();
+            pages.dedup();
+            pages
+        }
+        false => BenchPage::ALL.to_vec(),
     };
-    let info = ask
-        .get_json(&format!("/v1/crud/backtests/{id}/info"))
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "could not read backtest {id} from chap-core ({e}); run `chap-devops bench` with no id to time the newest one"
-            )
-        })?;
-    let target = plan::target(id, &info);
-    let plots = discover_plots(&ask, id);
-    let routes = plan::routes(&target, &plots);
+    let facts = discover(&ask, args, &pages)?;
+    let skipped: Vec<(BenchPage, &str)> = pages
+        .iter()
+        .filter_map(|&p| plan::missing(p, &facts).map(|why| (p, why)))
+        .collect();
+    let routes = plan::routes(&facts, &pages);
+    if routes.is_empty() {
+        if facts.backtest.is_none() {
+            return Err(anyhow::anyhow!(plan::no_backtest(ask.base())));
+        }
+        let why: Vec<String> = skipped
+            .iter()
+            .map(|(p, why)| format!("{} page: {why}", p.name()))
+            .collect();
+        return Err(anyhow::anyhow!("nothing to time ({})", why.join("; ")));
+    }
 
     let timer = Api::new(&base, token, Duration::from_secs(args.timeout));
     let start = Instant::now();
@@ -62,36 +74,77 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
     let results: Vec<RouteResult> = routes
         .iter()
         .zip(&timings)
-        .map(|(r, t)| measure::summarize(&r.label, r.method, &r.path, t))
+        .map(|(r, t)| RouteResult {
+            page: r.page.name().to_string(),
+            step: r.step,
+            ..measure::summarize(&r.label, r.method, &r.path, t)
+        })
+        .collect();
+    let p50: Vec<f64> = results.iter().map(|r| r.p50_ms).collect();
+    let timed: Vec<BenchPage> = pages
+        .iter()
+        .copied()
+        .filter(|p| routes.iter().any(|r| r.page == *p))
+        .collect();
+    let page_rows: Vec<serde_json::Value> = timed
+        .iter()
+        .map(|&p| {
+            serde_json::json!({
+                "page": p.name(),
+                "steps": routes.iter().filter(|r| r.page == p).map(|r| r.step).max().unwrap_or(0) + 1,
+                "ms": plan::page_ms(&routes, &p50, p),
+            })
+        })
         .collect();
 
     if !ctx.out.json {
         print!("{}", table(ctx, &results));
     }
+    let backtest = facts.backtest.as_ref().map(|b| b.id);
+    let prediction = facts.prediction.as_ref().map(|p| p.id);
     let value = serde_json::json!({
         "url": timer.base(),
-        "backtest": id,
+        "backtest": backtest,
+        "prediction": prediction,
         "repeat": args.repeat,
         "parallel": args.parallel,
         "seconds": seconds,
+        "pages": page_rows,
+        "skipped": skipped.iter().map(|(p, why)| serde_json::json!({"page": p.name(), "reason": why})).collect::<Vec<_>>(),
         "routes": results,
     });
     let local = chap.local;
     ctx.out.report(&value, |lines| {
+        let of: Vec<String> = [
+            backtest.map(|id| format!("backtest {id}")),
+            prediction.map(|id| format!("prediction {id}")),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
         lines.info(format!(
-            "timed {} requests of backtest {id}, {}, {} at a time, in {}",
+            "timed {} requests on {} page{} ({}), {}, {} at a time, in {}",
             results.len(),
+            timed.len(),
+            if timed.len() == 1 { "" } else { "s" },
+            of.join(", "),
             measure::times_each(args.repeat),
             args.parallel,
             human_ms(seconds * 1000.0)
         ));
+        let opens: Vec<String> = timed
+            .iter()
+            .map(|&p| format!("{} {}", p.name(), human_ms(plan::page_ms(&routes, &p50, p))))
+            .collect();
+        lines.info(format!("time to open, from the p50s: {}", opens.join(", ")));
         if let Some(slow) = results
             .iter()
             .filter(|r| r.failed < r.requests)
             .max_by(|a, b| a.p50_ms.total_cmp(&b.p50_ms))
         {
             lines.info(format!(
-                "slowest: {}, p50 {}",
+                "slowest: {} {}, p50 {}",
+                slow.page,
                 slow.label,
                 human_ms(slow.p50_ms)
             ));
@@ -104,9 +157,16 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
                 ""
             };
             lines.warning(format!(
-                "`{}` failed {} of {} times: {why}{next}",
-                r.label, r.failed, r.requests
+                "`{} {}` failed {} of {} times: {why}{next}",
+                r.page, r.label, r.failed, r.requests
             ));
+        }
+        for (page, why) in &skipped {
+            let line = format!("did not time the {} page: {why}", page.name());
+            match asked {
+                true => lines.warning(line),
+                false => lines.hint(line),
+            };
         }
         if args.parallel == 1 {
             lines.hint(
@@ -114,6 +174,88 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
             );
         }
     })
+}
+
+/// What the pages need to know, asked untimed.
+///
+/// A backtest or a prediction that was named and cannot be read is an error.
+/// One that was not named and is not there leaves its pages out.
+fn discover(api: &Api, args: &BenchArgs, pages: &[BenchPage]) -> Result<Facts> {
+    let wants = |page: BenchPage| pages.contains(&page);
+    let mut facts = Facts {
+        version: api
+            .get_json("/system/info")
+            .ok()
+            .and_then(|info| plan::version(&info)),
+        ..Facts::default()
+    };
+    let backtest_pages = [
+        BenchPage::Evaluation,
+        BenchPage::Compare,
+        BenchPage::Plots,
+        BenchPage::Benchmark,
+        BenchPage::Dataset,
+    ];
+    if backtest_pages.iter().any(|&p| wants(p)) {
+        let id = match args.backtest {
+            Some(id) => Some(id),
+            None => plan::newest_id(&api.get_json("/v1/crud/backtests")?),
+        };
+        if let Some(id) = id {
+            let info = api
+                .get_json(&format!("/v1/crud/backtests/{id}/info"))
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "could not read backtest {id} from chap-core ({e}); run `chap-devops bench` with no id to time the newest one"
+                    )
+                })?;
+            facts.backtest = Some(plan::backtest(id, &info));
+        }
+    }
+    let spec_id = facts.backtest.as_ref().and_then(|b| b.specification_id);
+    if let Some(spec) = spec_id
+        && [
+            BenchPage::Evaluation,
+            BenchPage::Compare,
+            BenchPage::Benchmark,
+        ]
+        .iter()
+        .any(|&p| wants(p))
+    {
+        facts.specification = api
+            .get_json(&format!(
+                "/v1/crud/backtest-specifications/{spec}?includeComparisonModels=true&includeArchivedModels=false"
+            ))
+            .ok()
+            .map(|value| plan::specification(spec, &value));
+    }
+    if wants(BenchPage::Plots)
+        && let Some(id) = facts.backtest.as_ref().map(|b| b.id)
+    {
+        facts.plots = discover_plots(api, id);
+    }
+    if wants(BenchPage::Prediction) {
+        let id = match args.prediction {
+            Some(id) => Some(id),
+            None => api
+                .get_json("/v1/crud/predictions")
+                .ok()
+                .and_then(|list| plan::newest_id(&list)),
+        };
+        if let Some(id) = id {
+            let row = api.get_json(&format!("/v1/crud/predictions/{id}"));
+            match (row, args.prediction) {
+                (Ok(row), _) => facts.prediction = Some(plan::prediction(id, &row)),
+                (Err(e), Some(_)) => {
+                    return Err(anyhow::anyhow!(
+                        "could not read prediction {id} from chap-core ({e}); run `chap-devops bench` without --prediction to time the newest one"
+                    ));
+                }
+                (Err(_), None) => {}
+            }
+        }
+    }
+    Ok(facts)
 }
 
 /// Each plot with the subplot body its facet coordinates give. A plot list
@@ -204,6 +346,7 @@ fn table(ctx: &Ctx, results: &[RouteResult]) -> String {
         .iter()
         .map(|r| {
             vec![
+                r.page.clone(),
                 r.label.clone(),
                 format!("{}", r.requests),
                 format!("{}", r.failed),
@@ -218,7 +361,7 @@ fn table(ctx: &Ctx, results: &[RouteResult]) -> String {
         .collect();
     ctx.out.table(
         &[
-            "REQUEST", "N", "FAILED", "MIN", "P50", "P95", "MAX", "SIZE", "GZIP",
+            "PAGE", "REQUEST", "N", "FAILED", "MIN", "P50", "P95", "MAX", "SIZE", "GZIP",
         ],
         &rows,
     )

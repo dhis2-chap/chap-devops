@@ -3,8 +3,8 @@
 `chap-devops bench` puts load on chap-core in two ways:
 
 - With no `--write`, it times the requests that the Modeling App sends to
-  chap-core when a person opens one evaluation. Use it to find which page is
-  slow, and to see if it gets slower as the data grows. It changes nothing.
+  chap-core when a person opens a page. Use it to find which page is slow,
+  and to see if it gets slower as the data grows. It changes nothing.
 - With `--write`, it imports a dataset and runs several backtests on it at
   the same time, then checks what each one stored. See
   [Backtests under load](#backtests-under-load---write).
@@ -13,47 +13,75 @@
 [Synthetic datasets](#synthetic-datasets-chap-devops-bench-dataset).
 
 ```sh
-chap-devops bench                 # the newest backtest, 3 times each, 1 at a time
-chap-devops bench 12 --repeat 10  # backtest 12
-chap-devops bench --parallel 8    # 8 requests open at the same time
+chap-devops bench                        # every page, 3 times each, 1 at a time
+chap-devops bench 12 --repeat 10         # the pages of backtest 12
+chap-devops bench --page prediction      # only the prediction page
+chap-devops bench --page evaluation,dataset --prediction 7
+chap-devops bench --parallel 8           # 8 requests open at the same time
 ```
 
-## What it sends
+## The pages
 
-First it reads the backtest (`/v1/crud/backtests/{id}/info`) and the list of
-plots, and it does not time these reads. Then it sends each request below
-`--repeat` times:
+`--page` selects the pages, separated by commas. Without it, `bench` times
+all of them. The requests follow the Modeling App: each page is a list of
+steps. The requests of one step go out at the same time, and the next step
+waits for their answers. Every page starts with `/system/info`, because the
+Modeling App waits for it before it shows anything.
 
-- the lists: `backtests`, `configured-models`, `datasets`, `jobs`;
-- `backtest info` and `backtest-specification`;
-- `evaluation-entry` and `actualCases`, for the whole country (`adm0`) and
-  for the first 10 org units, as the chart page asks for them;
-- `compatible-backtests`, the `dataset` of the backtest, and `metrics`;
-- for each plot, `facet-coords` and the first `subplot`.
+| Page | What the Modeling App shows | The requests to chap-core |
+| --- | --- | --- |
+| `evaluation` | One evaluation, as it opens | `backtest info`; then `configured-models`, the plot list, the specification and the version-dependent widgets; then `evaluation-entry` and `actualCases` for the whole country (`adm0`) |
+| `compare` | The comparison of an evaluation | the `backtests` list; the specification and `compatible-backtests`; the info of each baseline that is done; then `evaluation-entry` and `actualCases` for the first 10 org units |
+| `plots` | The custom plots, after a person picks one | the plot list; `facet-coords` of each plot; the first `subplot` of each plot |
+| `benchmark` | The benchmark of the backtest specification | the specification, `jobs`; then `configured-models` and the parameters |
+| `dataset` | The dataset details page | the dataset of the backtest, with every observation |
+| `prediction` | One prediction | the prediction and `configured-models`; then `prediction-entry`, `alerts`, `alert-policies`, and `actualCases` of the dataset for every org unit of the prediction, with `isDatasetId=true` |
+
+The backtest is the one you give, or the newest in chap-core's list. The
+prediction is the one `--prediction` gives, or the newest. The `benchmark`
+and `dataset` pages use the specification and the dataset of the backtest.
+
+`bench` first reads the version, the backtest, its specification, the
+prediction and the plots, and it does not time these reads. With the
+version, it leaves out the requests that the Modeling App does not send to
+an older chap-core, for example `backtest-parameters` before 2.4. If
+chap-core does not give its version, `bench` sends all of them.
+
+Some requests are not in `bench`:
+
+- the requests to DHIS2 itself, for example the names of the org units;
+- the requests that start only when a person clicks, for example the
+  outbreak scores of an alert policy;
+- the `thresholds` request of the prediction page, which needs the alert
+  policies of the prediction.
+
+If a page cannot be timed, for example because there is no prediction,
+`bench` leaves it out. With `-v` it says why. If you selected the page with
+`--page`, it gives a warning.
 
 The requests go round by round, so with `--parallel 1` one request is never
 sent two times in a row.
 
 ## The report
 
-This example is from a `bench` before the `GZIP` column:
+The table has one row for each request of each page: `PAGE`, `REQUEST`, the
+count `N`, `FAILED`, then `MIN`, `P50`, `P95` and `MAX`, then `SIZE` and
+`GZIP`. After the table:
 
-```text
-REQUEST                                  N  FAILED  MIN     P50     P95     MAX     SIZE
-backtests                                5  0       8 ms    10 ms   11 ms   11 ms   3.9 kB
-evaluation-entry 10 org units            5  0       65 ms   68 ms   73 ms   73 ms   114.4 kB
-dataset                                  5  0       125 ms  232 ms  245 ms  245 ms  774.8 kB
-predicted_vs_actual subplot              5  0       668 ms  674 ms  748 ms  748 ms  38.2 kB
-...
-timed 25 requests of backtest 4, 5 times each, 1 at a time, in 16.12 s
-slowest: predicted_vs_actual subplot, p50 674 ms
-```
+- `timed ...`: the count of requests and pages, and the backtest and the
+  prediction.
+- `time to open, from the p50s`: for each page, the p50 of the slowest
+  request in each step, added up over the steps. This is an estimate of
+  how long the page takes to open with one person on the server.
+- `slowest`: the request with the highest p50.
 
 The times are the time until the whole answer came and was unpacked.
 A failed request counts with the time it took, because a person waited that
 long. Each failed request adds a warning with what chap-core said. `--json`
-gives every row with `min_ms`, `p50_ms`, `p95_ms`, `max_ms`, `bytes`,
-`wire_bytes` and the count of each HTTP status.
+gives every row with its `page` and `step`, `min_ms`, `p50_ms`, `p95_ms`,
+`max_ms`, `bytes`, `wire_bytes` and the count of each HTTP status. `pages`
+gives each page with its `steps` and its time to open (`ms`), and `skipped`
+gives each page that was left out, with the reason.
 
 ## gzip
 
@@ -76,8 +104,8 @@ run the same `bench` version on both.
 A Modeling App page sends several requests at the same time. `--parallel 8`
 does the same. If the server answers one request at a time, the fast requests
 wait for the slow ones. Then their p50 goes up, but the total time does not go
-down. For the evaluation above (18 org units, 72 months), on chap-core
-`master` of 2026-11-05:
+down. For one evaluation (18 org units, 72 months), on chap-core `master` of
+2026-11-05, with the requests of a `bench` from before the pages:
 
 | | `--parallel 1` | `--parallel 8` |
 | --- | --- | --- |
@@ -85,6 +113,19 @@ down. For the evaluation above (18 org units, 72 months), on chap-core
 | `backtests` p50 | 10 ms | 737 ms |
 | `configured-models` p50 | 12 ms | 748 ms |
 | `predicted_vs_actual subplot` p50 | 674 ms | 2.67 s |
+
+## Before and after a change
+
+To see what a change in chap-core does, time the same page before and
+after it, with the same data and the same `bench` version:
+
+```sh
+chap-devops --json bench --page prediction --repeat 10 > before.json
+# change chap-core and start it again
+chap-devops --json bench --page prediction --repeat 10 > after.json
+```
+
+Compare `pages` and the `p50_ms` of each row in the two files.
 
 ## Another chap-core
 

@@ -2,10 +2,10 @@
 //! and the synthetic data for it.
 
 use crate::synthetic::{PeriodType, Spec};
-use clap::{Args, Subcommand};
+use clap::{Args, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
-/// Time the requests of one evaluation, or run backtests under load
+/// Time the Modeling App's pages, or run backtests under load
 #[derive(Debug, Clone, Args)]
 #[command(args_conflicts_with_subcommands = true, disable_help_subcommand = true)]
 pub struct BenchArgs {
@@ -15,6 +15,20 @@ pub struct BenchArgs {
     /// Backtest id to time; the newest backtest when not given
     #[arg(value_name = "BACKTEST", conflicts_with = "write")]
     pub backtest: Option<i64>,
+
+    /// Pages to time, comma-separated; all pages when not given
+    #[arg(
+        long,
+        value_name = "PAGE",
+        value_enum,
+        value_delimiter = ',',
+        conflicts_with = "write"
+    )]
+    pub page: Vec<BenchPage>,
+
+    /// Prediction id for the prediction page; the newest when not given
+    #[arg(long, value_name = "ID", conflicts_with = "write")]
+    pub prediction: Option<i64>,
 
     /// How many times to send each request
     #[arg(long, value_name = "N", default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=1000))]
@@ -68,6 +82,46 @@ pub struct BenchArgs {
 
     #[command(flatten)]
     pub synthetic: SyntheticArgs,
+}
+
+/// A Modeling App page that `chap-devops bench` times.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BenchPage {
+    // One evaluation, as it opens
+    Evaluation,
+    // The comparison of an evaluation, with 10 org units
+    Compare,
+    // The custom plots of an evaluation, after a person picks a plot
+    Plots,
+    // The benchmark of the backtest specification
+    Benchmark,
+    // The dataset of the backtest, with every observation
+    Dataset,
+    // One prediction, with the cases of all its org units
+    Prediction,
+}
+
+impl BenchPage {
+    pub const ALL: [BenchPage; 6] = [
+        BenchPage::Evaluation,
+        BenchPage::Compare,
+        BenchPage::Plots,
+        BenchPage::Benchmark,
+        BenchPage::Dataset,
+        BenchPage::Prediction,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            BenchPage::Evaluation => "evaluation",
+            BenchPage::Compare => "compare",
+            BenchPage::Plots => "plots",
+            BenchPage::Benchmark => "benchmark",
+            BenchPage::Dataset => "dataset",
+            BenchPage::Prediction => "prediction",
+        }
+    }
 }
 
 /// The shape of a synthetic dataset.

@@ -27,6 +27,9 @@ impl Timing {
 /// Every request to one route, in numbers.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RouteResult {
+    /// The page that sends it, and its step on that page.
+    pub page: String,
+    pub step: u8,
     pub label: String,
     pub method: String,
     pub path: String,
@@ -70,6 +73,8 @@ pub fn summarize(label: &str, method: &str, path: &str, timings: &[Timing]) -> R
         *statuses.entry(key).or_insert(0) += 1;
     }
     RouteResult {
+        page: String::new(),
+        step: 0,
         label: label.to_string(),
         method: method.to_string(),
         path: path.to_string(),

@@ -29,31 +29,38 @@ fn bench_times_the_newest_backtest_and_warns_about_a_failed_request() {
     .clone();
     let stdout = String::from_utf8(output.stdout).expect("text");
     let stderr = String::from_utf8(output.stderr).expect("text");
-    assert!(stdout.starts_with("REQUEST "), "{stdout}");
+    assert!(stdout.starts_with("PAGE "), "{stdout}");
     let header = stdout.lines().next().unwrap_or_default();
     assert!(
         header.contains(" SIZE ") && header.ends_with("GZIP"),
         "{header}"
     );
-    for label in [
-        "backtest info",
-        "evaluation-entry adm0",
-        "evaluation-entry 2 org units",
-        "backtest-specification",
-        "bias facet-coords",
-        "bias subplot",
+    for row in [
+        "evaluation  backtest info",
+        "evaluation  evaluation-entry adm0",
+        "compare     evaluation-entry 2 org units",
+        "compare     baseline 8 info",
+        "benchmark   backtest-specification",
+        "plots       bias facet-coords",
+        "plots       bias subplot",
+        "dataset     dataset",
+        "prediction  actualCases 3 org units",
     ] {
-        assert!(stdout.contains(label), "{label} is missing:\n{stdout}");
+        assert!(stdout.contains(row), "{row} is missing:\n{stdout}");
     }
     assert!(
         stdout.contains(&format!(
-            "of backtest {BENCH_BACKTEST}, 2 times each, 3 at a time"
+            "on 6 pages (backtest {BENCH_BACKTEST}, prediction {BENCH_PREDICTION}), 2 times each, 3 at a time"
         )),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains("time to open, from the p50s: evaluation "),
         "{stdout}"
     );
     assert!(stdout.contains("slowest: "), "{stdout}");
     assert!(
-        stderr.contains("`compatible-backtests` failed 2 of 2 times: HTTP 500"),
+        stderr.contains("`compare compatible-backtests` failed 2 of 2 times: HTTP 500"),
         "{stderr}"
     );
     assert!(stderr.contains("database is gone"), "{stderr}");
@@ -99,6 +106,68 @@ fn bench_json_has_a_row_per_request_with_its_numbers() {
         .filter_map(|m| m["level"].as_str())
         .collect();
     assert!(levels.contains(&"warning"), "{value}");
+}
+
+#[test]
+fn bench_times_the_prediction_page_with_every_org_unit_of_the_dataset() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    let value: Json = json_of(&mut chap_in(
+        &sandbox,
+        &dir,
+        &["--json", "bench", "--page", "prediction", "--repeat", "1"],
+    ));
+    assert_eq!(value["prediction"], BENCH_PREDICTION);
+    assert_eq!(value["backtest"], Json::Null);
+    let routes = value["routes"].as_array().expect("routes");
+    assert!(routes.iter().all(|r| r["page"] == "prediction"), "{value}");
+    let cases = routes
+        .iter()
+        .find(|r| r["label"] == "actualCases 3 org units")
+        .expect("the cases of the dataset");
+    assert_eq!(
+        cases["path"],
+        "/v1/analytics/actualCases/3?orgUnits=ou1&orgUnits=ou2&orgUnits=ou3&isDatasetId=true"
+    );
+    assert_eq!(cases["step"], 2);
+    let pages = value["pages"].as_array().expect("pages");
+    assert_eq!(pages.len(), 1);
+    assert_eq!(pages[0]["page"], "prediction");
+    assert_eq!(pages[0]["steps"], 3);
+}
+
+#[test]
+fn bench_warns_about_a_page_it_was_asked_for_and_cannot_time() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    // Backtest 7 names no specification, so there is no benchmark page.
+    chap_in(
+        &sandbox,
+        &dir,
+        &["bench", "7", "--page", "benchmark,dataset", "--repeat", "1"],
+    )
+    .assert()
+    .success()
+    .stdout(predicates::str::is_match(r"(?m)^dataset +dataset ").expect("a regex"))
+    .stderr(predicates::str::contains("did not time the benchmark page"));
+}
+
+#[test]
+fn bench_names_a_prediction_chap_core_does_not_have() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    chap_in(
+        &sandbox,
+        &dir,
+        &["bench", "--page", "prediction", "--prediction", "41"],
+    )
+    .assert()
+    .failure()
+    .stderr(predicates::str::contains("could not read prediction 41"))
+    .stderr(predicates::str::contains("without --prediction"));
 }
 
 #[test]
