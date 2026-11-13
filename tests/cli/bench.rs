@@ -271,3 +271,14 @@ fn the_write_options_need_write() {
         .assert()
         .code(2);
 }
+
+#[test]
+fn bench_outside_a_deployment_names_url() {
+    let sandbox = Sandbox::new();
+    chap_in(&sandbox, sandbox.home.path(), &["bench"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("is not a chap-devops deployment"))
+        .stderr(predicates::str::contains("run `chap-devops bench` in one"))
+        .stderr(predicates::str::contains("`--url URL`"));
+}

@@ -31,7 +31,16 @@ pub(crate) fn chap_core(ctx: &Ctx, url: Option<&str>, command: &str) -> Result<T
             false,
         ),
         None => {
-            let project = ctx.project()?;
+            let project =
+                ctx.project()
+                    .map_err(|e| match e.downcast_ref::<crate::error::ChapError>() {
+                        Some(crate::error::ChapError::NotAProject(dir)) => anyhow::anyhow!(
+                            "{} is not a chap-devops deployment; run {command} in one, or give \
+                         the chap-core API with `--url URL`",
+                            dir.display()
+                        ),
+                        _ => e,
+                    })?;
             crate::components::require_chap_core(&project.state.components, command)?;
             (project.api_url(), Some(project), true)
         }
