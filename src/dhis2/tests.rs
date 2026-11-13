@@ -13,6 +13,7 @@ fn answer(status: u16, body: &str) -> Answer {
         content_type: crate::api::JSON.to_string(),
         body: body.as_bytes().to_vec(),
         wire_bytes: body.len(),
+        transport: Default::default(),
     }
 }
 

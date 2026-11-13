@@ -30,6 +30,28 @@ pub struct Server {
     /// this deployment runs.
     pub docker_cpus: Option<u64>,
     pub docker_memory_bytes: Option<u64>,
+    /// Whether chap-core packed an answer with gzip when asked, as the
+    /// DHIS2 route asks. `None` when the answer was too small to tell.
+    pub gzip: Option<bool>,
+    /// What the answer says came between: `Server` and `Via`. A proxy, or
+    /// the DHIS2 route, can pack, unpack or hold back answers.
+    pub transport: crate::api::Transport,
+}
+
+/// chap-core packs answers of this size and more (`minimum_size` of its
+/// `GZipMiddleware`); a smaller answer says nothing about gzip.
+const GZIP_MINIMUM: usize = 1000;
+
+/// Whether an answer to a request for gzip came packed, and what it says
+/// came between.
+pub fn encoding(answer: &crate::api::Answer) -> (Option<bool>, crate::api::Transport) {
+    let packed = answer
+        .transport
+        .content_encoding
+        .as_deref()
+        .is_some_and(|e| e.eq_ignore_ascii_case("gzip"));
+    let known = packed || answer.body.len() >= GZIP_MINIMUM;
+    (known.then_some(packed), answer.transport.clone())
 }
 
 /// Ask chap-core and, for a local chap-core, docker.
@@ -42,7 +64,15 @@ pub fn describe(ctx: &Ctx, api: &Api, local: bool) -> Server {
             .filter(|v| !v.is_empty())
             .map(str::to_string)
     };
+    // An answer that is always large enough to be packed: the configured
+    // models, with their templates.
+    let (gzip, transport) = match api.send("GET", "/v1/crud/configured-models", None) {
+        Ok(answer) if answer.is_success() => encoding(&answer),
+        _ => (None, crate::api::Transport::default()),
+    };
     let mut server = Server {
+        gzip,
+        transport,
         chap_core_version: field("chap_core_version"),
         revision: field("revision"),
         machine: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
@@ -131,6 +161,19 @@ pub fn line(server: &Server) -> String {
             "docker with {cpus} CPUs and {}",
             super::measure::human_bytes(memory as usize)
         ));
+    }
+    match server.gzip {
+        Some(true) => parts.push("answers packed with gzip".to_string()),
+        Some(false) => parts.push("answers not packed, though gzip was asked for".to_string()),
+        None => {}
+    }
+    if let Some(name) = &server.transport.server
+        && !name.eq_ignore_ascii_case("uvicorn")
+    {
+        parts.push(format!("server `{name}`"));
+    }
+    if let Some(via) = &server.transport.via {
+        parts.push(format!("via `{via}`"));
     }
     match server.cpus {
         Some(cpus) => parts.push(format!("{} with {cpus} CPUs", server.machine)),

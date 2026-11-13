@@ -182,6 +182,7 @@ impl Dhis2 {
             reason: status.canonical_reason().unwrap_or_default().to_string(),
             content_type,
             wire_bytes: body.len(),
+            transport: Default::default(),
             body,
         })
     }

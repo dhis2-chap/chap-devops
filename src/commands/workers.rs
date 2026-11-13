@@ -88,7 +88,10 @@ pub fn set_workers(ctx: &Ctx, project: &Project, count: u32) -> Result<usize> {
     }
     crate::dotenv::write(&path, &crate::dotenv::join(&lines))?;
 
-    crate::output::notice(&format!("recreating `chap` with {count} API workers"));
+    crate::output::notice(&format!(
+        "recreating `chap` with {count} API worker{}",
+        plural(count as usize)
+    ));
     let args = ["up", "-d", "--no-deps", "--force-recreate", "chap"].map(str::to_string);
     match crate::docker::compose_output(project, &args) {
         Ok((0, _, _)) => {}

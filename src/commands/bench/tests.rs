@@ -421,6 +421,8 @@ fn the_server_line_says_what_was_measured() {
         cpus: Some(12),
         docker_cpus: Some(12),
         docker_memory_bytes: Some(33_598_132_224),
+        gzip: None,
+        transport: Default::default(),
     };
     assert_eq!(
         line(&full),
@@ -433,6 +435,42 @@ fn the_server_line_says_what_was_measured() {
         ..Server::default()
     };
     assert_eq!(line(&remote), "measured on chap-core 2.8.0, linux x86_64");
+
+    // Through a proxy that unpacks: the line says so, and names the proxy.
+    let proxied = Server {
+        gzip: Some(false),
+        transport: crate::api::Transport {
+            server: Some("nginx/1.27".to_string()),
+            via: Some("1.1 dhis2-route".to_string()),
+            ..Default::default()
+        },
+        ..remote
+    };
+    assert_eq!(
+        line(&proxied),
+        "measured on chap-core 2.8.0, answers not packed, though gzip was asked for, \
+         server `nginx/1.27`, via `1.1 dhis2-route`, linux x86_64"
+    );
+}
+
+#[test]
+fn an_answer_says_whether_it_came_packed_only_when_it_is_large_enough() {
+    use super::server::encoding;
+    let answer = |size: usize, encoding: Option<&str>| crate::api::Answer {
+        status: 200,
+        reason: "OK".to_string(),
+        content_type: "application/json".to_string(),
+        body: vec![b' '; size],
+        wire_bytes: size,
+        transport: crate::api::Transport {
+            content_encoding: encoding.map(str::to_string),
+            ..Default::default()
+        },
+    };
+    assert_eq!(encoding(&answer(5000, Some("gzip"))).0, Some(true));
+    assert_eq!(encoding(&answer(5000, None)).0, Some(false));
+    // chap-core does not pack an answer under 1,000 bytes.
+    assert_eq!(encoding(&answer(200, None)).0, None);
 }
 
 #[test]

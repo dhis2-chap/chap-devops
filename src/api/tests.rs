@@ -7,6 +7,7 @@ fn answer(status: u16, body: &str) -> Answer {
         content_type: JSON.to_string(),
         body: body.as_bytes().to_vec(),
         wire_bytes: body.len(),
+        transport: Default::default(),
     }
 }
 

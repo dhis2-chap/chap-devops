@@ -63,13 +63,13 @@ fn bench_times_the_newest_backtest_and_warns_about_a_failed_request() {
         "{stdout}"
     );
     assert!(
-        stdout.contains("time to open, from the p50s: evaluation "),
+        stdout.contains("chap-core time per page, from the p50s: evaluation "),
         "{stdout}"
     );
     assert!(stdout.contains("slowest: "), "{stdout}");
     assert!(
         stdout.contains(&format!(
-            "measured on chap-core {CHAP_CORE_VERSION} ({CHAP_CORE_REVISION})"
+            "measured on chap-core {CHAP_CORE_VERSION} ({CHAP_CORE_REVISION}), answers packed with gzip"
         )),
         "{stdout}"
     );
@@ -97,6 +97,7 @@ fn bench_json_has_a_row_per_request_with_its_numbers() {
     assert_eq!(value["server"]["revision"], CHAP_CORE_REVISION);
     // The sandbox has no docker, so the process counts are not known.
     assert_eq!(value["server"]["api_workers"], Json::Null);
+    assert_eq!(value["server"]["gzip"], true);
     let routes = value["routes"].as_array().expect("routes");
     let subplot = routes
         .iter()

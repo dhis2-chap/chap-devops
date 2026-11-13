@@ -142,7 +142,10 @@ pub fn run(ctx: &Ctx, args: &BenchArgs) -> Result<()> {
             .iter()
             .map(|&p| format!("{} {}", p.name(), human_ms(plan::page_ms(&routes, &p50, p))))
             .collect();
-        lines.info(format!("time to open, from the p50s: {}", opens.join(", ")));
+        lines.info(format!(
+            "chap-core time per page, from the p50s: {}",
+            opens.join(", ")
+        ));
         lines.info(server::line(&server));
         if let Some(slow) = results
             .iter()

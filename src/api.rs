@@ -62,6 +62,17 @@ pub struct Answer {
     /// How many bytes came over the network: the gzip size when the body
     /// came as gzip, else the length of `body`.
     pub wire_bytes: usize,
+    /// The headers that say what was between this client and chap-core:
+    /// `Content-Encoding`, `Server` and `Via`, as they came.
+    pub transport: Transport,
+}
+
+/// What an answer says about how it came: packed or not, and through what.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Transport {
+    pub content_encoding: Option<String>,
+    pub server: Option<String>,
+    pub via: Option<String>,
 }
 
 impl Answer {
@@ -260,11 +271,23 @@ impl Api {
             .and_then(|v| v.to_str().ok())
             .unwrap_or_default()
             .to_string();
-        let gzipped = response
-            .headers()
-            .get("content-encoding")
-            .and_then(|v| v.to_str().ok())
-            .is_some_and(|v| v.trim().eq_ignore_ascii_case("gzip"));
+        let header = |name: &str| {
+            response
+                .headers()
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+        };
+        let transport = Transport {
+            content_encoding: header("content-encoding"),
+            server: header("server"),
+            via: header("via"),
+        };
+        let gzipped = transport
+            .content_encoding
+            .as_deref()
+            .is_some_and(|v| v.eq_ignore_ascii_case("gzip"));
         let body = response
             .body_mut()
             .with_config()
@@ -287,6 +310,7 @@ impl Api {
             content_type,
             body,
             wire_bytes,
+            transport,
         })
     }
 

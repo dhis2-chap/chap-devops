@@ -70,9 +70,13 @@ count `N`, `FAILED`, then `MIN`, `P50`, `P95` and `MAX`, then `SIZE` and
 
 - `timed ...`: the count of requests and pages, and the backtest and the
   prediction.
-- `time to open, from the p50s`: for each page, the p50 of the slowest
-  request in each step, added up over the steps. This is an estimate of
-  how long the page takes to open with one person on the server.
+- `chap-core time per page, from the p50s`: for each page, the p50 of the
+  slowest request in each step, added up over the steps. This is the part
+  of opening the page that chap-core takes, with one person on the server.
+  It is not the time a person waits for the page: it leaves out the
+  Modeling App's own requests to DHIS2 (for example the names of the org
+  units), the time of the DHIS2 route, and the work of the browser. Use it
+  to compare two runs on the same setup.
 - `slowest`: the request with the highest p50.
 - `measured on`: what the numbers are from. See
   [What was measured](#what-was-measured).
@@ -113,6 +117,19 @@ with `--write`, gives a `measured on` line and `server` in `--json`:
 - `docker_cpus` and `docker_memory_bytes`: what the docker engine has. On
   macOS and Windows this is the docker VM.
 - `machine` and `cpus`: the machine that chap-devops runs on.
+- `gzip`: whether chap-core packed an answer with gzip when `bench` asked
+  for it, as the DHIS2 route asks. `bench` checks this with one untimed
+  `GET /v1/crud/configured-models`. It is `null` when that answer was under
+  1,000 bytes, which chap-core never packs.
+- `transport`: the `Server` and `Via` headers of that answer. A proxy in
+  front of chap-core, or the DHIS2 route, shows here. Such a proxy can pack
+  or unpack the answers, or hold them back, so its time is in the numbers.
+
+The `measured on` line says `answers packed with gzip`, or `answers not
+packed, though gzip was asked for`. The second is a sign that something
+between `bench` and chap-core unpacks the answers, or that chap-core does
+not pack them. It names the server when it is not chap-core's own
+`uvicorn`.
 
 `bench` counts the processes that run, with `docker compose top`. It does
 not read the settings, because chap-core can ignore a setting. It counts
