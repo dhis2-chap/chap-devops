@@ -1,7 +1,7 @@
 //! The end of a detached `chap-devops up`: the wait for `--wait`, and what
 //! started and where it answers.
 
-use super::report::up_lines;
+use super::report::{configure_next, up_lines};
 use super::{edited_config_warnings, note, previous, wait};
 use crate::commands::Ctx;
 use crate::docker;
@@ -50,6 +50,11 @@ pub(super) fn finish_up(
             readiness.is_some(),
             lines,
         );
+        if readiness.is_none()
+            && let Some(line) = configure_next(before, &after, project)
+        {
+            lines.info(line);
+        }
         for line in &edited {
             lines.warning(line.as_str());
         }

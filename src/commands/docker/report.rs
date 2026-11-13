@@ -159,6 +159,37 @@ pub fn up_lines(
     }
 }
 
+/// What closes an `up` without `--wait` that started a model next to
+/// chap-core.
+///
+/// chap-core 2.4 and later makes no configured model from a registration, so
+/// a model it cannot run until `chap-devops models configs sync` makes one.
+/// `--wait` does that step itself, after the models registered; without it,
+/// `up` returns before they did, and this line is the only one that says the
+/// step is still to do. A run that started no model says nothing: the
+/// configured models of a model already running are made already.
+pub const CONFIGURE_NEXT: &str = "when the models are registered, run `chap-devops models \
+     configs sync` to give chap-core configured models; `chap-devops up --wait` does this itself";
+
+/// [`CONFIGURE_NEXT`], when this `up` started or recreated a model service of
+/// a deployment with chap-core.
+pub fn configure_next(
+    before: &[docker::Container],
+    after: &[docker::Container],
+    project: &Project,
+) -> Option<&'static str> {
+    if !project.state.components.has_chap_core_api() {
+        return None;
+    }
+    let (started, _) = docker::diff_containers(before, after);
+    let model_started = project
+        .state
+        .models
+        .values()
+        .any(|m| started.contains(&m.service_id));
+    model_started.then_some(CONFIGURE_NEXT)
+}
+
 /// What `restart` recreated, from the containers before and after.
 ///
 /// Compose recreates only the containers that no longer match the files, and
@@ -246,3 +277,6 @@ pub fn unknown_service_message(unknown: &[String], services: &[String]) -> Strin
         services.join(", ")
     )
 }
+
+#[cfg(test)]
+mod tests;

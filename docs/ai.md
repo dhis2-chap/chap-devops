@@ -245,8 +245,10 @@ chap-devops status
 It worked when `chap-devops status` says chap-core is `up` and the line under the
 table says the models are registered (`1 model registered`, or `all 2 models
 registered` with more). Models can take a minute or two after `chap-devops up`: if
-some say `not registered`, wait a minute and run `chap-devops status` again. Then
-`chap-devops open chap-core` opens chap-core's API page in the browser.
+some say `not registered`, wait a minute and run `chap-devops status` again.
+When they are registered, run `chap-devops models configs sync`, as the last
+line of `chap-devops up` says. Then `chap-devops open chap-core` opens
+chap-core's API page in the browser.
 
 Next: [What to try next without DHIS2](#what-to-try-next-without-dhis2).
 
