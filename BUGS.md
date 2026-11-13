@@ -171,7 +171,7 @@ bug that is fixed leaves the file.
   Helm chart, with a low default, and document how to size it by the memory
   of one job.
 
-### A facility-scale import as rows holds the API worker for 28 of its 30 s
+### A facility-scale import as rows blocks the API's event loop for about 10 s; under emulation the worker is killed
 
 - Seen: chap-core `master` (2.8.0.dev0, `94e16246`), built natively for
   arm64 with `chap-devops init --source`, 2026-11-13; and chap-core v2.7.0
@@ -180,20 +180,24 @@ bug that is fixed leaves the file.
   --covariates 4` sends `make-dataset` with `providedData`: one object for
   each value, 2,737,500 objects, 227 MB. This is how the Modeling App sends a
   dataset.
-- Native `master`: the request answered after 28.3 s, and the job took
-  76.4 s more. gunicorn stops an API worker that does not answer it for
-  30 s, so this is 2 s from a failure.
 - v2.7.0 under emulation: the API log has `[CRITICAL] WORKER TIMEOUT
   (pid:25)` and `Worker (pid:25) was sent SIGABRT!`, and the client gets
-  `Peer disconnected` after 19 s. The same data as `providedDataColumns`
-  (`--format columns`) was stored in 92.9 s: request 12.6 s, job 80.3 s.
+  `Peer disconnected` after 19 s. Nothing is stored. The same data as
+  `providedDataColumns` (`--format columns`) was stored in 92.9 s: request
+  12.6 s, job 80.3 s.
+- Native `master`: the import passed. The request answered after 28.3 s,
+  and the job took 76.4 s more.
 - Cause (found in the chap-core session): FastAPI parses and checks the
   body on the event loop, and `get_job_request` parses it a second time.
-  The uvicorn worker sends gunicorn a heartbeat only while the loop runs,
-  so a loop that is blocked long enough gets the worker killed.
+  Natively this blocks the loop for about 8 to 10 s at this size. The
+  uvicorn worker sends gunicorn a heartbeat every 15 s, and gunicorn kills
+  a worker that sent none for 30 s, so a loop that is blocked for 15 to
+  30 s or more loses the worker. The 28.3 s request is not the measure: the
+  loop keeps its heartbeat during the upload and during the work in the
+  threadpool. The risk is a slower CPU or a larger dataset.
 - `chap-devops bench --write --predict` sends the prediction run
   (`POST /v1/crud/prediction-setups/{id}/run`) as rows too, so it has the
-  same risk at this size.
+  same risk.
 - Fix: parse and check large bodies off the event loop, and parse them once.
   CLIM-1889.
 
