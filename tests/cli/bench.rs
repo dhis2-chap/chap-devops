@@ -4,6 +4,14 @@
 use crate::common::*;
 use serde_json::Value as Json;
 
+/// `chap-devops <args>` in `cwd`, without docker: `bench` asks docker how
+/// many processes run, and a test must not ask the docker of this machine.
+fn bench_in(sandbox: &Sandbox, cwd: &std::path::Path, args: &[&str]) -> assert_cmd::Command {
+    let mut cmd = chap_in(sandbox, cwd, args);
+    cmd.env("CHAP_DEVOPS_NO_DOCKER_PROBE", "1");
+    cmd
+}
+
 fn served_project(sandbox: &Sandbox) -> std::path::PathBuf {
     let port = chap_core_server();
     sandbox
@@ -18,7 +26,7 @@ fn bench_times_the_newest_backtest_and_warns_about_a_failed_request() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    let output = chap_in(
+    let output = bench_in(
         &sandbox,
         &dir,
         &["bench", "--repeat", "2", "--parallel", "3"],
@@ -78,7 +86,7 @@ fn bench_json_has_a_row_per_request_with_its_numbers() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    let value: Json = json_of(&mut chap_in(
+    let value: Json = json_of(&mut bench_in(
         &sandbox,
         &dir,
         &["--json", "bench", "9", "--repeat", "3"],
@@ -123,7 +131,7 @@ fn bench_times_the_prediction_page_with_every_org_unit_of_the_dataset() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    let value: Json = json_of(&mut chap_in(
+    let value: Json = json_of(&mut bench_in(
         &sandbox,
         &dir,
         &["--json", "bench", "--page", "prediction", "--repeat", "1"],
@@ -153,7 +161,7 @@ fn bench_warns_about_a_page_it_was_asked_for_and_cannot_time() {
     let dir = served_project(&sandbox);
 
     // Backtest 7 names no specification, so there is no benchmark page.
-    chap_in(
+    bench_in(
         &sandbox,
         &dir,
         &["bench", "7", "--page", "benchmark,dataset", "--repeat", "1"],
@@ -169,7 +177,7 @@ fn bench_names_a_prediction_chap_core_does_not_have() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    chap_in(
+    bench_in(
         &sandbox,
         &dir,
         &["bench", "--page", "prediction", "--prediction", "41"],
@@ -185,7 +193,7 @@ fn bench_names_a_backtest_chap_core_does_not_have() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    chap_in(&sandbox, &dir, &["bench", "41"])
+    bench_in(&sandbox, &dir, &["bench", "41"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("could not read backtest 41"))
@@ -206,7 +214,7 @@ fn bench_write(sandbox: &Sandbox, dir: &std::path::Path, extra: &[&str]) -> asse
     let mut args = vec!["bench", "--write"];
     args.extend_from_slice(SMALL);
     args.extend_from_slice(extra);
-    chap_in(sandbox, dir, &args)
+    bench_in(sandbox, dir, &args)
 }
 
 #[test]
@@ -227,7 +235,15 @@ fn bench_write_imports_a_dataset_runs_the_backtests_and_cleans_up() {
     assert!(stdout.starts_with("# "), "{stdout}");
     assert_eq!(
         stdout.lines().filter(|l| l.ends_with(" ok")).count(),
-        2,
+        3,
+        "{stdout}"
+    );
+    // Each job with its own run time from /v1/jobs, and the baseline that
+    // the runs queued.
+    assert!(stdout.contains(" 2.50 s "), "{stdout}");
+    assert!(stdout.contains("persistence (baseline)"), "{stdout}");
+    assert!(
+        stdout.contains("1 of 1 baseline backtests passed"),
         "{stdout}"
     );
     assert!(
@@ -252,7 +268,10 @@ fn bench_write_imports_a_dataset_runs_the_backtests_and_cleans_up() {
     // each, as the Modeling App sends them.
     assert_eq!(seen["observations"], 3 * 12 * 4);
     assert_eq!(seen["backtests"].as_array().expect("backtests").len(), 2);
-    assert_eq!(seen["backtests"][0]["modelId"], OLD_CHAPKIT_MODEL);
+    assert_eq!(
+        seen["backtests"][0]["modelIds"],
+        serde_json::json!([OLD_CHAPKIT_MODEL])
+    );
     assert_eq!(seen["backtests"][0]["datasetId"], TEST_DATASET);
     // The two backtests wrote one row, which goes once, then the dataset.
     assert_eq!(
@@ -336,11 +355,53 @@ fn bench_write_predict_keep_says_how_to_time_the_prediction_page() {
 }
 
 #[test]
+fn bench_write_runs_several_models_under_one_request_as_the_benchmark_page() {
+    let sandbox = Sandbox::new();
+    let dir = served_project(&sandbox);
+
+    let value: Json = json_of(&mut bench_in(
+        &sandbox,
+        &dir,
+        &[
+            "--json",
+            "bench",
+            "--write",
+            "--locations",
+            "3",
+            "--periods",
+            "12",
+            "--period-type",
+            "month",
+            "--model",
+            &format!("{OLD_CHAPKIT_MODEL},{PASSING_CONFIGURED}"),
+            "--backtests",
+            "1",
+        ],
+    ));
+    let seen = recorded(&sandbox, &dir);
+    assert_eq!(seen["backtests"].as_array().map(Vec::len), Some(1));
+    assert_eq!(
+        seen["backtests"][0]["modelIds"],
+        serde_json::json!([
+            OLD_CHAPKIT_MODEL,
+            format!("{PASSING_MODEL}:{PASSING_MODEL}_1790267117082761")
+        ])
+    );
+    let rows = value["backtests"].as_array().expect("rows");
+    let own: Vec<&Json> = rows.iter().filter(|r| r["baseline"] == false).collect();
+    assert_eq!(own.len(), 2, "{value}");
+    assert!(own.iter().all(|r| r["number"] == 1), "{value}");
+    assert_eq!(own[0]["seconds"], 2.5);
+    assert!(own[0]["request_seconds"].as_f64().is_some(), "{value}");
+    assert_eq!(rows.iter().filter(|r| r["baseline"] == true).count(), 1);
+}
+
+#[test]
 fn bench_write_keeps_a_dataset_it_was_given() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);
 
-    let value: Json = json_of(&mut chap_in(
+    let value: Json = json_of(&mut bench_in(
         &sandbox,
         &dir,
         &[
@@ -380,7 +441,7 @@ fn bench_write_fails_when_a_backtest_fails_and_says_why() {
     .code(1)
     .stdout(predicates::str::contains("0 of 1 backtests"))
     .stderr(predicates::str::contains(format!(
-        "backtest 1 (job bt-{FAILING_MODEL})"
+        "backtest 1 of {FAILING_MODEL} (job bt-{FAILING_MODEL})"
     )))
     .stderr(predicates::str::contains("`chap-devops jobs logs bt-"));
 }
@@ -426,7 +487,7 @@ fn the_write_options_need_write() {
 #[test]
 fn bench_outside_a_deployment_names_url() {
     let sandbox = Sandbox::new();
-    chap_in(&sandbox, sandbox.home.path(), &["bench"])
+    bench_in(&sandbox, sandbox.home.path(), &["bench"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("is not a chap-devops deployment"))

@@ -434,3 +434,17 @@ fn the_server_line_says_what_was_measured() {
     };
     assert_eq!(line(&remote), "measured on chap-core 2.8.0, linux x86_64");
 }
+
+#[test]
+fn a_job_runs_from_its_start_to_its_end_to_the_millisecond() {
+    use super::runs::job_times;
+    let job = crate::jobs::Job {
+        start_time: Some("2026-11-13T11:00:00.250000".to_string()),
+        end_time: Some("2026-11-13T11:00:02.750000+00:00".to_string()),
+        ..crate::jobs::Job::default()
+    };
+    let (start, end) = job_times(&job);
+    assert_eq!(end.zip(start).map(|(e, s)| e - s), Some(2.5));
+    let queued = crate::jobs::Job::default();
+    assert_eq!(job_times(&queued), (None, None));
+}

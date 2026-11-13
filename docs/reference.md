@@ -936,8 +936,8 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--url <URL>` | Base URL of the chap-core API. |
 | `--timeout <SECONDS>` | Request timeout in seconds. Default: `120`. |
 | `--write` | Import a dataset and run backtests on it, instead of timing reads. |
-| `--model <MODEL>` | Configured model to backtest, by name or id. |
-| `--backtests <N>` | How many backtests to start at the same time. Default: `4`. |
+| `--model <MODEL>` | Configured models to backtest, by name or id, comma-separated. |
+| `--backtests <N>` | How many runs of the models to start at the same time. Default: `4`. |
 | `--dataset <ID>` | Backtest this dataset id instead of a new synthetic one. |
 | `--wait <SECONDS>` | Seconds to wait for the jobs to finish. Default: `3600`. |
 | `--predict` | Also make a prediction from the first backtest that passed. |

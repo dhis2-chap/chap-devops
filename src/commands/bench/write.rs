@@ -8,9 +8,7 @@ use super::measure::human_ms;
 use crate::api::Api;
 use crate::cli::BenchArgs;
 use crate::commands::Ctx;
-use crate::commands::chap_jobs::{
-    Target, database_result, drop_rows, job_failure, job_status, post,
-};
+use crate::commands::chap_jobs::{Target, database_result, drop_rows, job_failure};
 use crate::commands::dataset;
 use crate::commands::modeltest::first_line;
 use crate::error::{ChapError, Result};
@@ -26,14 +24,30 @@ pub(super) const POLL: Duration = Duration::from_secs(3);
 /// The exit code when a backtest failed.
 const EXIT_FAILED: i32 = 1;
 
-/// One backtest of the run.
+/// One backtest of the run: a job of a `create-backtests` request, or a
+/// baseline job that one of them queued.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct Backtest {
+    /// The run that started it; `0` for a baseline.
     pub number: u32,
+    /// The configured model, or the name of the baseline.
+    pub model: String,
+    pub baseline: bool,
     pub job: Option<String>,
     /// The last status chap-core gave, or `not started`.
     pub status: String,
+    /// How long the `create-backtests` request of its run took.
+    pub request_seconds: Option<f64>,
+    /// From the answer to the request to the start of the job.
+    pub queued_seconds: Option<f64>,
+    /// How long the job ran, from its start and end time in `/v1/jobs`.
     pub seconds: Option<f64>,
+    /// When the request was answered, in seconds since the Unix epoch.
+    #[serde(skip)]
+    pub answered_at: Option<f64>,
+    /// Whether a poll saw the job end.
+    #[serde(skip)]
+    pub ended: bool,
     pub backtest_id: Option<i64>,
     pub forecasts: Option<usize>,
     pub expected_forecasts: Option<usize>,
@@ -76,7 +90,12 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         target.token.clone(),
         Duration::from_secs(args.timeout),
     );
-    let model = model_id(&api, args.model.as_deref())?;
+    let models = model_ids(&api, args.model.as_deref())?;
+    let model = models
+        .iter()
+        .map(|(_, name)| name.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
     let stamp = crate::backup::stamp(crate::backup::now());
     let wait = Duration::from_secs(args.wait);
     let started = Instant::now();
@@ -114,85 +133,27 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     // --- the backtests, all started before any is polled ---
     crate::interrupt::install();
     crate::output::notice(&format!(
-        "starting {} backtests of {} on dataset {dataset}",
-        args.backtests, model
+        "starting {} runs of {model} on dataset {dataset}",
+        args.backtests
     ));
-    let mut runs: Vec<(Backtest, Instant)> = Vec::new();
-    for number in 1..=args.backtests {
-        let body = serde_json::json!({
-            "name": format!("bench-{stamp}-{number}"),
-            "modelId": model_value(&model),
-            "datasetId": dataset,
-        });
-        let mut run = Backtest {
-            number,
-            status: "not started".to_string(),
-            ..Backtest::default()
-        };
-        match post(&api, "/v1/analytics/create-backtest", &body) {
-            Ok(answer) => match answer.get("id").and_then(Value::as_str) {
-                Some(job) => {
-                    run.job = Some(job.to_string());
-                    run.status = "PENDING".to_string();
-                }
-                None => run.problem = Some("chap-core gave no job id".to_string()),
-            },
-            Err(e) => run.problem = Some(first_line(&e.to_string())),
-        }
-        runs.push((run, Instant::now()));
-    }
+    let before = super::runs::baseline_jobs(&api);
+    let mut runs = super::runs::start(&api, &models, dataset, &stamp, args.backtests);
 
-    // --- the wait ---
-    let until = Instant::now() + wait;
-    let mut stopped = false;
-    loop {
-        let mut running = 0;
-        for (run, since) in runs.iter_mut() {
-            let Some(job) = run.job.clone() else { continue };
-            if run.seconds.is_some() {
-                continue;
-            }
-            match job_status(&api, &job) {
-                Ok(status) => {
-                    let outcome = Outcome::of(&status);
-                    run.status = status;
-                    if outcome.is_running() {
-                        running += 1;
-                    } else {
-                        run.seconds = Some(since.elapsed().as_secs_f64());
-                    }
-                }
-                Err(e) => {
-                    ctx.out
-                        .verbose(&format!("job {job}: {}", first_line(&e.to_string())));
-                    running += 1;
-                }
-            }
-        }
-        if running == 0 {
-            break;
-        }
-        if crate::interrupt::requested() {
-            stopped = true;
-            break;
-        }
-        if Instant::now() + POLL >= until {
-            break;
-        }
-        ctx.out
-            .verbose(&format!("{running} backtests still running"));
-        std::thread::sleep(POLL);
-    }
+    // --- the wait, for the baselines too ---
+    let stopped = super::runs::wait(ctx, &api, &mut runs, &before, Instant::now() + wait);
+    super::runs::times(&api, &mut runs);
 
     // --- what each one stored ---
-    let mut runs: Vec<Backtest> = runs.into_iter().map(|(run, _)| run).collect();
     for run in runs.iter_mut() {
         inspect(&api, run, wait);
     }
-    let still_running = runs.iter().any(|r| r.job.is_some() && r.seconds.is_none());
+    let still_running = runs.iter().any(|r| r.job.is_some() && !r.ended);
 
     // --- the prediction, from the first backtest that passed ---
-    let first_passed = runs.iter().find(|r| r.passed()).and_then(|r| r.backtest_id);
+    let first_passed = runs
+        .iter()
+        .find(|r| r.passed() && !r.baseline)
+        .and_then(|r| r.backtest_id);
     let prediction = match (&synthetic, first_passed) {
         (Some(data), Some(backtest)) if args.predict && !stopped => Some(super::predict::make(
             ctx,
@@ -232,11 +193,12 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let value = serde_json::json!({
         "url": api.base(),
         "server": server,
-        "model": model,
+        "models": models.iter().map(|(_, name)| name).collect::<Vec<_>>(),
         "dataset": dataset,
         "dataset_imported": made,
         "import_seconds": made.then_some(imported_in),
         "import_request_seconds": import_took.as_ref().map(|t| t.0),
+        "backtest_request_seconds": runs.iter().filter_map(|r| r.request_seconds).fold(None, |m: Option<f64>, s| Some(m.map_or(s, |m| m.max(s)))),
         "backtests": runs,
         "prediction": prediction,
         "failed": failed,
@@ -309,12 +271,21 @@ fn closing(
     stopped: bool,
     lines: &mut Report,
 ) {
-    let passed = runs.iter().filter(|r| r.passed()).count();
+    let own: Vec<&Backtest> = runs.iter().filter(|r| !r.baseline).collect();
+    let passed = own.iter().filter(|r| r.passed()).count();
     lines.info(format!(
         "{passed} of {} backtests of {model} on dataset {dataset} passed, in {}",
-        runs.len(),
+        own.len(),
         human_ms(took.as_secs_f64() * 1000.0)
     ));
+    let baselines: Vec<&Backtest> = runs.iter().filter(|r| r.baseline).collect();
+    if !baselines.is_empty() {
+        lines.info(format!(
+            "{} of {} baseline backtests passed",
+            baselines.iter().filter(|r| r.passed()).count(),
+            baselines.len()
+        ));
+    }
     if stopped {
         lines.warning("stopped by Ctrl-C before every backtest finished");
     }
@@ -324,9 +295,12 @@ fn closing(
             .as_deref()
             .map(|job| format!(" (job {job})"))
             .unwrap_or_default();
+        let which = match run.baseline {
+            true => format!("baseline {}", run.model),
+            false => format!("backtest {} of {}", run.number, run.model),
+        };
         lines.warning(format!(
-            "backtest {}{job}: {}",
-            run.number,
+            "{which}{job}: {}",
             run.problem.as_deref().unwrap_or_default()
         ));
     }
@@ -335,7 +309,7 @@ fn closing(
 /// Fill in what a backtest ended as and stored.
 fn inspect(api: &Api, run: &mut Backtest, wait: Duration) {
     let Some(job) = run.job.clone() else { return };
-    if run.seconds.is_none() {
+    if !run.ended {
         run.problem = Some(format!(
             "still {} after {} s; `chap-devops jobs show {job}` shows where it is",
             run.status,
@@ -371,16 +345,17 @@ fn inspect(api: &Api, run: &mut Backtest, wait: Duration) {
     run.problem = check(run.forecasts, run.expected_forecasts, metrics);
 }
 
-/// The configured model to backtest, checked against chap-core's list.
-fn model_id(api: &Api, given: Option<&str>) -> Result<String> {
+/// The configured models to backtest, a comma-separated list of names or
+/// ids, checked against chap-core's list: each as its id and name.
+fn model_ids(api: &Api, given: Option<&str>) -> Result<Vec<(i64, String)>> {
     let list = api.get_json("/v1/crud/configured-models")?;
-    let models: Vec<(String, String)> = list
+    let models: Vec<(i64, String)> = list
         .as_array()
         .into_iter()
         .flatten()
         .filter(|m| !m.get("archived").and_then(Value::as_bool).unwrap_or(false))
         .filter_map(|m| {
-            let id = m.get("id")?.as_i64()?.to_string();
+            let id = m.get("id")?.as_i64()?;
             let name = m.get("name")?.as_str()?.to_string();
             Some((id, name))
         })
@@ -392,39 +367,59 @@ fn model_id(api: &Api, given: Option<&str>) -> Result<String> {
     };
     let Some(given) = given else {
         return Err(ChapError::Usage(format!(
-            "--write needs --model, one of the configured models of chap-core: {}",
+            "--write needs --model, one or more of the configured models of chap-core: {}",
             names()
         ))
         .into());
     };
-    match models
-        .iter()
-        .find(|(id, name)| id == given || name == given)
-    {
-        Some((_, name)) => Ok(name.clone()),
-        None => Err(ChapError::Usage(format!(
-            "chap-core has no configured model `{given}`; give --model one of: {}",
+    let mut picked = Vec::new();
+    for one in given.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        match models
+            .iter()
+            .find(|(id, name)| id.to_string() == one || name == one)
+        {
+            Some(model) if !picked.contains(model) => picked.push(model.clone()),
+            Some(_) => {}
+            None => {
+                return Err(ChapError::Usage(format!(
+                    "chap-core has no configured model `{one}`; give --model one or more of: {}",
+                    names()
+                ))
+                .into());
+            }
+        }
+    }
+    if picked.is_empty() {
+        return Err(ChapError::Usage(format!(
+            "--write needs --model, one or more of the configured models of chap-core: {}",
             names()
         ))
-        .into()),
+        .into());
     }
-}
-
-/// `modelId` as chap-core takes it: the name, as a string.
-fn model_value(model: &str) -> Value {
-    Value::String(model.to_string())
+    Ok(picked)
 }
 
 fn table(ctx: &Ctx, runs: &[Backtest]) -> String {
     let rows: Vec<Vec<String>> = runs
         .iter()
         .map(|r| {
+            let time = |s: Option<f64>| {
+                s.map(|s| human_ms(s * 1000.0))
+                    .unwrap_or_else(|| "-".to_string())
+            };
             vec![
-                r.number.to_string(),
+                match r.baseline {
+                    true => "-".to_string(),
+                    false => r.number.to_string(),
+                },
+                match r.baseline {
+                    true => format!("{} (baseline)", r.model),
+                    false => r.model.clone(),
+                },
                 r.status.clone(),
-                r.seconds
-                    .map(|s| human_ms(s * 1000.0))
-                    .unwrap_or_else(|| "-".to_string()),
+                time(r.request_seconds),
+                time(r.queued_seconds),
+                time(r.seconds),
                 r.backtest_id.map(|id| id.to_string()).unwrap_or_default(),
                 match (r.forecasts, r.expected_forecasts) {
                     (Some(got), Some(want)) => format!("{got}/{want}"),
@@ -442,8 +437,11 @@ fn table(ctx: &Ctx, runs: &[Backtest]) -> String {
     ctx.out.table(
         &[
             "#",
+            "MODEL",
             "STATUS",
-            "TIME",
+            "REQUEST",
+            "QUEUED",
+            "RUN",
             "BACKTEST",
             "FORECASTS",
             "METRICS",

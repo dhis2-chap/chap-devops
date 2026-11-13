@@ -50,7 +50,7 @@ pub struct BenchArgs {
     #[arg(long, help_heading = "Write options")]
     pub write: bool,
 
-    /// Configured model to backtest, by name or id
+    /// Configured models to backtest, by name or id, comma-separated
     #[arg(
         long,
         value_name = "MODEL",
@@ -59,7 +59,7 @@ pub struct BenchArgs {
     )]
     pub model: Option<String>,
 
-    /// How many backtests to start at the same time
+    /// How many runs of the models to start at the same time
     #[arg(long, value_name = "N", default_value_t = 4, value_parser = clap::value_parser!(u32).range(1..=64), help_heading = "Write options")]
     pub backtests: u32,
 

@@ -16,6 +16,11 @@ pub(super) fn ago(now: u64, at: &str) -> Option<String> {
 /// a space in place of the `T`. Anything else is `None`, which the table
 /// shows as `-` rather than inventing an age.
 pub fn parse_rfc3339(text: &str) -> Option<u64> {
+    parse_rfc3339_precise(text).map(|s| s.floor() as u64)
+}
+
+/// [`parse_rfc3339`] with the fractional second, for job run times.
+pub fn parse_rfc3339_precise(text: &str) -> Option<f64> {
     let text = text.trim();
     let (date, rest) = text.split_once(['T', 't', ' '])?;
     let mut fields = date.split('-');
@@ -30,10 +35,16 @@ pub fn parse_rfc3339(text: &str) -> Option<u64> {
     let mut fields = clock.split(':');
     let hour: i64 = fields.next()?.trim().parse().ok()?;
     let minute: i64 = fields.next()?.parse().ok()?;
-    // The fractional part is below the resolution of anything this prints.
-    let second: i64 = match fields.next() {
-        Some(text) => text.split('.').next()?.parse().ok()?,
-        None => 0,
+    let (second, fraction): (i64, f64) = match fields.next() {
+        Some(text) => {
+            let (whole, fraction) = text.split_once('.').unwrap_or((text, ""));
+            let fraction = match fraction {
+                "" => 0.0,
+                digits => format!("0.{digits}").parse().ok()?,
+            };
+            (whole.parse().ok()?, fraction)
+        }
+        None => (0, 0.0),
     };
     if fields.next().is_some() {
         return None;
@@ -41,7 +52,7 @@ pub fn parse_rfc3339(text: &str) -> Option<u64> {
 
     let seconds =
         days_from_civil(year, month, day) * 86_400 + hour * 3600 + minute * 60 + second - offset;
-    u64::try_from(seconds).ok()
+    (seconds >= 0).then_some(seconds as f64 + fraction)
 }
 
 /// Split a time off its UTC offset, in seconds. A time with no offset at all

@@ -11,6 +11,7 @@
 mod measure;
 mod plan;
 mod predict;
+mod runs;
 mod server;
 mod write;
 

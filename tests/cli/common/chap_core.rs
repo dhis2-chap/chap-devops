@@ -561,6 +561,33 @@ pub(crate) fn analytics_route(
             let entries = vec![serde_json::json!({"orgUnit": "loc1", "value": 1.0}); 9];
             Some((200, json, serde_json::to_string(&entries).expect("JSON")))
         }
+        // The Modeling App's run of several models: one job for each, and
+        // the baseline its specification has no run of yet.
+        ("POST", "/v1/analytics/create-backtests") => {
+            let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
+            recorded.backtests.push(sent.clone());
+            let jobs: Vec<Json> = sent["modelIds"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(|model| {
+                    let service = backtest_service(model, recorded);
+                    let id = configured_models()
+                        .into_iter()
+                        .find(|(_, name, _)| Some(name.as_str()) == model.as_str())
+                        .map_or(0, |(id, ..)| id);
+                    serde_json::json!({"configuredModelId": id, "jobId": format!("bt-{service}")})
+                })
+                .collect();
+            if !recorded.baselines.iter().any(|b| b == BASELINE_JOB) {
+                recorded.baselines.push(BASELINE_JOB.to_string());
+            }
+            Some((
+                200,
+                json,
+                serde_json::json!({"specificationId": 2, "jobs": jobs}).to_string(),
+            ))
+        }
         ("POST", "/v1/analytics/create-backtest") => {
             let sent: Json = serde_json::from_str(body).unwrap_or(Json::Null);
             recorded.backtests.push(sent.clone());
@@ -659,6 +686,8 @@ pub(crate) struct Recorded {
     pub(crate) features: Vec<Vec<String>>,
     /// The services whose sample data was fetched.
     pub(crate) sampled: Vec<String>,
+    /// The baseline jobs that the `create-backtests` requests queued.
+    pub(crate) baselines: Vec<String>,
     /// Every prediction setup body, whole.
     pub(crate) setups: Vec<Json>,
     /// Observations in the last prediction run body.
@@ -701,7 +730,11 @@ pub(crate) fn chap_core_route(
         // The backtest of the model whose prediction crashes is the one job
         // `chap-devops models test --backtest` has to report a reason for.
         id if id == format!("bt-{FAILING_MODEL}") => Some("FAILURE"),
-        id if id.starts_with("ds-") || id.starts_with("bt-") || id.starts_with("pr-") => {
+        id if id.starts_with("ds-")
+            || id.starts_with("bt-")
+            || id.starts_with("pr-")
+            || id.starts_with("bl-") =>
+        {
             Some("SUCCESS")
         }
         _ => None,
@@ -740,6 +773,32 @@ pub(crate) fn chap_core_route(
         return answer;
     }
 
+    if route == "/v1/jobs" && method == "GET" && query.contains("type=run_baseline") {
+        let jobs: Vec<Json> = recorded
+            .baselines
+            .iter()
+            .map(|id| {
+                serde_json::json!({"id": id, "type": "run_baseline",
+                    "name": "baseline/persistence", "status": "SUCCESS"})
+            })
+            .collect();
+        return (200, json, serde_json::to_string(&jobs).expect("JSON"));
+    }
+    if route == "/v1/jobs" && method == "GET" && query.contains("ids=") {
+        // The run times bench reads: every job ran for 2.5 s, from 0.5 s
+        // after the request.
+        let jobs: Vec<Json> = query
+            .split('&')
+            .filter_map(|pair| pair.strip_prefix("ids="))
+            .map(|id| {
+                serde_json::json!({"id": id, "type": "create_backtest", "name": id,
+                    "status": status_of(id).unwrap_or("PENDING"),
+                    "start_time": "2026-11-13T11:00:00.500000",
+                    "end_time": "2026-11-13T11:00:03.000000"})
+            })
+            .collect();
+        return (200, json, serde_json::to_string(&jobs).expect("JSON"));
+    }
     if route == "/v1/jobs" && method == "GET" {
         // The `status` query parameter is the one filter the CLI sends.
         let wanted: Vec<&str> = query
@@ -790,7 +849,7 @@ pub(crate) fn chap_core_route(
             ("GET", "database_result") if status == "SUCCESS" => {
                 let row = if id.starts_with("ds-") {
                     TEST_DATASET
-                } else if id.starts_with("bt-") {
+                } else if id.starts_with("bt-") || id.starts_with("bl-") {
                     TEST_BACKTEST
                 } else if id.starts_with("pr-") {
                     WRITE_PREDICTION
@@ -916,6 +975,9 @@ pub(crate) fn online_update(sandbox: &Sandbox, port: u16, bin: &Path, args: &[&s
 
 /// The backtest `chap-devops bench` times by default: the newest in the list.
 pub(crate) const BENCH_BACKTEST: i64 = 9;
+
+/// The baseline job a `create-backtests` request queues.
+pub(crate) const BASELINE_JOB: &str = "bl-persistence";
 
 /// The prediction setup, the prediction and its dataset that
 /// `chap-devops bench --write --predict` makes.

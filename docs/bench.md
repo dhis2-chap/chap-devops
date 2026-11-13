@@ -167,27 +167,35 @@ that people use: run it on a deployment of its own.
 
 ```sh
 chap-devops bench --write --model seasonal_median
+chap-devops bench --write --model naive_model,seasonal_median --backtests 1
 chap-devops bench --write --model seasonal_median --backtests 8 --locations 300 --periods 156
 chap-devops bench --write --model 12 --dataset 5   # an existing dataset
 ```
 
-The steps:
+The steps follow the Modeling App's evaluation and benchmark pages:
 
 1. It makes a synthetic dataset from the [dataset options](#synthetic-datasets-chap-devops-bench-dataset)
    and imports it with `make-dataset`. With `--dataset ID`, it uses that
    dataset instead.
-2. It starts `--backtests` backtests (default 4) of the configured model
-   `--model`, by name or id, with `create-backtest`. It starts all of them
-   before it polls any of them.
-3. It polls the jobs until each one has ended, for at most `--wait` seconds.
-4. For each backtest that ended, it checks what chap-core stored.
-5. It deletes the dataset it made and the backtests, including the
-   backtests of chap-core's built-in baselines. `--keep` keeps them. It
-   never deletes a dataset that `--dataset` named.
+2. It starts `--backtests` runs (default 4) at the same time. A run is one
+   `create-backtests` request with all the models of `--model`, under one
+   backtest specification, as the benchmark page sends it. It starts all
+   the runs before it polls any job.
+3. Each backtest job queues the baselines that the specification has no
+   run of yet (`run_baseline` jobs: `persistence`,
+   `seasonal_shift_persistence`, `global_median`, `seasonal_median`). The
+   benchmark page is complete only when they end, so `bench` waits for them
+   too.
+4. It polls the jobs until each one has ended, for at most `--wait` seconds.
+5. For each backtest that ended, the baselines included, it checks what
+   chap-core stored.
+6. It deletes the dataset it made and all the backtests. `--keep` keeps
+   them. It never deletes a dataset that `--dataset` named.
 
-`--model` takes the name that `chap-devops api GET /v1/crud/configured-models`
-shows, for example `seasonal_median` or `chapkit_ewars_model:default`. Without
-it, the error lists the names.
+`--model` takes one or more names or ids, separated by commas, as
+`chap-devops api GET /v1/crud/configured-models` shows them, for example
+`seasonal_median` or `chapkit_ewars_model:default`. Without it, the error
+lists the names.
 
 A backtest passes when its job ended with `SUCCESS`, and chap-core stored one
 forecast for each org unit, split and forecast period, and stored aggregate
@@ -199,20 +207,37 @@ quantile. The expected count comes from the backtest row: `orgUnits` times
 - chap-core stored fewer or more forecasts than expected, or none;
 - chap-core stored no aggregate metrics.
 
+This run is from chap-core `master` (2.8.0.dev0) on an Apple Silicon Mac,
+with 18 org units and 156 weeks:
+
 ```text
-#  STATUS   TIME     BACKTEST  FORECASTS    METRICS  RESULT
-1  SUCCESS  83.50 s  26        25200/25200  13       ok
-2  SUCCESS  86.65 s  23        25200/25200  13       ok
-...
-8 of 8 backtests of seasonal_median on dataset 4 passed, in 143.33 s
-deleted dataset 4 and the 8 backtests the run made; --keep keeps them
+#  MODEL                                  STATUS   REQUEST  QUEUED  RUN     BACKTEST  FORECASTS  METRICS  RESULT
+1  naive_model                            SUCCESS  103 ms   0 ms    2.46 s  1         1512/1512  13       ok
+1  seasonal_median                        SUCCESS  103 ms   0 ms    2.98 s  2         1512/1512  13       ok
+-  seasonal_median (baseline)             SUCCESS  -        -       2.88 s  4         1512/1512  13       ok
+-  global_median (baseline)               SUCCESS  -        -       2.80 s  3         1512/1512  13       ok
+-  seasonal_shift_persistence (baseline)  SUCCESS  -        -       3.19 s  5         1512/1512  13       ok
+-  persistence (baseline)                 SUCCESS  -        -       3.20 s  6         1512/1512  13       ok
+2 of 2 backtests of naive_model, seasonal_median on dataset 2 passed, in 11.11 s
+4 of 4 baseline backtests passed
 ```
 
-`TIME` is from the start of the backtest to the poll that saw it end, so it
-is exact to about 3 s. If a backtest fails, the command exits with status 1
-and gives a warning with the reason from the job log. `--json` gives each
-backtest with its `status`, `seconds`, `backtest_id`, `forecasts`,
-`expected_forecasts`, `metrics` and `problem`.
+The times of each job:
+
+- `REQUEST`: the `create-backtests` request of its run. chap-core loads the
+  dataset in this request, so it grows with the dataset.
+- `QUEUED`: from the answer to the request to the start of the job.
+- `RUN`: from the start to the end of the job, from `start_time` and
+  `end_time` in `/v1/jobs`. This is exact, also for a job that is shorter
+  than a poll.
+
+`QUEUED` compares the clock of this machine with the clock of chap-core, so
+it is only exact when they are the same machine. If a backtest fails, the
+command exits with status 1 and gives a warning with the reason from the job
+log. `--json` gives each backtest with its `model`, `baseline`, `status`,
+`request_seconds`, `queued_seconds`, `seconds`, `backtest_id`, `forecasts`,
+`expected_forecasts`, `metrics` and `problem`. It also gives
+`import_request_seconds`, `import_seconds` and `backtest_request_seconds`.
 
 ### A prediction: --predict
 

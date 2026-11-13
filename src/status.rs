@@ -27,7 +27,7 @@ pub use models::{
 pub use probe::{
     body_description, parse_health, parse_services, services_are_not_chap_core, token_rejected,
 };
-pub use time::parse_rfc3339;
+pub use time::{parse_rfc3339, parse_rfc3339_precise};
 
 use components::component_rows;
 pub use components::{mark_paused, mark_unhealthy, paused_line};
