@@ -171,6 +171,21 @@ bug that is fixed leaves the file.
   Helm chart, with a low default, and document how to size it by the memory
   of one job.
 
+### A prediction refuses two whole years of weekly data
+
+- Seen: chap-core v2.7.0 (revision `62bae69c`), 2026-11-13, a synthetic
+  dataset of 18 org units and 104 weeks (2023W1 to 2024W52), model
+  `seasonal_median`. The code is the same on `master` (`94e16246`).
+- A backtest on the dataset passes. A prediction from that backtest, through
+  `POST /v1/crud/prediction-setups/{id}/run` with the same values, fails:
+  `ValueError: Training data must cover at least two whole years`.
+- `validate_training_data` in `chap_core/validators.py` compares timestamps:
+  `end_timestamp < start_timestamp + 2 * delta_year`. 104 ISO weeks end on
+  2024-12-29, 4 days before 2025-01-02, so two whole ISO years fail. 105
+  weeks pass.
+- Fix: compare whole periods (104 weeks or 24 months) instead of timestamps,
+  and say in the message how many periods the data has and how many it needs.
+
 ## DHIS2 routes (hosted DHIS2 2.43.2)
 
 ### One route request in ten waits 30 s and ends in an empty 504
