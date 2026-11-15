@@ -15,13 +15,11 @@ use serde_json::Value;
 use super::measure::human_ms;
 
 /// The options a series sets for each of its runs, with a value.
-const SERIES_VALUES: &[&str] = &[
-    "--workers",
-    "--sizes",
-    "--locations",
-    "--periods",
-    "--period-type",
-];
+const SERIES_VALUES: &[&str] = &["--workers", "--sizes"];
+
+/// The options that `--sizes` sets again for each size. A `--workers`
+/// series keeps them, so each count imports the same dataset.
+const SIZE_VALUES: &[&str] = &["--locations", "--periods", "--period-type"];
 
 /// The options a series sets for each of its runs, without a value.
 const SERIES_FLAGS: &[&str] = &["--fresh-database", "--json"];
@@ -29,6 +27,13 @@ const SERIES_FLAGS: &[&str] = &["--fresh-database", "--json"];
 /// The arguments of this process without the options of the series, and
 /// with `--json`.
 pub fn child_args(args: &[String]) -> Vec<String> {
+    let sizes = args
+        .iter()
+        .any(|a| a == "--sizes" || a.starts_with("--sizes="));
+    let values: Vec<&str> = match sizes {
+        true => SERIES_VALUES.iter().chain(SIZE_VALUES).copied().collect(),
+        false => SERIES_VALUES.to_vec(),
+    };
     let mut out = Vec::new();
     let mut skip = false;
     for arg in args {
@@ -36,13 +41,11 @@ pub fn child_args(args: &[String]) -> Vec<String> {
             skip = false;
             continue;
         }
-        if SERIES_VALUES.contains(&arg.as_str()) {
+        if values.contains(&arg.as_str()) {
             skip = true;
             continue;
         }
-        let with_value = SERIES_VALUES
-            .iter()
-            .any(|o| arg.starts_with(&format!("{o}=")));
+        let with_value = values.iter().any(|o| arg.starts_with(&format!("{o}=")));
         if with_value || SERIES_FLAGS.contains(&arg.as_str()) {
             continue;
         }

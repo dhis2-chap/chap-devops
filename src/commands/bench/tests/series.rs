@@ -136,6 +136,37 @@ fn a_child_run_has_the_same_arguments_without_workers_and_with_json() {
 }
 
 #[test]
+fn a_workers_run_keeps_the_size_of_the_dataset() {
+    use super::super::compare::child_args;
+    let args: Vec<String> = [
+        "bench",
+        "--write",
+        "--workers",
+        "1,4",
+        "--locations",
+        "50",
+        "--periods=110",
+        "--period-type",
+        "week",
+    ]
+    .map(str::to_string)
+    .to_vec();
+    assert_eq!(
+        child_args(&args),
+        [
+            "bench",
+            "--write",
+            "--locations",
+            "50",
+            "--periods=110",
+            "--period-type",
+            "week",
+            "--json"
+        ]
+    );
+}
+
+#[test]
 fn the_comparison_has_a_row_for_each_measure_and_a_column_for_each_count() {
     use super::super::compare::rows;
     let one = json!({"pages": [{"page": "prediction", "ms": 900.0}],
