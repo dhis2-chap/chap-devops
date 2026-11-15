@@ -588,39 +588,6 @@ fn bench_sizes_runs_once_for_each_size_side_by_side() {
 }
 
 #[test]
-fn bench_fresh_database_needs_sizes_and_this_deployment() {
-    let sandbox = Sandbox::new();
-    let dir = served_project(&sandbox);
-
-    bench_in(
-        &sandbox,
-        &dir,
-        &["bench", "--write", "--model", "m", "--fresh-database"],
-    )
-    .assert()
-    .code(2)
-    .stderr(predicates::str::contains("--sizes"));
-    bench_in(
-        &sandbox,
-        &dir,
-        &[
-            "bench",
-            "--write",
-            "--model",
-            "m",
-            "--sizes",
-            "3x12m",
-            "--fresh-database",
-            "--url",
-            "http://localhost:18998",
-        ],
-    )
-    .assert()
-    .failure()
-    .stderr(predicates::str::contains("cannot be used with --url"));
-}
-
-#[test]
 fn bench_write_second_user_reports_each_phase() {
     let sandbox = Sandbox::new();
     let dir = served_project(&sandbox);

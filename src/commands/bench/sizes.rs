@@ -36,19 +36,23 @@ pub fn size_args(size: &Size) -> Vec<String> {
     .to_vec()
 }
 
+/// The deployment whose database `--fresh-database` empties, or `None`
+/// without `--fresh-database`. A chap-core at `--url` is refused.
+pub fn fresh_project(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<Option<Project>> {
+    match (args.fresh_database, local) {
+        (false, _) => Ok(None),
+        (true, true) => Ok(Some(ctx.project()?)),
+        (true, false) => Err(ChapError::Usage(
+            "--fresh-database empties the database of this deployment's chap-core, so it \
+             cannot be used with --url; leave out --url, or --fresh-database"
+                .into(),
+        )
+        .into()),
+    }
+}
+
 pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
-    let project = match (args.fresh_database, local) {
-        (false, _) => None,
-        (true, true) => Some(ctx.project()?),
-        (true, false) => {
-            return Err(ChapError::Usage(
-                "--fresh-database empties the database of this deployment's chap-core, so it \
-                 cannot be used with --url; leave out --url, or --fresh-database"
-                    .into(),
-            )
-            .into());
-        }
-    };
+    let project = fresh_project(ctx, args, local)?;
     let mut runs: Vec<(Size, Value)> = Vec::new();
     let mut failed = None;
     for size in &args.sizes {
@@ -113,7 +117,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
 
 /// Empty chap-core's database: stop `chap` and `worker`, drop the database
 /// and make it again, start them, and wait until chap-core answers.
-fn fresh_database(ctx: &Ctx, project: &Project) -> Result<()> {
+pub fn fresh_database(ctx: &Ctx, project: &Project) -> Result<()> {
     crate::output::notice("emptying chap-core's database");
     let compose = |args: &[&str]| -> Result<()> {
         let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();

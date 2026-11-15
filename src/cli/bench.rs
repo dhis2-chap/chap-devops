@@ -38,8 +38,8 @@ pub struct BenchArgs {
     #[arg(long, value_name = "SIZES", value_delimiter = ',', requires = "write", conflicts_with_all = ["workers", "dataset"])]
     pub sizes: Vec<Size>,
 
-    /// Empty chap-core's database before each size; deletes all its data
-    #[arg(long, requires = "sizes")]
+    /// Empty chap-core's database before each run; deletes all its data
+    #[arg(long, requires = "write", conflicts_with = "dataset")]
     pub fresh_database: bool,
 
     /// Load a small page every 0.5 s during --write, as a second user

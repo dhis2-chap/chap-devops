@@ -244,6 +244,28 @@ The rows are the time per page and the p50 of each request, and with
 run whole under `runs`. `--workers` changes this deployment's chap-core, so
 it cannot be used with `--url`.
 
+## An empty database: --fresh-database
+
+`--fresh-database` empties chap-core's database before a `--write` run, so
+the run does not find the rows of the runs before it. It stops `chap` and
+`worker`, drops the database and makes it again, and starts them. chap-core
+makes its tables and its configured models again when it starts.
+
+- With `--write` alone, it empties the database once, before the run.
+- With `--sizes`, it empties the database before each size.
+- With `--workers`, it empties the database before each count of API
+  workers, so each count starts from the same state.
+
+**This deletes all the data in chap-core's database:** use it only on a
+deployment of its own. It does not work with `--url` or with `--dataset`.
+The closing lines say that the database was emptied, and `--json` gives
+`fresh_database`.
+
+```sh
+chap-devops bench --write --model seasonal_median --backtests 1 --predict \
+  --locations 1500 --periods 365 --fresh-database
+```
+
 ## Dataset sizes: --sizes
 
 `--sizes` runs `--write` once for each dataset size, and puts the numbers
@@ -261,11 +283,8 @@ dataset options, such as `--covariates` and `--format`, are the same for
 every size.
 
 `--fresh-database` empties chap-core's database before each size, so a run
-does not find the rows of the run before it. It stops `chap` and `worker`,
-drops the database and makes it again, and starts them. chap-core makes its
-tables and its configured models again when it starts. **This deletes all
-the data in chap-core's database:** use it only on a deployment of its own.
-It does not work with `--url`.
+does not find the rows of the run before it. See
+[An empty database](#an-empty-database---fresh-database).
 
 This run is from chap-core `master` (2.8.0.dev0) on an Apple Silicon Mac:
 

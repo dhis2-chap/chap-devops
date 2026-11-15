@@ -934,7 +934,7 @@ Usage: chap-devops bench [OPTIONS] [BACKTEST]
 | `--prediction <ID>` | Prediction id for the prediction page; the newest when not given. |
 | `--workers <N,N>` | Run once for each API worker count, comma-separated, and compare. |
 | `--sizes <SIZES>` | Run --write once for each size, such as 500x520w,3000x120m. |
-| `--fresh-database` | Empty chap-core's database before each size; deletes all its data. |
+| `--fresh-database` | Empty chap-core's database before each run; deletes all its data. |
 | `--second-user` | Load a small page every 0.5 s during --write, as a second user. |
 | `--resources` | Record the CPU, memory, database and Valkey use of each phase. |
 | `--repeat <N>` | How many times to send each request. Default: `3`. |

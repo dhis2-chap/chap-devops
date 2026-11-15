@@ -85,6 +85,13 @@ pub fn check(forecasts: Option<usize>, expected: Option<usize>, metrics: usize) 
 }
 
 pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
+    let emptied = match super::sizes::fresh_project(ctx, args, target.local)? {
+        Some(project) => {
+            super::sizes::fresh_database(ctx, &project)?;
+            true
+        }
+        None => false,
+    };
     let api = Api::new(
         &target.base,
         target.token.clone(),
@@ -211,6 +218,7 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
     let server = super::server::describe(ctx, &api, target.local);
     let value = serde_json::json!({
         "url": api.base(),
+        "fresh_database": emptied,
         "server": server,
         "models": models.iter().map(|(_, name)| name).collect::<Vec<_>>(),
         "dataset": dataset,
@@ -226,6 +234,9 @@ pub(super) fn run(ctx: &Ctx, args: &BenchArgs, target: &Target) -> Result<()> {
         "seconds": started.elapsed().as_secs_f64(),
     });
     ctx.out.report(&value, |lines| {
+        if emptied {
+            lines.info("emptied chap-core's database before the run");
+        }
         closing(&runs, &model, dataset, started.elapsed(), stopped, lines);
         lines.info(super::server::line(&server));
         for line in phases

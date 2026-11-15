@@ -85,6 +85,7 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
         .into());
     }
     let project = ctx.project()?;
+    let fresh = super::sizes::fresh_project(ctx, args, local)?.is_some();
     for &count in &args.workers {
         super::super::workers::check(&project, count)?;
     }
@@ -100,6 +101,12 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
                 break;
             }
         };
+        if fresh && let Err(e) = super::sizes::fresh_database(ctx, &project) {
+            failed = Some(anyhow::anyhow!(
+                "could not empty the database before the run with {count} API workers: {e}"
+            ));
+            break;
+        }
         crate::output::notice(&format!(
             "timing with {running} API worker{}",
             super::super::workers::plural(running)
@@ -130,14 +137,20 @@ pub fn run(ctx: &Ctx, args: &BenchArgs, local: bool) -> Result<()> {
             "api_workers": count, "running": running, "result": value,
         })).collect::<Vec<_>>(),
         "restored_api_workers": before,
+        "fresh_database": fresh,
     });
     ctx.out.report(&value, |lines| {
         let counts: Vec<String> = runs.iter().map(|(c, ..)| c.to_string()).collect();
         lines.info(format!(
-            "ran the same bench with {} of {} API worker counts ({}); set back to {before}",
+            "ran the same bench with {} of {} API worker counts ({}){}; set back to {before}",
             runs.len(),
             args.workers.len(),
-            counts.join(", ")
+            counts.join(", "),
+            if fresh {
+                ", each on an empty database"
+            } else {
+                ""
+            }
         ));
         if let Some(e) = &failed {
             lines.warning(e.to_string());
