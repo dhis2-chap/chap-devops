@@ -405,7 +405,7 @@ impl OcsConfigRequest {
 }
 
 /// `--ocs-bbox`: four numbers in degrees, `xmin,ymin,xmax,ymax`, each
-/// minimum below its maximum. The value comes back as the file writes it.
+/// minimum below its maximum. The value comes back as it was given.
 pub fn parse_bbox(text: &str) -> std::result::Result<String, String> {
     let numbers: Vec<f64> = text
         .split(',')
@@ -431,11 +431,7 @@ pub fn parse_bbox(text: &str) -> std::result::Result<String, String> {
              xmin,ymin,xmax,ymax"
         ));
     }
-    Ok(text
-        .split(',')
-        .map(str::trim)
-        .collect::<Vec<_>>()
-        .join(", "))
+    Ok(text.to_string())
 }
 
 /// `--ocs-country`: an ISO 3166-1 alpha-3 code, three letters.

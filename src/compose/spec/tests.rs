@@ -225,7 +225,7 @@ fn an_overlay_value_that_could_add_yaml_keys_is_refused() {
 fn an_ocs_bbox_is_four_numbers_in_order() {
     assert_eq!(
         parse_bbox("-13.5,6.9, -10.1,10.0").unwrap(),
-        "-13.5, 6.9, -10.1, 10.0"
+        "-13.5,6.9, -10.1,10.0"
     );
     for (bad, why) in [
         ("1,2,3", "not four numbers"),
