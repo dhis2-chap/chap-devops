@@ -236,6 +236,20 @@ pub(super) fn plan(
         api_token: crate::dotenv::non_empty(env, "CHAP_API_TOKEN"),
         registration_key: crate::dotenv::non_empty(env, "SERVICEKIT_REGISTRATION_KEY"),
     };
+    // The new `.env` quotes them, but some characters it cannot hold at all.
+    for (key, value) in [
+        ("POSTGRES_USER", &old_env.postgres_user),
+        ("POSTGRES_PASSWORD", &old_env.postgres_password),
+        ("POSTGRES_DB", &old_env.postgres_db),
+    ] {
+        if let Some(problem) = crate::dotenv::literal_problem(value) {
+            return Err(anyhow::anyhow!(
+                "{key} in {} has {problem}; change it in the database and in that `.env`, \
+                 then run this again",
+                dir.join(crate::project::ENV_FILE).display()
+            ));
+        }
+    }
     if old_env.api_token.is_none() && old_env.registration_key.is_some() {
         notes.push(
             "the old .env sets SERVICEKIT_REGISTRATION_KEY without CHAP_API_TOKEN; chap-devops \

@@ -68,6 +68,33 @@ fn fill_replaces_every_token() {
     assert_eq!(out, "a=1 b=2 a=1");
 }
 
+/// One pass: a value that holds a token is not filled again, and an `@`
+/// that starts no known token stays.
+#[test]
+fn fill_does_not_expand_a_token_inside_a_value() {
+    let out = fill(
+        "p=@P@ port=@PORT@ mail@host",
+        &[("P", "a@PORT@b"), ("PORT", "8000")],
+    );
+    assert_eq!(out, "p=a@PORT@b port=8000 mail@host");
+}
+
+#[test]
+fn env_quotes_postgres_values_that_compose_would_change() {
+    let text = render_env(&EnvSpec {
+        postgres_password: "s3cret #1 $HOME".into(),
+        ..env_spec()
+    });
+    assert!(
+        text.contains("\nPOSTGRES_PASSWORD='s3cret #1 $HOME'\n"),
+        "{text}"
+    );
+    assert_eq!(
+        crate::dotenv::non_empty(&text, "POSTGRES_PASSWORD").as_deref(),
+        Some("s3cret #1 $HOME")
+    );
+}
+
 #[test]
 fn fill_leaves_compose_variables_alone() {
     let out = fill("${TAG:-sha-1234567} @TAG@", &[("TAG", "x")]);

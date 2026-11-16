@@ -267,12 +267,19 @@ pub fn render_env(spec: &EnvSpec) -> String {
             .collect::<Vec<_>>()
             .join("\n")
     };
+    // Generated values are plain; adopted ones may need quotes, or compose
+    // reads `#` as a comment and `$` as a variable.
+    let (user, password, db) = (
+        crate::dotenv::encode(&spec.postgres_user),
+        crate::dotenv::encode(&spec.postgres_password),
+        crate::dotenv::encode(&spec.postgres_db),
+    );
     fill(
         &ENV_TEMPLATE,
         &[
-            ("POSTGRES_USER", &spec.postgres_user),
-            ("POSTGRES_PASSWORD", &spec.postgres_password),
-            ("POSTGRES_DB", &spec.postgres_db),
+            ("POSTGRES_USER", &user),
+            ("POSTGRES_PASSWORD", &password),
+            ("POSTGRES_DB", &db),
             ("CHAP_IMAGE_TAG_LINE", &chap_image_tag_line),
             ("API_PORT", &spec.api_port.to_string()),
             (
@@ -349,12 +356,33 @@ pub(crate) fn render_template(name: &str, source: &str, ctx: minijinja::Value) -
         .unwrap_or_else(|e| panic!("the template {name} does not render: {e:#}"))
 }
 
-/// Replace every `@KEY@` token in `template` with its value.
+/// Replace every `@KEY@` token in `template` with its value, in one pass:
+/// a value that has `@OTHER@` in it stays as it is. A token with no value is
+/// left in place.
 pub(crate) fn fill(template: &str, vars: &[(&str, &str)]) -> String {
-    let mut out = template.to_string();
-    for (key, value) in vars {
-        out = out.replace(&format!("@{key}@"), value);
+    let mut out = String::with_capacity(template.len());
+    let mut rest = template;
+    while let Some(start) = rest.find('@') {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 1..];
+        let value = after.find('@').and_then(|end| {
+            let key = &after[..end];
+            vars.iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, value)| (*value, end))
+        });
+        match value {
+            Some((value, end)) => {
+                out.push_str(value);
+                rest = &after[end + 1..];
+            }
+            None => {
+                out.push('@');
+                rest = after;
+            }
+        }
     }
+    out.push_str(rest);
     out
 }
 

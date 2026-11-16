@@ -223,3 +223,31 @@ fn adopt_keeps_the_api_on_the_port_chap_core_published_it_on() {
     assert_eq!(state(&dir)["api_port"], 8000);
     assert!(read(&dir.join(".env")).contains("CHAP_API_PORT=8000"));
 }
+
+/// A password that needs quotes keeps them in the new `.env`, so compose
+/// reads the same password the database was made with.
+#[cfg(unix)]
+#[test]
+fn adopt_keeps_a_password_that_needs_quotes() {
+    let sandbox = Sandbox::new();
+    let old = old_deployment(&sandbox);
+    std::fs::write(
+        old.join(".env"),
+        "POSTGRES_USER=chap\nPOSTGRES_PASSWORD='pa$word #1'\nPOSTGRES_DB=chap_core\n",
+    )
+    .unwrap();
+    let (_temp, bin, _log) = fake_docker("");
+    adopt(&sandbox, &old, &bin).assert().success();
+    let env = std::fs::read_to_string(sandbox.project().join(".env")).unwrap();
+    assert!(env.contains("\nPOSTGRES_PASSWORD='pa$word #1'\n"), "{env}");
+
+    // A quote cannot be written into `.env` at all, so it is refused.
+    let sandbox = Sandbox::new();
+    let old = old_deployment(&sandbox);
+    std::fs::write(old.join(".env"), "POSTGRES_PASSWORD=\"it's\"\n").unwrap();
+    adopt(&sandbox, &old, &bin)
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("POSTGRES_PASSWORD in "))
+        .stderr(predicates::str::contains("change it in the database"));
+}
