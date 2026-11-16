@@ -94,8 +94,10 @@ fi
 # --- step 2: tag the merged release commit ----------------------------------
 
 if [ "$mode" = "tag" ]; then
-  git fetch --quiet --tags "$REMOTE" "$BRANCH"
-  if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+  # Not `fetch --tags`: the release workflow moves the `dev` tag on every
+  # push to main, and fetch refuses to move a local copy of it.
+  git fetch "$REMOTE" "$BRANCH"
+  if [ -n "$(git ls-remote --tags "$REMOTE" "refs/tags/${tag}")" ]; then
     echo "error: tag ${tag} already exists on ${REMOTE}" >&2
     exit 1
   fi
