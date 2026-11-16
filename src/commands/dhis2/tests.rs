@@ -947,3 +947,21 @@ fn show_without_chap_core_does_not_name_connect() {
         );
     }
 }
+
+/// A URL with a login in it would be stored in `.chap-devops/` and traced.
+/// The refusal does not quote it back.
+#[test]
+fn a_url_with_a_login_in_it_is_refused() {
+    use super::use_external::external_url;
+    let err = external_url("https://admin:s3cret@dhis2.example.org/")
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("before an `@`"), "{err}");
+    assert!(!err.contains("s3cret"), "{err}");
+    assert_eq!(
+        external_url("https://dhis2.example.org/").unwrap(),
+        "https://dhis2.example.org"
+    );
+    // An `@` in the path is not a login.
+    assert!(external_url("https://dhis2.example.org/a@b").is_ok());
+}

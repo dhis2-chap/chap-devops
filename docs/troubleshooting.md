@@ -2225,3 +2225,14 @@ value comes from the marketplace entry or from `models-manual.yaml`.
 An image config can also declare a user or a working directory with such
 characters. chap-devops then uses its default and prints a note that names
 `--user` or `--data-dir`.
+
+## `the URL has a user name or a password before an @`
+
+`chap-devops dhis2 use` refuses a URL such as
+`https://admin:district@dhis2.example.org`. chap-devops stores the URL in
+`.chap-devops/` and shows it in traces, so a password in it would not stay
+secret.
+
+1. Give the URL without the part before the `@`.
+2. Set `DHIS2_ADMIN_USERNAME` and `DHIS2_ADMIN_PASSWORD`, or
+   `DHIS2_API_TOKEN`, in `.env`.

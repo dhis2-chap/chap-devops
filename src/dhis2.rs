@@ -42,7 +42,8 @@ pub use apps::{
 };
 pub use client::{Dhis2, Ready, said};
 pub use credentials::{
-    AuthKind, CredentialSource, Credentials, credentials_for, describe_credential,
+    AuthKind, CREDENTIALS_WAY_OUT, CredentialSource, Credentials, credentials_for,
+    describe_credential,
 };
 pub use route::{
     RouteAction, allowlist_hint, external_route_target, is_allowlist_refusal, route_action,

@@ -268,7 +268,7 @@ pub(super) fn cleartext_note(url: &str) -> Option<String> {
 
 /// A URL as it is recorded: `http://` or `https://` with a host, and without a
 /// trailing slash.
-fn external_url(raw: &str) -> Result<String> {
+pub(super) fn external_url(raw: &str) -> Result<String> {
     let url = raw.trim().trim_end_matches('/');
     let host = url
         .strip_prefix("https://")
@@ -279,6 +279,16 @@ fn external_url(raw: &str) -> Result<String> {
         return Err(anyhow::anyhow!(
             "`{raw}` is not a URL chap-devops can record; give it with http:// or https://, like \
              `https://dhis2.example.org`"
+        ));
+    }
+    // The URL is stored in `.chap-devops/` and shown in traces, so it must
+    // not carry a password. The `@` is not quoted back: what is before it
+    // may be one.
+    if host.contains('@') {
+        return Err(anyhow::anyhow!(
+            "the URL has a user name or a password before an `@`, which chap-devops would store \
+             in `.chap-devops/`; give the URL without it, and for the DHIS2 login {}",
+            crate::dhis2::CREDENTIALS_WAY_OUT
         ));
     }
     Ok(url.to_string())
