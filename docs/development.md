@@ -14,7 +14,8 @@ make vendor    # refresh the embedded marketplace snapshot
 make docs      # regenerate the reference, then build the book into site/
 make docs-serve        # serve the book locally with live reload
 make docs-reference    # regenerate docs/reference.md from the CLI help texts
-make release-tag VERSION=x.y.z   # bump, check, commit and tag a release
+make release-pr VERSION=x.y.z    # bump, check, and open the release pull request
+make release-tag VERSION=x.y.z   # after the merge: tag the release and start the build
 make clean     # remove target/ and bin/
 ```
 
@@ -371,27 +372,34 @@ base64 -i developer_id.p12 | pbcopy
 
 ### Cutting a release
 
-```sh
-make release-tag VERSION=0.2.0
-```
+`main` is protected: every change reaches it through a pull request whose
+checks passed. A release is therefore two steps.
 
-which runs `scripts/release.sh`. It refuses to do anything unless the tree is
-clean and the branch is `main`, bumps `version` in `Cargo.toml` and
-`Cargo.lock`, runs `make check test`, commits `chore: release v0.2.0`, creates
-an annotated `v0.2.0` tag, and then prints the push command rather than
-pushing. Nothing reaches GitHub until you run it:
+1. Open the release pull request:
 
-```sh
-git push --atomic origin main v0.2.0
-```
+   ```sh
+   make release-pr VERSION=0.2.0
+   ```
 
-`--atomic` lands the branch and the tag together or not at all, so a rejected
-branch never leaves a tag building a release. With `--push` the script also
-fetches `origin/main` first and stops if it holds commits the local branch
-does not.
+   This runs `scripts/release.sh 0.2.0 --pr`. It refuses to do anything unless
+   the tree is clean, the branch is `main`, and `main` is the same as
+   `origin/main`. It then creates `release/v0.2.0`, bumps `version` in
+   `Cargo.toml` and `Cargo.lock`, runs `make check test`, commits
+   `chore: release v0.2.0`, pushes the branch and opens the pull request.
 
-`make release-tag VERSION=0.2.0 PUSH=1`, or `scripts/release.sh 0.2.0 --push`,
-pushes straight away.
+2. When the checks pass, merge the pull request. Then tag the release:
+
+   ```sh
+   git pull && make release-tag VERSION=0.2.0
+   ```
+
+   This runs `scripts/release.sh 0.2.0 --tag`. It finds the commit
+   `chore: release v0.2.0` on `origin/main`, checks that its `Cargo.toml` has
+   version 0.2.0, creates the annotated tag `v0.2.0` on it and pushes only the
+   tag. The protection of `main` does not apply to a tag.
+
+Without `--pr` or `--tag`, the script does step 1 locally and pushes nothing.
+It prints the push command, and the command that removes the branch again.
 
 ### What the workflow produces
 
