@@ -1057,6 +1057,51 @@ fn a_manifest_path_outside_the_project_is_refused() {
     let err = check_manifest_files(&manifest, Path::new("backup.tar.gz")).unwrap_err();
     assert!(err.to_string().contains("`../../.bashrc`"), "{err}");
 
+    // The member paths, the service id and the data directory of a model are
+    // checked too: they become stage paths and a `sh -c` script.
+    let head = "schema_version: 1\ncreated_by: chap-devops 0.12.2\ncreated_at: \
+                2026-10-01T00:00:00Z\nproject: p\nfiles: [compose.yml]\n";
+    let model = |service_id: &str, data_dir: &str, path: &str| {
+        format!(
+            "models:\n- id: m\n  service_id: {service_id}\n  version: '1'\n  image_tag: t\n  \
+             data_dir: {data_dir:?}\n  user: '1:1'\n  volume: v\n  path: {path}\n  \
+             size_bytes: 0\n"
+        )
+    };
+    let cases = [
+        (model("m", "/data", "models/m.tar"), None),
+        (model("m", "/data", "../../x"), Some("the member `../../x`")),
+        (
+            model("../m", "/data", "models/m.tar"),
+            Some("the service id"),
+        ),
+        (
+            model("m", "/data; rm -rf /", "models/m.tar"),
+            Some("the data directory"),
+        ),
+        (
+            "components:\n- name: ocs\n  service: ocs\n  volume: v\n  data_dir: /v\n  \
+             path: ../escape.tar\n  size_bytes: 0\n"
+                .to_string(),
+            Some("the member `../escape.tar`"),
+        ),
+    ];
+    for (tail, want) in cases {
+        let manifest: Manifest = serde_yaml_ng::from_str(&format!("{head}{tail}")).unwrap();
+        let checked = check_manifest_files(&manifest, Path::new("backup.tar.gz"));
+        match want {
+            None => checked.unwrap(),
+            Some(want) => {
+                let err = checked.unwrap_err().to_string();
+                assert!(err.contains(want), "{err}");
+            }
+        }
+    }
+    let tmp = tempfile::tempdir().unwrap();
+    let stage = Stage::new(&tmp.path().join(".chap-devops"), "t").unwrap();
+    assert!(stage.path("../out").is_err());
+    assert!(stage.path("components/ocs.tar").is_ok());
+
     let dir = tempfile::tempdir().unwrap();
     let to = dir.path().join("to");
     let err = copy_file(dir.path(), &to, "../escaped").unwrap_err();

@@ -112,22 +112,53 @@ pub fn is_contained_relative(rel: &str) -> bool {
             .all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
-/// Refuse an archive whose manifest names a project file outside the project
-/// directory, before a restore touches anything.
+/// Refuse an archive whose manifest names a path or a name that chap-devops
+/// never writes, before a restore touches anything.
+///
+/// The member paths become paths in the stage, and a model's data directory
+/// goes into the `sh -c` of its init container. So every one of them must be
+/// a plain relative path, a plain service id, or a plain absolute directory.
 pub fn check_manifest_files(manifest: &Manifest, archive: &Path) -> Result<()> {
-    match manifest
+    let refuse = |what: &str, value: &str| {
+        Err(anyhow::anyhow!(
+            "{} lists {what} `{value}`, which chap-devops never writes; this archive was \
+             changed after `chap-devops backup create` made it - restore from another one",
+            archive.display()
+        ))
+    };
+    if let Some(rel) = manifest
         .files
         .iter()
         .find(|rel| !is_contained_relative(rel))
     {
-        Some(rel) => Err(anyhow::anyhow!(
-            "{} lists the deployment file `{rel}`, which is not inside a deployment directory; \
-             chap-devops never writes such a path, so this archive was changed after `chap-devops backup \
-             create` made it - restore from another one",
-            archive.display()
-        )),
-        None => Ok(()),
+        return refuse("the deployment file", rel);
     }
+    let members = manifest
+        .database
+        .iter()
+        .map(|db| Some(&db.path))
+        .chain(manifest.models.iter().map(|m| m.path.as_ref()))
+        .chain(manifest.components.iter().map(|c| c.path.as_ref()))
+        .flatten();
+    for member in members {
+        if !is_contained_relative(member) {
+            return refuse("the member", member);
+        }
+    }
+    for model in &manifest.models {
+        let plain = !model.service_id.is_empty()
+            && model
+                .service_id
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+        if !plain {
+            return refuse("the service id", &model.service_id);
+        }
+        if crate::compose::apply::check_data_dir(&model.data_dir).is_err() {
+            return refuse("the data directory", &model.data_dir);
+        }
+    }
+    Ok(())
 }
 
 /// Copy `rel` from `from` to `to`, creating the parent directories.
@@ -219,8 +250,15 @@ impl Stage {
         })
     }
 
-    /// `self.dir/rel`, with the parent directories created.
+    /// `self.dir/rel`, with the parent directories created. A `rel` that
+    /// would leave the stage is refused.
     pub fn path(&self, rel: &str) -> Result<PathBuf> {
+        if !is_contained_relative(rel) {
+            return Err(anyhow::anyhow!(
+                "refusing `{rel}`: it is not a path inside {}",
+                self.dir.display()
+            ));
+        }
         let path = join_relative(&self.dir, rel);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)
