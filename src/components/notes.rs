@@ -67,8 +67,8 @@ pub fn dhis2_seed_note(seed: Option<&str>) -> String {
 /// The note for a seed that gives every DHIS2 user one password. `chap-devops
 /// dhis2` uses that password for every user, so nothing else is to set.
 pub fn dhis2_seed_password_note() -> String {
-    "the restore gives every DHIS2 user the password set by `seed_password:` in \
-     `.chap-devops/components.yaml`, turns on every account and turns off two-factor login; \
+    "the restore gives every DHIS2 user the password in `DHIS2_SEED_PASSWORD` in `.env`, \
+     turns on every account and turns off two-factor login; \
      `chap-devops dhis2 --user NAME` uses it for any user"
         .to_string()
 }

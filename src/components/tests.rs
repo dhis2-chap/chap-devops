@@ -69,7 +69,7 @@ fn the_settings_round_trip_with_their_defaults() {
             image_tag: "2.41.7".into(),
             image: "dhis2/core-dev".into(),
             seed: Dhis2Seed::From("dumps/laos.sql.gz".into()),
-            seed_password: Some("district".into()),
+            seed_password: true,
             connected_at: None,
         },
         dhis2_external: None,
@@ -84,7 +84,7 @@ fn the_settings_round_trip_with_their_defaults() {
     // The seed is one string, whichever of the three it is, so the block
     // reads as something an operator would type.
     assert!(text.contains("  seed: dumps/laos.sql.gz\n"), "{text}");
-    assert!(text.contains("  seed_password: district\n"), "{text}");
+    assert!(text.contains("  seed_password: true\n"), "{text}");
     // The one record in the file, and it is written whichever way round it
     // is, so a reader can see that nothing has connected this deployment.
     assert!(text.contains("  connected_at: null\n"), "{text}");

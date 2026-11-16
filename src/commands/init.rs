@@ -429,6 +429,22 @@ pub(crate) fn create(ctx: &Ctx, args: &InitArgs, report_it: bool) -> Result<()> 
         }
     }
 
+    // The seed password is a secret, so it goes in `.env` and the state only
+    // records that it is set. parse_components() has checked it already.
+    if let Some(password) = args
+        .dhis2_seed_password
+        .as_deref()
+        .filter(|_| components.dhis2.seed_password)
+    {
+        let body = std::fs::read_to_string(&env_path)
+            .map_err(|e| anyhow::anyhow!("reading {}: {e}", env_path.display()))?;
+        let var = crate::components::DHIS2_SEED_PASSWORD_ENV_VAR;
+        crate::dotenv::write(
+            &env_path,
+            &crate::auth::write_secrets(&body, &[(var, password)]),
+        )?;
+    }
+
     // `.env` decides: a kept file that already carries the secrets keeps the
     // deployment authenticated, and a rendered one says so itself. The state
     // file only records which of the two are in use, never their values, and

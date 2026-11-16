@@ -18,7 +18,7 @@ pub enum CredentialSource {
     /// [`TOKEN_ENV_VAR`] or [`PASSWORD_ENV_VAR`] in the environment this
     /// command ran in.
     Environment,
-    /// `seed_password:` in `.chap-devops/components.yaml`: the restore of the seed
+    /// `DHIS2_SEED_PASSWORD` in `.env`: the restore of the seed
     /// gave every user that password, on a DHIS2 chap-devops deployed.
     SeedPassword,
     /// None of these, so [`DEFAULT_PASSWORD`] - which is what a seeded dump
@@ -46,7 +46,7 @@ pub fn describe_credential(kind: AuthKind, source: CredentialSource) -> String {
             format!("password from {PASSWORD_ENV_VAR}")
         }
         (AuthKind::Basic, CredentialSource::SeedPassword) => {
-            "the seed password from `.chap-devops/components.yaml`".to_string()
+            "the seed password from `DHIS2_SEED_PASSWORD` in `.env`".to_string()
         }
         (AuthKind::Basic, CredentialSource::Default) => "the DHIS2 default password".to_string(),
         (AuthKind::Token, CredentialSource::EnvFile) => "API token from `.env`".to_string(),
@@ -164,8 +164,8 @@ pub struct CredentialInputs<'a> {
     /// Whether chap-devops deployed this DHIS2, which is the only case in which
     /// [`DEFAULT_PASSWORD`] is known to be anybody's password.
     pub deployed: bool,
-    /// `seed_password:` of a DHIS2 chap-devops deployed from a seed: the password of
-    /// every user, so it serves any `--user`.
+    /// `DHIS2_SEED_PASSWORD` in `.env` of a DHIS2 chap-devops deployed from a
+    /// seed: the password of every user, so it serves any `--user`.
     pub seed_password: Option<&'a str>,
 }
 
@@ -175,10 +175,13 @@ pub fn credentials_for(
     project_dir: &Path,
     user: Option<&str>,
     deployed: bool,
-    seed_password: Option<&str>,
+    seeded_with_password: bool,
 ) -> Result<Credentials> {
     let body =
         std::fs::read_to_string(project_dir.join(crate::project::ENV_FILE)).unwrap_or_default();
+    let seed_password = seeded_with_password
+        .then(|| crate::dotenv::non_empty(&body, crate::components::DHIS2_SEED_PASSWORD_ENV_VAR))
+        .flatten();
     let var = |name: &str| std::env::var(name).ok();
     let (env_username, env_password, env_token) = (
         var(USERNAME_ENV_VAR),
@@ -192,7 +195,7 @@ pub fn credentials_for(
         env_password: env_password.as_deref(),
         env_token: env_token.as_deref(),
         deployed,
-        seed_password,
+        seed_password: seed_password.as_deref(),
     })
 }
 

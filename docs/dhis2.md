@@ -387,14 +387,19 @@ chap-devops init laos --only dhis2 --dhis2-tag 2.42 --dhis2-seed laos.sql.gz --d
 cp laos.sql.gz laos/
 ```
 
-Without a value, the password is `district`. The option writes
-`seed_password:` in `.chap-devops/components.yaml`:
+Without a value, the password is `district`. The option writes the password
+to `.env` as `DHIS2_SEED_PASSWORD`, and records in
+`.chap-devops/components.yaml` only that it is set:
 
 ```yaml
 dhis2:
   seed: laos.sql.gz
-  seed_password: district
+  seed_password: true
 ```
+
+The password is a secret, so it is in `.env` only, which only its owner can
+read. A password with a quote, a backslash or a control character is refused,
+because `.env` cannot hold it as written.
 
 The restore then does four things to every row of `userinfo`:
 
@@ -420,12 +425,10 @@ The rules of the seed apply:
   exists, run `chap-devops components disable dhis2 --purge` first.
 - It needs a seed. `--dhis2-seed none` has no users, so the two options
   together are refused.
-- To change or remove it later, edit `seed_password:` and run `chap-devops sync`.
-  `DHIS2_SEED_PASSWORD` in `.env` also sets it.
+- To change the password later, edit `DHIS2_SEED_PASSWORD` in `.env`. To
+  remove it, set `seed_password: false` and run `chap-devops sync`.
 
-The password is plain text in `.chap-devops/components.yaml` and in
-`compose.dhis2.yml`. Use it for a known password such as `district`, not for a
-secret. `chap-devops dhis2` uses it for every user, so `chap-devops dhis2 analytics --user
+`chap-devops dhis2` uses the password for every user, so `chap-devops dhis2 analytics --user
 em` logs in as `em` with no other setting. A password in `.env` or in the
 environment still comes first.
 

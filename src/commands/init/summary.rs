@@ -175,7 +175,7 @@ pub(super) fn summary(
                 components.dhis2_seed_source(),
             ));
         }
-        if components.dhis2_seed_source().is_some() && components.dhis2.seed_password.is_some() {
+        if components.dhis2_seed_source().is_some() && components.dhis2.seed_password {
             lines.hint(crate::components::dhis2_seed_password_note());
         }
         lines.hint(DHIS2_FIRST_START_NOTE);

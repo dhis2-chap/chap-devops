@@ -1523,3 +1523,26 @@ fn init_reads_the_dump_version_only_from_the_deployment_directory() {
             "laos.sql.gz is DHIS2 2.41 (Flyway migration 2.41.5), so DHIS2 runs 2.41",
         ));
 }
+
+/// The seed password is a secret: init writes it to `.env` and nowhere else.
+/// The state records only that it is set, and the compose file reads it from
+/// `.env`.
+#[test]
+fn init_writes_the_seed_password_to_the_env_file_only() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .init(&["--only", "dhis2", "--dhis2-seed-password", "s3cret#1"])
+        .assert()
+        .success();
+    let read = |name: &str| std::fs::read_to_string(sandbox.project().join(name)).unwrap();
+    assert!(
+        read(".env").contains("DHIS2_SEED_PASSWORD='s3cret#1'"),
+        "{}",
+        read(".env")
+    );
+    for name in [".chap-devops/components.yaml", "compose.dhis2.yml"] {
+        assert!(!read(name).contains("s3cret"), "{name}: {}", read(name));
+    }
+    assert!(read(".chap-devops/components.yaml").contains("seed_password: true"));
+    assert!(read("compose.dhis2.yml").contains("DHIS2_SEED_PASSWORD: ${DHIS2_SEED_PASSWORD:-}"));
+}

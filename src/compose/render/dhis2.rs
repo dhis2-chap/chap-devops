@@ -151,8 +151,8 @@ pub fn render_dhis2(spec: &Dhis2Spec) -> String {
             seed_url => seed.map(seed_value),
             seed_source => seed.and_then(seed_source),
             seed_mount => DHIS2_SEED_MOUNT,
-            // A `$` is doubled, so compose does not read it as a variable.
-            seed_password => spec.seed_password.as_ref().map(|p| p.replace('$', "$$")),
+            seed_password => spec.seed_password,
+            seed_password_var => crate::components::DHIS2_SEED_PASSWORD_ENV_VAR,
             dump_image => DHIS2_DUMP_IMAGE,
             dump_volume => DHIS2_DUMP_VOLUME,
             seed_file => DHIS2_SEED_FILE,

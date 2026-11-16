@@ -1184,7 +1184,7 @@ fn the_seed_password_serves_every_user_of_a_seeded_dhis2() {
     assert_eq!(em.source, CredentialSource::SeedPassword);
     assert_eq!(
         em.describe(),
-        "the seed password from `.chap-devops/components.yaml`"
+        "the seed password from `DHIS2_SEED_PASSWORD` in `.env`"
     );
     // Without --user: the user `.env` names, or admin.
     let admin = resolved(seeded(None));
@@ -1297,4 +1297,17 @@ fn a_recorded_success_with_a_server_date_has_the_offset_of_this_machine() {
         shown_success(&recorded),
         crate::output::local_date_time(1_781_596_260)
     );
+}
+
+/// The seed password is read from `.env`, and only for a DHIS2 that was
+/// seeded with one.
+#[test]
+fn the_seed_password_comes_from_the_env_file() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join(".env"), "DHIS2_SEED_PASSWORD='s3cret #1'\n").unwrap();
+    let seeded = credentials_for(dir.path(), Some("em"), true, true).unwrap();
+    assert_eq!(seeded.source, CredentialSource::SeedPassword);
+    assert!(seeded.header().ends_with(&base64(b"em:s3cret #1")));
+    // Not seeded with a password: the line is not read.
+    assert!(credentials_for(dir.path(), Some("em"), true, false).is_err());
 }

@@ -855,14 +855,20 @@ fn a_seed_password_needs_a_seed_and_a_value() {
         ..ComponentFlags::default()
     })
     .unwrap();
-    assert_eq!(set.dhis2.seed_password.as_deref(), Some("district"));
-    assert_eq!(
-        with_dhis2(ComponentFlags::default())
+    assert!(set.dhis2.seed_password);
+    assert!(
+        !with_dhis2(ComponentFlags::default())
             .unwrap()
             .dhis2
-            .seed_password,
-        None
+            .seed_password
     );
+    // `.env` cannot hold a quote as written.
+    let err = with_dhis2(ComponentFlags {
+        dhis2_seed_password: Some("it's"),
+        ..ComponentFlags::default()
+    })
+    .unwrap_err();
+    assert!(err.to_string().contains("choose another password"), "{err}");
 
     let err = with_dhis2(ComponentFlags {
         dhis2_seed: Some("none"),

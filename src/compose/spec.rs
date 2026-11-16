@@ -242,9 +242,9 @@ pub struct Dhis2Spec {
     /// no dump volume at all, which is an empty DHIS2 that migrates itself on
     /// first boot.
     pub seed: Option<Dhis2SeedSource>,
-    /// The password the restore gives every DHIS2 user. Only with a seed: an
-    /// empty database has no users to give it to.
-    pub seed_password: Option<String>,
+    /// Whether the restore gives every DHIS2 user the password in `.env`.
+    /// Only with a seed: an empty database has no users to give it to.
+    pub seed_password: bool,
     /// The size of the seed dump in bytes, when it is a file that sync found.
     /// The time the restore gets grows with it.
     pub seed_bytes: Option<u64>,
@@ -271,9 +271,8 @@ impl Dhis2Spec {
             image_tag: components.dhis2.image_tag.clone(),
             image: components.dhis2.image.clone(),
             seed: components.dhis2_seed_source().map(Dhis2SeedSource::of),
-            seed_password: components
-                .dhis2_seed_source()
-                .and(components.dhis2.seed_password.clone()),
+            seed_password: components.dhis2_seed_source().is_some()
+                && components.dhis2.seed_password,
             seed_bytes: None,
             host_gateway: components.chap_core_external.is_some(),
             group: None,

@@ -360,7 +360,7 @@ fn open_session(ctx: &Ctx, common: &Dhis2CommonArgs) -> Result<Session> {
     let client = match &components.dhis2_external {
         Some(external) => {
             let credentials =
-                dhis2::credentials_for(&project.dir, common.user.as_deref(), false, None)?;
+                dhis2::credentials_for(&project.dir, common.user.as_deref(), false, false)?;
             Dhis2::new(&external.url, credentials, dhis2::DEFAULT_TIMEOUT).external()
         }
         None => {
@@ -383,9 +383,8 @@ fn open_session(ctx: &Ctx, common: &Dhis2CommonArgs) -> Result<Session> {
                 )),
             }
             // The seed password only when the database came from a seed.
-            let seed_password = components
-                .dhis2_seed_source()
-                .and(components.dhis2.seed_password.as_deref());
+            let seed_password =
+                components.dhis2_seed_source().is_some() && components.dhis2.seed_password;
             let credentials =
                 dhis2::credentials_for(&project.dir, common.user.as_deref(), true, seed_password)?;
             Dhis2::new(&base, credentials, dhis2::DEFAULT_TIMEOUT)

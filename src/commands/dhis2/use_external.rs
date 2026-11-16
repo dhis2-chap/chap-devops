@@ -325,7 +325,7 @@ fn is_loopback(url: &str) -> bool {
 /// Ask the recorded DHIS2 whether it answers, and whether it takes the
 /// credential `chap-devops dhis2` would send it.
 fn probe_external(project: &Project, external: &crate::components::ExternalDhis2) -> UseProbe {
-    let credentials = dhis2::credentials_for(&project.dir, None, false, None);
+    let credentials = dhis2::credentials_for(&project.dir, None, false, false);
     // `send_open` carries no credential, so a placeholder serves for the ping
     // when there is none to carry.
     let client = Dhis2::new(

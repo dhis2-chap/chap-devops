@@ -176,7 +176,12 @@ pub(super) fn parse_components(flags: &ComponentFlags) -> Result<Components> {
                 "--dhis2-seed-password needs a password; drop the value to use `district`"
             ));
         }
-        components.dhis2.seed_password = Some(password.to_string());
+        if let Some(problem) = crate::dotenv::literal_problem(password) {
+            return Err(anyhow::anyhow!(
+                "--dhis2-seed-password has {problem}; choose another password"
+            ));
+        }
+        components.dhis2.seed_password = true;
     }
     if flags.ocs_read_only {
         if !components.ocs.enabled {

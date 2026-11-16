@@ -123,8 +123,8 @@ services:
     environment:
       DHIS2_DB_DUMP_URL: ${DHIS2_DB_DUMP_URL:-{{ seed_url }}}
       {{ tag_var }}: ${ {{- tag_var }}:-{{ image_tag }}}
-{% if seed_password is not none %}
-      DHIS2_SEED_PASSWORD: ${DHIS2_SEED_PASSWORD:-{{ seed_password }}}
+{% if seed_password %}
+      {{ seed_password_var }}: ${ {{- seed_password_var }}:-}
 {% endif %}
     volumes:
       - type: volume
@@ -177,7 +177,7 @@ services:
   extension, so CREATE EXTENSION pgcrypto in public fails: the script installs
   it in a schema of its own and removes that schema after the update.
 #}
-{% if seed_password is not none %}
+{% if seed_password %}
         # Every DHIS2 user gets the password in DHIS2_SEED_PASSWORD, and every
         # account is turned on, with no two-factor login and no expiry date. The
         # postgres entrypoint runs this file after the dump, because the files

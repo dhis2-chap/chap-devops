@@ -342,7 +342,7 @@ fn dhis2_spec() -> Dhis2Spec {
         image_tag: crate::components::DHIS2_DEFAULT_TAG.to_string(),
         image: crate::components::DHIS2_IMAGE.to_string(),
         seed: Some(Dhis2SeedSource::Url(DHIS2_DEFAULT_SEED_URL.to_string())),
-        seed_password: None,
+        seed_password: false,
         seed_bytes: None,
         host_gateway: false,
         group: None,
@@ -961,16 +961,17 @@ fn the_route_allowlist_is_whatever_the_caller_narrowed_it_to() {
 #[test]
 fn a_seed_password_resets_every_user_after_the_dump() {
     let text = render_dhis2(&Dhis2Spec {
-        seed_password: Some("dis$trict".to_string()),
+        seed_password: true,
         ..dhis2_spec()
     });
     assert_no_tokens(&text);
     let doc = parse(&text);
     let svc = service(&doc, "dhis2-dump");
+    // The password itself is in `.env` only.
     assert_eq!(
         svc["environment"]["DHIS2_SEED_PASSWORD"].as_str(),
-        Some("${DHIS2_SEED_PASSWORD:-dis$$trict}"),
-        "a `$` is doubled for compose: {text}"
+        Some("${DHIS2_SEED_PASSWORD:-}"),
+        "{text}"
     );
     let script = svc["command"][0].as_str().unwrap();
     assert!(
