@@ -100,9 +100,11 @@ if [ "$mode" = "tag" ]; then
     exit 1
   fi
   # A squash merge adds " (#NN)" to the subject; a rebase merge keeps it.
-  commit="$(git log "${REMOTE}/${BRANCH}" --format='%H %s' |
-    awk -v s="$subject" '{ t = substr($0, 42) }
-      t == s || index(t, s " (#") == 1 { print $1; exit }')"
+  # The log is read whole first: awk stops at the first match, and a git log
+  # still writing into the closed pipe would fail the pipeline (pipefail).
+  history="$(git log "${REMOTE}/${BRANCH}" --format='%H %s')"
+  commit="$(awk -v s="$subject" '{ t = substr($0, 42) }
+    t == s || index(t, s " (#") == 1 { print $1; exit }' <<<"$history")"
   if [ -z "$commit" ]; then
     echo "error: ${REMOTE}/${BRANCH} has no commit '${subject}'; merge the release pull" \
       "request first (scripts/release.sh ${version} --pr opens it)" >&2
