@@ -106,7 +106,7 @@ const DHIS2_DB_SERVICE: &str = "dhis2-db";
 /// would cost it a timeout to say what the container already said.
 pub(super) fn component_rows(
     project: &Project,
-    agent: &ureq::Agent,
+    agent: &super::probe::Prober,
     running: &BTreeSet<String>,
 ) -> Vec<ComponentStatus> {
     let components = &project.state.components;

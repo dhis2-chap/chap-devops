@@ -147,7 +147,7 @@ pub fn parse_services(body: &str) -> Result<Vec<RegisteredService>, serde_json::
 /// answer it still gets a version in the report - the tag the project pins,
 /// marked as such so nobody reads it as the running build.
 pub(super) fn version_of(
-    agent: &ureq::Agent,
+    agent: &Prober,
     base: &str,
     api: &ApiHealth,
     pinned: &str,
@@ -262,63 +262,47 @@ pub(super) enum Failure {
     Other(String),
 }
 
+/// What every probe of one status run shares: the timeout of each request.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Prober {
+    timeout: Duration,
+}
+
+pub(super) fn agent(timeout: Duration) -> Prober {
+    Prober { timeout }
+}
+
 /// `GET base+path`, with the API token when there is one.
+///
+/// The request goes through [`crate::api::Api`], like every other request to
+/// chap-core, so the token, the trace lines and the redirects follow the
+/// same rules. A status code is data here: 401 is reported on its own, any
+/// other failure as `HTTP <code>`.
 pub(super) fn get(
-    agent: &ureq::Agent,
+    prober: &Prober,
     base: &str,
     path: &str,
     token: Option<&str>,
 ) -> Result<Answer, Failure> {
-    let mut request = agent.get(format!("{base}{path}"));
-    if let Some(token) = token {
-        // The header chap-core documents in its OpenAPI spec and enforces in
-        // its middleware. It also accepts the token in `X-Service-Key`, but
-        // that spelling exists for servicekit, which can send no other.
-        request = request.header("Authorization", format!("Bearer {token}"));
-    }
-    let url = format!("{base}{path}");
-    let started = std::time::Instant::now();
-    let mut response = request.call().map_err(|e| {
-        crate::output::verbose(&format!(
-            "GET {url} -> failed in {}ms",
-            started.elapsed().as_millis()
-        ));
-        Failure::Other(e.to_string())
+    let api = crate::api::Api::new(base, token.map(str::to_string), prober.timeout);
+    let answer = api.send("GET", path, None).map_err(|err| {
+        match err.downcast_ref::<crate::error::ChapError>() {
+            Some(crate::error::ChapError::Unreachable { reason, .. }) => {
+                Failure::Other(reason.clone())
+            }
+            _ => Failure::Other(format!("{err:#}")),
+        }
     })?;
-    let status = response.status();
-    crate::output::verbose(&format!(
-        "GET {url} -> {} in {}ms",
-        status.as_u16(),
-        started.elapsed().as_millis()
-    ));
-    if status.as_u16() == 401 {
+    if answer.status == 401 {
         return Err(Failure::Unauthorized);
     }
-    if !status.is_success() {
-        return Err(Failure::Other(format!("HTTP {}", status.as_u16())));
+    if !answer.is_success() {
+        return Err(Failure::Other(format!("HTTP {}", answer.status)));
     }
-    let content_type = response
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or_default()
-        .to_string();
-    let body = response
-        .body_mut()
-        .read_to_string()
-        .map_err(|e| Failure::Other(e.to_string()))?;
-    crate::output::debug(&format!("  {}", crate::output::trace_body(&body)));
-    Ok(Answer { content_type, body })
-}
-
-pub(super) fn agent(timeout: Duration) -> ureq::Agent {
-    ureq::Agent::config_builder()
-        .timeout_global(Some(timeout))
-        // Status codes are reported by the caller, not raised as errors.
-        .http_status_as_error(false)
-        .user_agent(concat!("chap-devops/", env!("CARGO_PKG_VERSION")))
-        .build()
-        .new_agent()
+    Ok(Answer {
+        content_type: answer.content_type,
+        body: String::from_utf8_lossy(&answer.body).into_owned(),
+    })
 }
 
 /// `GET /v2/services`. The envelope is required (see [`parse_services`]);

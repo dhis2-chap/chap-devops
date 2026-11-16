@@ -57,7 +57,7 @@ fn closed_port() -> u16 {
 
 /// Short, because none of these tests waits for anything: the one request
 /// that fails is refused, not timed out.
-fn probe_agent() -> ureq::Agent {
+fn probe_agent() -> crate::status::probe::Prober {
     agent(Duration::from_millis(500))
 }
 
