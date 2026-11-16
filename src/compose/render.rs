@@ -330,11 +330,20 @@ pub fn render_umbrella(files: &[String], project_name: Option<&str>) -> String {
 /// Render a compose template with minijinja. A block tag on its own line
 /// leaves no trace, nothing is escaped, and a name the context does not have
 /// is an error. The templates are part of the binary, so an error is a bug.
+/// The syntax of every template: a block tag on its own line leaves no trace,
+/// and the trailing newline stays.
+pub(crate) fn block_syntax() -> minijinja::syntax::SyntaxConfig {
+    minijinja::syntax::SyntaxConfig::builder()
+        .trim_blocks(true)
+        .lstrip_blocks(true)
+        .keep_trailing_newline(true)
+        .build()
+        .expect("the default delimiters are valid")
+}
+
 pub(crate) fn render_template(name: &str, source: &str, ctx: minijinja::Value) -> String {
     let mut env = minijinja::Environment::new();
-    env.set_trim_blocks(true);
-    env.set_lstrip_blocks(true);
-    env.set_keep_trailing_newline(true);
+    env.set_syntax(block_syntax());
     env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
     env.set_auto_escape_callback(|_| minijinja::AutoEscape::None);
     env.render_named_str(name, source, ctx)

@@ -379,13 +379,13 @@ fn context(
 ) -> minijinja::Value {
     let is_r = template.is_r();
     minijinja::context! {
-        author => author.name,
-        contact_email => author.email,
-        name => names.name,
-        service_id => names.service_id,
-        model_id => names.model_id,
-        slug => names.model_id,
-        class_name => names.class_name,
+        author => author.name.clone(),
+        contact_email => author.email.clone(),
+        name => names.name.clone(),
+        service_id => names.service_id.clone(),
+        model_id => names.model_id.clone(),
+        slug => names.model_id.clone(),
+        class_name => names.class_name.clone(),
         template => template.as_str(),
         with_validation => with_validation,
         is_r => is_r,
@@ -412,9 +412,7 @@ pub fn render(
     with_validation: bool,
 ) -> Result<Vec<(&'static str, String)>> {
     let mut env = Environment::new();
-    env.set_trim_blocks(true);
-    env.set_lstrip_blocks(true);
-    env.set_keep_trailing_newline(true);
+    env.set_syntax(crate::compose::render::block_syntax());
     for (name, source) in SOURCES {
         env.add_template(name, source)
             .with_context(|| format!("the embedded template {name} does not parse"))?;
