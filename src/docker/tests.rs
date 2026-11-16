@@ -788,3 +788,17 @@ fn docker_info_gives_the_cpus_and_the_memory_of_the_engine() {
     assert_eq!(parse_engine_resources(""), None);
     assert_eq!(parse_engine_resources("x 1"), None);
 }
+
+/// `-d` shows what a compose query printed, except for `config`, which holds
+/// the values of `.env`.
+#[test]
+fn the_trace_of_compose_config_leaves_out_the_secrets() {
+    let config = r#"{"services":{"chap":{"environment":{"CHAP_DATABASE_URL":"postgresql://chap:s3cret@postgres/chap_core"}}}}"#;
+    let line = traced_answer(&["config", "--format", "json"], config);
+    assert!(!line.contains("s3cret"), "{line}");
+    assert!(line.contains(&format!("{} bytes", config.len())), "{line}");
+    let line = traced_answer(&["config", "--services"], "chap\nworker\n");
+    assert!(line.contains("chap\nworker"), "{line}");
+    let line = traced_answer(&["ps", "--format", "json"], "[]\n");
+    assert_eq!(line, "  docker said:\n[]");
+}

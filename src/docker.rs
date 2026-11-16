@@ -302,11 +302,29 @@ fn compose_query(project: &Project, extra: &[&str]) -> std::result::Result<Strin
         return Err(failure);
     }
     let body = String::from_utf8_lossy(&out.stdout).into_owned();
-    crate::output::debug(&format!(
+    crate::output::debug(&traced_answer(extra, &body));
+    Ok(body)
+}
+
+/// The `-d` line for what a compose query printed.
+///
+/// `config` prints the files with `.env` already put in: the database
+/// password, the API token and every other secret. Its trace says only how
+/// long it was. `--services`, `--images` and `--hash` print names only.
+fn traced_answer(extra: &[&str], body: &str) -> String {
+    let names_only = extra
+        .iter()
+        .any(|a| matches!(*a, "--services" | "--images") || a.starts_with("--hash"));
+    if extra.first() == Some(&"config") && !names_only {
+        return format!(
+            "  docker said {} bytes (not shown: `config` holds the values of `.env`)",
+            body.len()
+        );
+    }
+    format!(
         "  docker said:\n{}",
         crate::output::trace_body(body.trim_end())
-    ));
-    Ok(body)
+    )
 }
 
 /// Run a short `docker compose` query and return its stdout, or `None` when
