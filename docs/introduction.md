@@ -1,5 +1,9 @@
 # Introduction
 
+> [!WARNING]
+> At this time, `chap-devops` is mostly an internal tool for the Chap team.
+> It is not for production deployments.
+
 [Chap](https://chap.dhis2.org) forecasts
 cases of climate-sensitive diseases such as dengue and malaria. It learns from
 past case counts together with climate data and population, scores how well
