@@ -17,12 +17,33 @@ fn tar_command() -> Command {
 }
 
 /// Pack `members` of `stage` into `archive` as gzipped tar.
+///
+/// The archive holds `.env` and the database dumps, so it is created
+/// readable by its owner only, as `.env` is. tar writes to stdout because
+/// it would create a file of its own with the default mode.
 pub fn tar_create(archive: &Path, stage: &Path, members: &[String]) -> Result<()> {
+    let file = owner_only_file(archive)?;
     let mut cmd = tar_command();
-    cmd.arg("-czf").arg(archive).arg("-C").arg(stage);
+    cmd.arg("-czf").arg("-").arg("-C").arg(stage);
     cmd.args(members);
+    cmd.stdout(Stdio::from(file));
     finish_tar(cmd, &format!("writing {}", archive.display()))?;
     Ok(())
+}
+
+/// A new, empty file at `path` that only its owner can read and write.
+fn owner_only_file(path: &Path) -> Result<File> {
+    let _ = std::fs::remove_file(path);
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options
+        .open(path)
+        .map_err(|e| anyhow::anyhow!("creating {}: {e}", path.display()))
 }
 
 /// The member names inside `archive`.

@@ -205,6 +205,14 @@ impl Stage {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir)
             .map_err(|e| anyhow::anyhow!("creating {}: {e}", dir.display()))?;
+        // The dumps and the copy of `.env` land here, so only the owner may
+        // look inside.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))
+                .map_err(|e| anyhow::anyhow!("protecting {}: {e}", dir.display()))?;
+        }
         Ok(Stage {
             dir,
             lock: Some(lock),

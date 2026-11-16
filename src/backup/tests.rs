@@ -1120,3 +1120,28 @@ fn a_volume_the_restore_makes_has_the_compose_labels() {
             .any(|arg| arg.contains("version"))
     );
 }
+
+/// The archive and the stage hold `.env` and the database dumps, so other
+/// users on the machine cannot read them.
+#[cfg(unix)]
+#[test]
+fn the_archive_and_the_stage_are_for_the_owner_only() {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+    let dir = tempfile::tempdir().unwrap();
+    let chap_devops = dir.path().join(".chap-devops");
+    let stage = Stage::new(&chap_devops, "backup").unwrap();
+    assert_eq!(mode(&stage.dir), 0o700);
+
+    std::fs::write(stage.dir.join("manifest.yaml"), "schema_version: 1\n").unwrap();
+    let archive = dir.path().join("out.tar.gz");
+    // An older file of that name is replaced, not reused with its mode.
+    std::fs::write(&archive, "old").unwrap();
+    std::fs::set_permissions(&archive, std::fs::Permissions::from_mode(0o644)).unwrap();
+    tar_create(&archive, &stage.dir, &[MANIFEST_MEMBER.to_string()]).unwrap();
+    assert_eq!(mode(&archive), 0o600);
+    assert_eq!(
+        tar_read_member(&archive, MANIFEST_MEMBER).unwrap(),
+        "schema_version: 1\n"
+    );
+}

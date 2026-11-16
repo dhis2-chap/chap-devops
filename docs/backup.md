@@ -33,6 +33,10 @@ chap-devops-backup-<project>-<YYYYMMDD-HHMMSS>.tar.gz
                              the rows of audit
 ```
 
+The archive holds `.env` and the database dumps, so chap-devops creates it
+readable by its owner only (mode `0600`), as it does `.env`. Keep it that way
+when you copy it to another machine.
+
 Every member but the manifest is optional, and the manifest records which ones
 are there: what was included, what was skipped and why, and how long each
 service was held still while its volume was read.
