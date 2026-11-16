@@ -195,12 +195,16 @@ pub fn from_image_with(
     }
 
     let known = overrides::known_override(req.id);
-    let data_dir = match (flag(req.data_dir_flag), &declared) {
-        (Some(dir), _) => dir,
-        (None, Some((config, _))) if !config.working_dir.trim().is_empty() => {
-            crate::manual::data_dir_under(&config.working_dir)
+    let image_dir = match (flag(req.data_dir_flag), &declared) {
+        (None, Some((config, _))) => {
+            crate::manual::image_data_dir(&config.working_dir, &reference, &mut notes)
         }
-        _ => known
+        _ => None,
+    };
+    let data_dir = match (flag(req.data_dir_flag), image_dir) {
+        (Some(dir), _) => dir,
+        (None, Some(dir)) => dir,
+        (None, None) => known
             .map(|k| k.data_dir.to_string())
             .unwrap_or_else(|| overrides::DEFAULT_DATA_DIR.to_string()),
     };

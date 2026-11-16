@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 mod checks;
 
-pub use checks::{check_data_dir, check_user, validate};
+pub use checks::{check_data_dir, check_overlay, check_user, validate};
 
 /// What a caller wants done with one model's host port.
 ///

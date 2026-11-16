@@ -222,3 +222,43 @@ fn the_origins_read_as_sentences() {
     assert_eq!(Origin::Probe.label(), "from a docker probe");
     assert_eq!(Origin::Default.label(), "the chapkit default");
 }
+
+/// An image config can hold any text, unlike a Dockerfile `USER` or
+/// `WORKDIR`. A value the overlay cannot hold falls back to the default with
+/// a note, and the user never reaches the probe's `sh -c`.
+#[test]
+fn an_image_user_or_working_directory_with_yaml_in_it_falls_back() {
+    let mut notes = Vec::new();
+    let probed = std::cell::Cell::new(false);
+    let probe = |_: &str, _: &str| {
+        probed.set(true);
+        Some((1, 1))
+    };
+    assert_eq!(
+        resolve_user_with(
+            None,
+            "app\n    privileged: true",
+            "ghcr.io/x/y:t",
+            &endpoints(),
+            &mut notes,
+            &|_| true,
+            &probe
+        ),
+        (overrides::DEFAULT_USER.to_string(), Origin::Default)
+    );
+    assert!(!probed.get());
+    assert!(notes[0].contains("--user <uid>:<gid>"), "{notes:?}");
+
+    let mut notes = Vec::new();
+    assert_eq!(
+        image_data_dir("/app\n    privileged: true", "ghcr.io/x/y:t", &mut notes),
+        None
+    );
+    assert!(notes[0].contains("--data-dir <path>"), "{notes:?}");
+    assert_eq!(
+        image_data_dir("/app", "ghcr.io/x/y:t", &mut notes),
+        Some("/app/data".to_string())
+    );
+    assert_eq!(image_data_dir(" ", "ghcr.io/x/y:t", &mut notes), None);
+    assert_eq!(notes.len(), 1, "{notes:?}");
+}

@@ -2202,3 +2202,26 @@ enabled is out of its group again, as after a failed start, and its data stays.
 The command exits with 130. Run the same `chap-devops run` again to start it. A model
 that ran before the command is left running, and the message says so.
 
+
+## `has characters chap-devops cannot write into`
+
+`chap-devops sync` refuses a model with a line such as:
+
+```text
+my_model: its version "1.0\n    privileged: true" has characters chap-devops cannot write into `compose.my-model.yml`
+```
+
+chap-devops writes the model's id, image, tag, digest, version, repository,
+data directory and user into the compose overlay as they are. A newline or
+another unusual character in one of them could add keys to the service, for
+example `privileged: true`, and remove the protection the overlay gives. The
+value comes from the marketplace entry or from `models-manual.yaml`.
+
+1. Run `chap-devops models disable <id>` to remove the model.
+2. If the model is from the marketplace, report the entry to the marketplace.
+3. If you added the model with `chap-devops models add`, correct the value in
+   `.chap-devops/models-manual.yaml`, then run `chap-devops sync`.
+
+An image config can also declare a user or a working directory with such
+characters. chap-devops then uses its default and prints a note that names
+`--user` or `--data-dir`.

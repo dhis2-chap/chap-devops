@@ -109,3 +109,66 @@ pub fn check_user(user: &str) -> Result<()> {
     }
     Ok(())
 }
+
+/// Every value of an overlay that goes into its YAML as it is, checked
+/// against the characters YAML and a shell read as plain text.
+///
+/// The values come from the marketplace, an image config, or
+/// `models-manual.yaml`, and none of them passed the `--user` and
+/// `--data-dir` checks. A newline in one of them would add keys to the
+/// service, such as `privileged: true`, past the overlay's hardening.
+pub fn check_overlay(spec: &crate::compose::spec::OverlaySpec) -> Result<()> {
+    let refuse = |field: &str, value: &str| {
+        anyhow::anyhow!(
+            "{}: its {field} {value:?} has characters chap-devops cannot write into \
+             `compose.{}.yml`; run `chap-devops models disable {}`, and report it to the \
+             marketplace",
+            spec.id,
+            spec.service_id,
+            spec.id
+        )
+    };
+    let plain = |value: &str, extra: &str| {
+        !value.is_empty()
+            && value
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || extra.contains(c))
+    };
+    let text = |value: &str| !value.chars().any(char::is_control);
+    let digest = |value: &str| {
+        value
+            .strip_prefix("sha256:")
+            .is_some_and(|hex| hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit()))
+    };
+    // A tag, or `@sha256:...` for an image that `models add` pinned by digest.
+    let tag = |value: &str| {
+        (plain(value, "._-") && value.len() <= 128) || value.strip_prefix('@').is_some_and(digest)
+    };
+    let checks = [
+        ("id", spec.id.as_str(), plain(&spec.id, "_")),
+        (
+            "service id",
+            spec.service_id.as_str(),
+            plain(&spec.service_id, "-"),
+        ),
+        ("image", spec.image.as_str(), plain(&spec.image, "._-/:")),
+        ("image tag", spec.image_tag.as_str(), tag(&spec.image_tag)),
+        ("version", spec.version.as_str(), text(&spec.version)),
+        (
+            "repository",
+            spec.repository.as_str(),
+            text(&spec.repository),
+        ),
+    ];
+    if let Some((field, value, _)) = checks.iter().find(|(_, _, ok)| !ok) {
+        return Err(refuse(field, value));
+    }
+    if let Some(value) = spec.image_digest.as_deref()
+        && !digest(value)
+    {
+        return Err(refuse("image digest", value));
+    }
+    check_data_dir(&spec.data_dir).map_err(|_| refuse("data directory", &spec.data_dir))?;
+    check_user(&spec.user).map_err(|_| refuse("user", &spec.user))?;
+    Ok(())
+}

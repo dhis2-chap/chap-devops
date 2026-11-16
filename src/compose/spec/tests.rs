@@ -172,3 +172,51 @@ fn a_checkout_revision_is_head_and_says_when_files_differ() {
         Some(format!("{clean}-dirty"))
     );
 }
+
+/// Every model the embedded marketplace ships passes the overlay check, and
+/// a newline or a quote in any value it renders is refused with the model
+/// and the field named.
+#[test]
+fn an_overlay_value_that_could_add_yaml_keys_is_refused() {
+    use crate::compose::apply::check_overlay;
+    let r = registry();
+    for m in &r.models {
+        let Ok(v) = m.resolve(&VersionSelector::Channel(Channel::Stable)) else {
+            continue;
+        };
+        let spec = OverlaySpec::from_model(m, v, None, None, None);
+        check_overlay(&spec).unwrap_or_else(|e| panic!("{}: {e:#}", m.id));
+    }
+
+    let good = spec_for(&r, "chapkit_ewars_model", None, None);
+    let inject = "x\n    privileged: true";
+    type Set = fn(&mut OverlaySpec, &str);
+    let cases: [(&str, Set); 8] = [
+        ("version", |s, v| s.version = v.to_string()),
+        ("repository", |s, v| s.repository = v.to_string()),
+        ("image", |s, v| s.image = v.to_string()),
+        ("image tag", |s, v| s.image_tag = v.to_string()),
+        ("image digest", |s, v| s.image_digest = Some(v.to_string())),
+        ("data directory", |s, v| s.data_dir = format!("/app{v}")),
+        ("user", |s, v| s.user = v.to_string()),
+        ("service id", |s, v| s.service_id = v.to_string()),
+    ];
+    for (field, set) in cases {
+        let mut spec = good.clone();
+        set(&mut spec, inject);
+        let err = check_overlay(&spec).expect_err(field).to_string();
+        assert!(err.contains(&format!("its {field} ")), "{err}");
+        assert!(err.contains("chapkit_ewars_model"), "{err}");
+        assert!(err.contains("chap-devops models disable"), "{err}");
+    }
+    // A tag such as `latest` and a real digest are fine.
+    let mut spec = good.clone();
+    spec.image_tag = "latest".to_string();
+    spec.image_digest = Some(format!("sha256:{}", "a".repeat(64)));
+    check_overlay(&spec).unwrap();
+    spec.image_tag = format!("@sha256:{}", "b".repeat(64));
+    spec.image_digest = None;
+    check_overlay(&spec).unwrap();
+    spec.image_tag = "@sha256:short".to_string();
+    assert!(check_overlay(&spec).is_err());
+}

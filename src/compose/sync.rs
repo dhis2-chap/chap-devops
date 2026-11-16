@@ -246,6 +246,7 @@ pub fn sync(project: &mut Project, registry: &Registry, check: bool) -> Result<S
         spec.external_chap_core = external.clone();
         spec.bind = model.bind.or(project.state.model_bind);
         spec.group = group.clone();
+        crate::compose::apply::check_overlay(&spec)?;
         // A chap-core elsewhere calls the model back on its host port. On
         // Linux, a container reaches the host through the docker bridge, and
         // a port published on loopback does not answer there. Docker Desktop

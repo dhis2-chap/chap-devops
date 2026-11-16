@@ -106,6 +106,31 @@ pub(crate) fn data_dir_under(working_dir: &str) -> String {
     format!("{base}/data")
 }
 
+/// The data directory under an image's `WorkingDir`, or `None` when the image
+/// declares none, or one that [`check_data_dir`] refuses. A refused one gets
+/// a note, and the caller uses its default.
+///
+/// [`check_data_dir`]: crate::compose::apply::check_data_dir
+pub(crate) fn image_data_dir(
+    working_dir: &str,
+    reference: &str,
+    notes: &mut Vec<String>,
+) -> Option<String> {
+    if working_dir.trim().is_empty() {
+        return None;
+    }
+    let dir = data_dir_under(working_dir);
+    if crate::compose::apply::check_data_dir(&dir).is_ok() {
+        return Some(dir);
+    }
+    notes.push(format!(
+        "{reference} declares the working directory {working_dir:?}, which chap-devops cannot \
+         write into the overlay, so it uses its default data directory; pass \
+         `--data-dir <path>` if that is wrong"
+    ));
+    None
+}
+
 /// The `user:` the overlay runs the service as, and where that came from.
 ///
 /// The flag wins. After that comes whatever the image declares, which is only
@@ -148,6 +173,15 @@ pub fn resolve_user_with(
     }
     let declared = declared.trim();
     if declared.is_empty() {
+        return (overrides::DEFAULT_USER.to_string(), Origin::Default);
+    }
+    // Checked before the probe too: the name goes into its `sh -c`.
+    if crate::compose::apply::check_user(declared).is_err() {
+        notes.push(format!(
+            "{reference} declares the user {declared:?}, which chap-devops cannot write into \
+             the overlay, so it runs as `{}`; pass `--user <uid>:<gid>` if that is wrong",
+            overrides::DEFAULT_USER
+        ));
         return (overrides::DEFAULT_USER.to_string(), Origin::Default);
     }
     // Numeric already, or one of the account names the chapkit images create:

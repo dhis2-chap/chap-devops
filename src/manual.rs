@@ -17,7 +17,9 @@ pub mod location;
 mod published;
 pub mod source;
 
-pub(crate) use image::data_dir_under;
+#[cfg(test)]
+use image::data_dir_under;
+pub(crate) use image::image_data_dir;
 pub use image::{resolve_user, resolve_user_with};
 pub use published::{BranchBuilds, branch_builds, commit_day, default_branch_of, newest_published};
 
@@ -247,12 +249,14 @@ pub fn resolve(req: &AddRequest, endpoints: &Endpoints) -> Result<Resolved> {
     let reference = crate::compose::image_ref(&image, &tag);
 
     let config = image_config(&source, &reference, endpoints, &mut notes)?;
-    let data_dir = match (&req.data_dir, &config) {
+    let image_dir = match (&req.data_dir, &config) {
+        (None, Some(config)) => image_data_dir(&config.working_dir, &reference, &mut notes),
+        _ => None,
+    };
+    let data_dir = match (&req.data_dir, image_dir) {
         (Some(dir), _) => (dir.trim().to_string(), Origin::Flag),
-        (None, Some(config)) if !config.working_dir.trim().is_empty() => {
-            (data_dir_under(&config.working_dir), Origin::Image)
-        }
-        _ => (overrides::DEFAULT_DATA_DIR.to_string(), Origin::Default),
+        (None, Some(dir)) => (dir, Origin::Image),
+        (None, None) => (overrides::DEFAULT_DATA_DIR.to_string(), Origin::Default),
     };
     let declared = config.as_ref().map(|c| c.user.as_str()).unwrap_or("");
     let (user, user_from) = match &source {
