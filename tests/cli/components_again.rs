@@ -127,3 +127,38 @@ fn a_new_base_url_is_named_and_the_same_one_changes_nothing() {
         .stdout(predicates::str::contains("base URL").not())
         .stdout(predicates::str::contains("chap-devops up").not());
 }
+
+/// `up` resumes what an interrupted backup left paused. When the unpause
+/// fails, it says so with the command that tries again.
+#[cfg(unix)]
+#[test]
+fn up_reports_a_paused_service_it_could_not_resume() {
+    let sandbox = Sandbox::new();
+    let dir = sandbox.project();
+    sandbox
+        .init(&["--models", "none", "--api-port", &free_port().to_string()])
+        .assert()
+        .success();
+    let temp = tempfile::tempdir().unwrap();
+    let bin = temp.path().join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
+    let docker = bin.join("docker");
+    std::fs::write(
+        &docker,
+        "#!/bin/sh\ncase \"$*\" in\n\
+         *' ps '*) printf '{\"Service\":\"chap\",\"State\":\"paused\"}\\n'; exit 0;;\n\
+         *' unpause '*) echo 'Error: daemon said no' >&2; exit 1;;\n\
+         esac\nexit 0\n",
+    )
+    .unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&docker, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    chap_with_docker(&sandbox, &dir, &bin, &["up", "--no-preflight"])
+        .assert()
+        .stderr(predicates::str::contains(
+            "could not resume chap (exit 1: Error: daemon said no); run \
+             `chap-devops docker run -- unpause chap`",
+        ));
+}

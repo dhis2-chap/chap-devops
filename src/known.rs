@@ -51,7 +51,14 @@ pub fn record(project: &Project) {
         return;
     }
     known.insert(name, dir);
-    let _ = write(&path, &known);
+    // Best effort: the record only helps `top` and `cleanup` find the
+    // deployment later, so a failure is a trace line, not an error.
+    if let Err(err) = write(&path, &known) {
+        crate::output::verbose(&format!(
+            "could not record this deployment in {}: {err:#}",
+            path.display()
+        ));
+    }
 }
 
 /// Drop these projects from the record: what `chap-devops cleanup` took away.

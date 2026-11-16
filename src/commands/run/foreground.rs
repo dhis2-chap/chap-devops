@@ -26,7 +26,16 @@ pub(super) fn follow(ctx: &Ctx, report: &RunReport, purge: bool) -> Result<()> {
         false => format!("following the log of {service}; Ctrl-C stops it"),
     });
     let args = ["logs", "-f", "--tail", TAIL, service.as_str()].map(str::to_string);
-    let _ = docker::run_compose(&project, &args)?;
+    let code = docker::run_compose(&project, &args)?;
+    // A follow that failed at once says nothing about the model, so it is
+    // neither "stopped by itself" nor stopped by this command.
+    if code != 0 && !crate::interrupt::requested() {
+        output::warn(&format!(
+            "following the log of {service} failed (exit {code}), so {id} was left as it is; \
+             `chap-devops logs {service}` shows the log, and `chap-devops stop {id}` stops it"
+        ));
+        return Ok(());
+    }
 
     if report.was_running {
         output::notice(&format!(

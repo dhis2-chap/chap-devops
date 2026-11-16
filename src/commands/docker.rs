@@ -232,9 +232,17 @@ fn resume_paused(ctx: &Ctx, project: &Project) {
             paused.join(", ")
         ),
     );
+    let names = paused.join(" ");
     let mut unpause = vec!["unpause".to_string()];
     unpause.extend(paused);
-    let _ = docker::compose_output(project, &unpause);
+    let failed = match docker::compose_output(project, &unpause) {
+        Ok((0, _, _)) => return,
+        Ok((code, _, stderr)) => format!("exit {code}: {}", crate::backup::first_line(&stderr)),
+        Err(err) => format!("{err:#}"),
+    };
+    crate::output::warn(&format!(
+        "could not resume {names} ({failed}); run `chap-devops docker run -- unpause {names}`"
+    ));
 }
 
 /// The services among `containers` that docker reports paused.

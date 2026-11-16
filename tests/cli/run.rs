@@ -641,3 +641,43 @@ fn chap_core_in_a_deployment_of_its_own_is_refused_with_the_command_to_use() {
         "`chap-devops components enable chap-core --url http://localhost:18999`",
     ));
 }
+
+/// A `docker` whose `logs` fails at once, with no Ctrl-C: the follow says
+/// nothing about the model, so it is left running.
+#[test]
+fn a_log_follow_that_fails_leaves_the_model_running() {
+    let sandbox = Sandbox::new();
+    let temp = tempfile::tempdir().unwrap();
+    let bin = temp.path().join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
+    let log = temp.path().join("calls.log");
+    let docker = bin.join("docker");
+    std::fs::write(
+        &docker,
+        format!(
+            "#!/bin/sh\necho \"$*\" >> '{}'\ncase \"$*\" in\n*' logs '*) exit 1;;\nesac\nexit 0\n",
+            log.display()
+        ),
+    )
+    .unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&docker, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    chap_with_docker(
+        &sandbox,
+        sandbox.home.path(),
+        &bin,
+        &["run", "chapkit_ewars_model", "--no-wait", "--attach"],
+    )
+    .assert()
+    .success()
+    .stderr(predicates::str::contains(
+        "following the log of chapkit-ewars-model failed (exit 1)",
+    ))
+    .stderr(predicates::str::contains("stopped by itself").not());
+    let calls = std::fs::read_to_string(&log).unwrap();
+    assert!(!calls.contains(" stop "), "{calls}");
+    assert!(!calls.contains(" down"), "{calls}");
+}
