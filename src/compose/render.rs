@@ -326,10 +326,6 @@ pub fn render_umbrella(files: &[String], project_name: Option<&str>) -> String {
     out
 }
 
-/// Replace every `@KEY@` token in `template` with its value.
-/// Render a compose template with minijinja. A block tag on its own line
-/// leaves no trace, nothing is escaped, and a name the context does not have
-/// is an error. The templates are part of the binary, so an error is a bug.
 /// The syntax of every template: a block tag on its own line leaves no trace,
 /// and the trailing newline stays.
 pub(crate) fn block_syntax() -> minijinja::syntax::SyntaxConfig {
@@ -341,6 +337,9 @@ pub(crate) fn block_syntax() -> minijinja::syntax::SyntaxConfig {
         .expect("the default delimiters are valid")
 }
 
+/// Render a compose template with minijinja. A block tag on its own line
+/// leaves no trace, nothing is escaped, and a name the context does not have
+/// is an error. The templates are part of the binary, so an error is a bug.
 pub(crate) fn render_template(name: &str, source: &str, ctx: minijinja::Value) -> String {
     let mut env = minijinja::Environment::new();
     env.set_syntax(block_syntax());
@@ -350,6 +349,7 @@ pub(crate) fn render_template(name: &str, source: &str, ctx: minijinja::Value) -
         .unwrap_or_else(|e| panic!("the template {name} does not render: {e:#}"))
 }
 
+/// Replace every `@KEY@` token in `template` with its value.
 pub(crate) fn fill(template: &str, vars: &[(&str, &str)]) -> String {
     let mut out = template.to_string();
     for (key, value) in vars {

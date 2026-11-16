@@ -43,11 +43,6 @@ pub const MOVING_DEFAULT_TAG: &str = "latest";
 const POSTGRES_USER: &str = "chap";
 const POSTGRES_DB: &str = "chap_core";
 
-/// Create compose.yml, compose.marketplace.yml, the model overlays, .env and
-/// the `.chap-devops/` directory in the target directory.
-///
-/// `args.source` names a chap-core checkout to build from instead of a
-/// release to pull; see [`checkout_source`].
 /// Read the DHIS2 version of a local seed dump and settle the tag with it:
 /// the tag of the dump when `--dhis2-tag` is not given, and a refusal for a
 /// tag older than the dump or a dump older than 2.41. The dump is read where
@@ -95,6 +90,11 @@ fn settle_dump_version(
     }))
 }
 
+/// Create compose.yml, compose.marketplace.yml, the model overlays, .env and
+/// the `.chap-devops/` directory in the target directory.
+///
+/// `args.source` names a chap-core checkout to build from instead of a
+/// release to pull; see [`checkout_source`].
 pub fn run(ctx: &Ctx, args: &InitArgs) -> Result<()> {
     create(ctx, args, true)
 }
