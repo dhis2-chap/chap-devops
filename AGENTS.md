@@ -180,6 +180,14 @@ steps and its "It worked when" lines in the same commit.
   secrets are set). Every push to main also publishes the `dev`
   pre-release. Release notes are generated from the commit types by
   `scripts/release-notes.sh`, so commit subjects are the changelog.
+- The `main` ruleset requires the CI checks `test (ubuntu-latest)`,
+  `test (macos-latest)` and `shell scripts` by name. A change that renames a
+  CI job or changes its matrix also changes those required checks, in the
+  same change. Otherwise every pull request waits for a check that never
+  runs, and GitHub shows no error.
+- If a required check is stuck, for example a macOS job with no runner, run
+  it again. A repository admin can merge past it with `gh pr merge --admin`;
+  nobody can push to `main` directly.
 
 ## Reference checkouts
 
