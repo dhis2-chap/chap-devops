@@ -5,7 +5,7 @@ BIN    := bin/chap-devops
 PREFIX ?= $(HOME)/.local
 ARGS   ?=
 .DEFAULT_GOAL := help
-.PHONY: help check lint test build e2e release run install vendor docs docs-reference docs-serve slides release-tag clean
+.PHONY: help check lint test build e2e release run install vendor docs docs-reference docs-serve slides release-pr release-tag clean
 help: ## Show this help
 	@echo "chap-devops - make targets:"
 	@echo ""
@@ -60,9 +60,12 @@ slides: ## Build the slide decks into site/slides/: HTML, 16:9 PDF and the index
 
 docs-serve: ## Serve the documentation at localhost:3000 and open a browser
 	mdbook serve --open
-release-tag: ## Bump the version, run the checks, commit and tag (VERSION=x.y.z, PUSH=1 to push)
-	@test -n "$(VERSION)" || { echo "usage: make release-tag VERSION=x.y.z [PUSH=1]"; exit 2; }
-	CARGO="$(CARGO)" MAKE="$(MAKE)" scripts/release.sh $(VERSION) $(if $(PUSH),--push,)
+release-pr: ## Bump the version, run the checks, and open the release pull request (VERSION=x.y.z)
+	@test -n "$(VERSION)" || { echo "usage: make release-pr VERSION=x.y.z"; exit 2; }
+	CARGO="$(CARGO)" MAKE="$(MAKE)" scripts/release.sh $(VERSION) --pr
+release-tag: ## After the release pull request is merged: tag it and start the release (VERSION=x.y.z)
+	@test -n "$(VERSION)" || { echo "usage: make release-tag VERSION=x.y.z"; exit 2; }
+	scripts/release.sh $(VERSION) --tag
 clean: ## Remove target/ and bin/
 	$(CARGO) clean
 	@rm -rf $(dir $(BIN))

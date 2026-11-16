@@ -171,8 +171,11 @@ steps and its "It worked when" lines in the same commit.
   concern per commit, no attribution lines of any kind.
 - Commits are signed through the 1Password SSH agent; "failed to write commit
   object" means 1Password is locked.
-- `scripts/release.sh X.Y.Z --push` bumps, verifies, tags and pushes; the tag
-  starts the release workflow (seven archives, an unsigned macOS universal
+- `main` is protected: every change goes through a pull request whose checks
+  passed. A release is two steps: `scripts/release.sh X.Y.Z --pr` bumps,
+  verifies and opens the release pull request; after the merge,
+  `scripts/release.sh X.Y.Z --tag` tags the release commit and pushes the tag,
+  which starts the release workflow (seven archives, an unsigned macOS universal
   binary, `SHA256SUMS`; it signs and notarizes macOS only when the Apple
   secrets are set). Every push to main also publishes the `dev`
   pre-release. Release notes are generated from the commit types by
