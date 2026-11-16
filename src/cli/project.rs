@@ -158,6 +158,7 @@ pub struct ComponentsArgs {
 #[derive(Debug, Clone, Subcommand)]
 pub enum ComponentsCmd {
     /// List every component and whether this deployment has it
+    #[command(visible_alias = "ls")]
     List(ComponentsListArgs),
 
     /// Enable a component, or change the settings of an enabled one

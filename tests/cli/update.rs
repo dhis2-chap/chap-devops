@@ -40,7 +40,7 @@ fn the_registry_a_deployment_was_created_with_is_the_one_it_uses() {
     let report = json_of(&mut chap_in(
         &sandbox,
         &dir,
-        &["--json", "registry", "show"],
+        &["--json", "registry", "list"],
     ));
     assert_eq!(report["url"], custom.as_str(), "{report}");
 
@@ -49,13 +49,13 @@ fn the_registry_a_deployment_was_created_with_is_the_one_it_uses() {
     let report = json_of(&mut chap_in(
         &sandbox,
         &dir,
-        &["--json", "--registry-url", other, "registry", "show"],
+        &["--json", "--registry-url", other, "registry", "list"],
     ));
     assert_ne!(report["url"], custom.as_str(), "{report}");
     let report = json_of(&mut chap_in(
         &sandbox,
         &dir,
-        &["--json", "registry", "show", "--registry-url", other],
+        &["--json", "registry", "list", "--registry-url", other],
     ));
     assert_ne!(report["url"], custom.as_str(), "{report}");
 }
@@ -601,7 +601,7 @@ fn a_corrupt_registry_cache_names_registry_update() {
         &dir,
         &[
             "registry",
-            "show",
+            "list",
             "--registry-url",
             &format!("http://127.0.0.1:{port}/registry.yaml"),
         ],

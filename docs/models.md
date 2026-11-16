@@ -23,7 +23,7 @@ Resolution order for every command that needs the catalogue:
 3. a stale cached copy, when the network fails,
 4. the snapshot compiled into the binary.
 
-`chap-devops registry show` prints which of those was used:
+`chap-devops registry list` prints which of those was used:
 
 ```text
   url     https://raw.githubusercontent.com/dhis2-chap/chap-marketplace/main/registry.yaml

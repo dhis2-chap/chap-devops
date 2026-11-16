@@ -453,7 +453,7 @@ Usage: chap-devops registry [OPTIONS] <COMMAND>
 
 Registry options: `--registry-url <URL>`, `--offline`, `--cache-dir <DIR>` (see [chap-devops](#chap-devops)).
 
-Subcommands: [`chap-devops registry update`](#chap-devops-registry-update), [`chap-devops registry show`](#chap-devops-registry-show)
+Subcommands: [`chap-devops registry update`](#chap-devops-registry-update), [`chap-devops registry list`](#chap-devops-registry-list)
 
 ## chap-devops registry update
 
@@ -465,12 +465,12 @@ Usage: chap-devops registry update [OPTIONS]
 
 Registry options: `--registry-url <URL>`, `--offline`, `--cache-dir <DIR>` (see [chap-devops](#chap-devops)).
 
-## chap-devops registry show
+## chap-devops registry list
 
-Show where the registry was loaded from and what it holds.
+List the registry's models and where the registry was loaded from.
 
 ```text
-Usage: chap-devops registry show [OPTIONS]
+Usage: chap-devops registry list [OPTIONS]
 ```
 
 Registry options: `--registry-url <URL>`, `--offline`, `--cache-dir <DIR>` (see [chap-devops](#chap-devops)).

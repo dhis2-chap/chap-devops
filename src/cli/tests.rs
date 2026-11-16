@@ -898,10 +898,11 @@ fn the_browser_is_the_top_level_ui_command() {
 }
 
 #[test]
-fn registry_has_update_and_show() {
+fn registry_has_update_and_list() {
     for (argv, want_update) in [
         (["chap", "registry", "update"], true),
-        (["chap", "registry", "show"], false),
+        (["chap", "registry", "list"], false),
+        (["chap", "registry", "ls"], false),
     ] {
         let cli = Cli::try_parse_from(argv).unwrap();
         let Command::Registry(r) = cli.command else {
@@ -982,4 +983,26 @@ fn hidden_registry_options_still_parse() {
     );
     let cli = parse(&["chap-devops", "auth", "show", "--cache-dir", "cache"]);
     assert_eq!(cli.cache_dir, Some(PathBuf::from("cache")));
+}
+
+/// Every `list` command also runs as `ls`.
+#[test]
+fn every_list_command_answers_to_ls() {
+    for group in [
+        vec!["models"],
+        vec!["models", "configs"],
+        vec!["jobs"],
+        vec!["components"],
+        vec!["registry"],
+    ] {
+        let argv = |verb: &'static str| [vec!["chap"], group.clone(), vec![verb]].concat();
+        let long = Cli::try_parse_from(argv("list"));
+        let short = Cli::try_parse_from(argv("ls"));
+        assert!(long.is_ok(), "{group:?} list: {:?}", long.err());
+        assert_eq!(
+            format!("{:?}", long.unwrap().command),
+            format!("{:?}", short.unwrap().command),
+            "{group:?}"
+        );
+    }
 }

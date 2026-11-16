@@ -6,7 +6,8 @@ chap-devops [--json] [-C DIR] [--registry-url URL] [--offline] [--cache-dir DIR]
 
 The groups below are the shape of the tool. The
 [Command reference](./reference.md) is generated from the `--help` texts and
-lists every command, every flag and every default.
+lists every command, every flag and every default. Every `list` command also
+runs as `ls`, for example `chap-devops models ls`.
 
 ## Running one model
 
@@ -186,7 +187,7 @@ You need no Python, uv or R for it. See [The chap CLI](./chap-cli.md).
 | Command | What it does |
 | --- | --- |
 | `chap-devops registry update` | Fetch the catalogue now and refresh the cache. |
-| `chap-devops registry show` | Where the catalogue came from and what it holds. |
+| `chap-devops registry list` | Where the catalogue came from and what it holds. |
 
 ## Docker
 

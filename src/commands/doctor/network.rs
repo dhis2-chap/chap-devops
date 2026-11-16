@@ -144,7 +144,7 @@ pub fn network_checks(probed: Option<&Probed>) -> Vec<Check> {
             "network marketplace",
             "the model catalogue",
             "the catalogue falls back to the cache and then to the snapshot built into this \
-             binary; `chap-devops registry show` says which one is in use",
+             binary; `chap-devops registry list` says which one is in use",
         ),
         (
             "net-releases",

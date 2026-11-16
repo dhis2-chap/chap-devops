@@ -143,7 +143,7 @@ const REGISTRY_USERS: &[(&str, &[&str])] = &[
     ("ui", REGISTRY_OPTIONS),
     ("registry", REGISTRY_OPTIONS),
     ("registry update", REGISTRY_OPTIONS),
-    ("registry show", REGISTRY_OPTIONS),
+    ("registry list", REGISTRY_OPTIONS),
     ("sync", REGISTRY_OPTIONS),
     ("update", REGISTRY_OPTIONS),
     ("up", REGISTRY_OPTIONS),

@@ -15,6 +15,7 @@ pub struct ModelsArgs {
 #[derive(Debug, Subcommand)]
 pub enum ModelsCmd {
     /// List marketplace models
+    #[command(visible_alias = "ls")]
     List(ModelsListArgs),
 
     /// Search the marketplace by id, name or summary
@@ -152,6 +153,7 @@ pub struct ConfigsArgs {
 #[derive(Debug, Clone, Subcommand)]
 pub enum ConfigsCmd {
     /// List the configured models chap-core has of each enabled model
+    #[command(visible_alias = "ls")]
     List(ConfigsListArgs),
 
     /// Add a configured model of a model to chap-core
@@ -434,14 +436,15 @@ pub enum RegistryCmd {
     /// Fetch the registry from the network and refresh the cache
     Update(RegistryUpdateArgs),
 
-    /// Show where the registry was loaded from and what it holds
-    Show(RegistryShowArgs),
+    /// List the registry's models and where the registry was loaded from
+    #[command(visible_alias = "ls")]
+    List(RegistryListArgs),
 }
 
 /// Fetch the registry from the network and refresh the cache
 #[derive(Debug, Clone, Args)]
 pub struct RegistryUpdateArgs {}
 
-/// Show where the registry was loaded from and what it holds
+/// List the registry's models and where the registry was loaded from
 #[derive(Debug, Clone, Args)]
-pub struct RegistryShowArgs {}
+pub struct RegistryListArgs {}

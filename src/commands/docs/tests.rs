@@ -9,7 +9,7 @@ fn every_command_path_gets_a_section() {
         "## chap-devops models",
         "## chap-devops models enable",
         "## chap-devops models unexpose",
-        "## chap-devops registry show",
+        "## chap-devops registry list",
         "## chap-devops docker run",
         "## chap-devops backup restore",
         "## chap-devops status",

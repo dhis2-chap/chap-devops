@@ -125,6 +125,7 @@ pub struct JobsArgs {
 #[derive(Debug, Clone, Subcommand)]
 pub enum JobsCmd {
     /// List the jobs chap-core knows about, newest first
+    #[command(visible_alias = "ls")]
     List(JobsListArgs),
 
     /// Show everything chap-core records about one job

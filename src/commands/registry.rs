@@ -21,7 +21,7 @@ struct RegistryReport {
     changes: Option<registry::changes::Changes>,
     #[serde(skip)]
     compared_age: Option<std::time::Duration>,
-    /// Marketplace ids, in index order. Only `show` fills this in.
+    /// Marketplace ids, in index order. Only `list` fills this in.
     #[serde(skip_serializing_if = "Option::is_none")]
     ids: Option<Vec<String>>,
 }
@@ -31,7 +31,7 @@ struct RegistryReport {
 pub fn run(ctx: &Ctx, cmd: &RegistryCmd) -> Result<()> {
     match cmd {
         RegistryCmd::Update(_) => update(ctx),
-        RegistryCmd::Show(_) => show(ctx),
+        RegistryCmd::List(_) => list(ctx),
     }
 }
 
@@ -60,7 +60,7 @@ fn updated(report: &RegistryReport, lines: &mut output::Report) {
 
 /// Report the catalogue the rest of the CLI would use right now, without
 /// forcing a refresh.
-fn show(ctx: &Ctx) -> Result<()> {
+fn list(ctx: &Ctx) -> Result<()> {
     let registry = registry::load(&ctx.registry)?;
     let report = report(ctx, &registry, true);
     // The fields and the ids are the table this command shows; the closing
@@ -90,7 +90,7 @@ fn show(ctx: &Ctx) -> Result<()> {
     ctx.out.report(&report, |lines| shown(&report, lines))
 }
 
-/// The lines `registry show` ends on: what the catalogue holds and where it
+/// The lines `registry list` ends on: what the catalogue holds and where it
 /// came from.
 fn shown(report: &RegistryReport, lines: &mut output::Report) {
     let source = report.provenance.describe();
