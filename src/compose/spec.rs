@@ -404,6 +404,51 @@ impl OcsConfigRequest {
     }
 }
 
+/// `--ocs-bbox`: four numbers in degrees, `xmin,ymin,xmax,ymax`, each
+/// minimum below its maximum. The value comes back as the file writes it.
+pub fn parse_bbox(text: &str) -> std::result::Result<String, String> {
+    let numbers: Vec<f64> = text
+        .split(',')
+        .map(|part| part.trim().parse::<f64>())
+        .collect::<std::result::Result<_, _>>()
+        .map_err(|_| {
+            format!("`{text}` is not four numbers; give xmin,ymin,xmax,ymax in degrees")
+        })?;
+    let [xmin, ymin, xmax, ymax] = numbers[..] else {
+        return Err(format!(
+            "`{text}` is not four numbers; give xmin,ymin,xmax,ymax in degrees"
+        ));
+    };
+    let inside = |v: f64, limit: f64| v.is_finite() && v.abs() <= limit;
+    if !(inside(xmin, 180.0) && inside(xmax, 180.0) && inside(ymin, 90.0) && inside(ymax, 90.0)) {
+        return Err(format!(
+            "`{text}` is outside -180..180 (x) or -90..90 (y) degrees"
+        ));
+    }
+    if xmin >= xmax || ymin >= ymax {
+        return Err(format!(
+            "`{text}` has a minimum that is not below its maximum; the order is \
+             xmin,ymin,xmax,ymax"
+        ));
+    }
+    Ok(text
+        .split(',')
+        .map(str::trim)
+        .collect::<Vec<_>>()
+        .join(", "))
+}
+
+/// `--ocs-country`: an ISO 3166-1 alpha-3 code, three letters.
+pub fn parse_country_code(text: &str) -> std::result::Result<String, String> {
+    let code = text.trim();
+    if code.len() == 3 && code.chars().all(|c| c.is_ascii_alphabetic()) {
+        return Ok(code.to_ascii_uppercase());
+    }
+    Err(format!(
+        "`{text}` is not an ISO 3166-1 alpha-3 code; give three letters, such as LAO"
+    ))
+}
+
 /// `Sierra Leone Climate Service` -> `sierra-leone-climate-service`.
 fn slug(text: &str) -> String {
     let mut out = String::with_capacity(text.len());

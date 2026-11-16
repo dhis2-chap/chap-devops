@@ -128,7 +128,7 @@ pub struct OcsConfigArgs {
     pub ocs_name: Option<String>,
 
     /// ISO 3166-1 alpha-3 country code for the OCS extent
-    #[arg(long = "ocs-country", value_name = "CODE")]
+    #[arg(long = "ocs-country", value_name = "CODE", value_parser = crate::compose::spec::parse_country_code)]
     pub ocs_country: Option<String>,
 
     // `allow_hyphen_values`: a western or southern extent starts with a minus
@@ -138,7 +138,12 @@ pub struct OcsConfigArgs {
     // anyone types first. `allow_negative_numbers` is the narrower version of
     // the same setting and does not help: the value is a list, not a number.
     /// OCS extent as xmin,ymin,xmax,ymax in degrees
-    #[arg(long = "ocs-bbox", value_name = "BBOX", allow_hyphen_values = true)]
+    #[arg(
+        long = "ocs-bbox",
+        value_name = "BBOX",
+        allow_hyphen_values = true,
+        value_parser = crate::compose::spec::parse_bbox
+    )]
     pub ocs_bbox: Option<String>,
 }
 

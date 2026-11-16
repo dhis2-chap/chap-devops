@@ -220,3 +220,30 @@ fn an_overlay_value_that_could_add_yaml_keys_is_refused() {
     spec.image_tag = "@sha256:short".to_string();
     assert!(check_overlay(&spec).is_err());
 }
+
+#[test]
+fn an_ocs_bbox_is_four_numbers_in_order() {
+    assert_eq!(
+        parse_bbox("-13.5,6.9, -10.1,10.0").unwrap(),
+        "-13.5, 6.9, -10.1, 10.0"
+    );
+    for (bad, why) in [
+        ("1,2,3", "not four numbers"),
+        ("a,b,c,d", "not four numbers"),
+        ("1,2,3,4,5", "not four numbers"),
+        ("10,2,3,4", "not below its maximum"),
+        ("1,2,200,4", "outside"),
+        ("1,2,NaN,4", "outside"),
+    ] {
+        let err = parse_bbox(bad).unwrap_err();
+        assert!(err.contains(why), "{bad}: {err}");
+    }
+}
+
+#[test]
+fn an_ocs_country_is_three_letters() {
+    assert_eq!(parse_country_code("lao").unwrap(), "LAO");
+    for bad in ["LA", "LAOS", "L4O", "LA:"] {
+        assert!(parse_country_code(bad).is_err(), "{bad}");
+    }
+}

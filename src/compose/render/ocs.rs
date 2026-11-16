@@ -122,10 +122,18 @@ pub fn render_ocs_config(spec: &OcsConfigSpec) -> String {
         &[
             ("EXAMPLE_NOTE", &note),
             ("ID", &spec.id),
-            ("NAME", &spec.name),
-            ("EXTENT_NAME", &spec.extent_name),
+            ("NAME", &yaml_scalar(&spec.name)),
+            ("EXTENT_NAME", &yaml_scalar(&spec.extent_name)),
             ("BBOX", &spec.bbox),
             ("COUNTRY_CODE", &spec.country_code),
         ],
     )
+}
+
+/// `text` as a YAML scalar: as it is when YAML reads it back unchanged, and
+/// quoted when it has a `:`, a `#` or another character YAML gives a meaning.
+fn yaml_scalar(text: &str) -> String {
+    serde_yaml_ng::to_string(text)
+        .map(|yaml| yaml.trim_end().to_string())
+        .unwrap_or_else(|_| format!("'{}'", text.replace('\'', "''")))
 }

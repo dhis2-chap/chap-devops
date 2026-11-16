@@ -1280,3 +1280,21 @@ fn components_enable_dhis2_refuses_a_tag_older_than_chap_devops_supports() {
             "--dhis2-tag 2.39 is older than DHIS2 2.41",
         ));
 }
+
+/// A bbox or a country code that OCS cannot use stops init before it writes
+/// anything, with the reason.
+#[test]
+fn init_refuses_an_ocs_bbox_or_country_it_cannot_use() {
+    let sandbox = Sandbox::new();
+    sandbox
+        .init(&["--with", "ocs", "--ocs-bbox", "1,2,3"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("is not four numbers"));
+    sandbox
+        .init(&["--with", "ocs", "--ocs-country", "Laos"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("not an ISO 3166-1 alpha-3 code"));
+    assert!(!sandbox.project().exists());
+}

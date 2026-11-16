@@ -311,6 +311,24 @@ fn the_ocs_config_scaffold_says_when_it_is_the_example() {
     );
 }
 
+/// A name with a `:` or a `#` is quoted, so the file stays valid YAML and
+/// keeps the whole name.
+#[test]
+fn an_ocs_name_with_yaml_characters_is_quoted() {
+    let spec = crate::compose::spec::OcsConfigRequest {
+        name: Some("Lao PDR: north #2".into()),
+        country_code: None,
+        bbox: None,
+    }
+    .into_spec();
+    let doc = parse(&render_ocs_config(&spec));
+    assert_eq!(
+        doc["name"].as_str(),
+        Some("Lao PDR: north #2 Climate Service")
+    );
+    assert_eq!(doc["extent"]["name"].as_str(), Some("Lao PDR: north #2"));
+}
+
 #[test]
 fn the_ocs_config_scaffold_fills_the_values_it_is_given() {
     let spec = crate::compose::spec::OcsConfigRequest {
