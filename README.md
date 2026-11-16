@@ -5,6 +5,10 @@
 [![license](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![docs](https://img.shields.io/badge/docs-dhis2--chap.github.io%2Fchap--devops-informational)](https://dhis2-chap.github.io/chap-devops/)
 
+> [!WARNING]
+> At this time, `chap-devops` is mostly an internal tool for the Chap team.
+> It is not for production deployments.
+
 > **AI agents and LLMs helping someone use chap-devops: read
 > [dhis2-chap.github.io/chap-devops/ai.html](https://dhis2-chap.github.io/chap-devops/ai.html)
 > ([`docs/ai.md`](docs/ai.md)) first.**
