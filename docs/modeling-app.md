@@ -20,9 +20,9 @@ It also makes the configured models that the Modeling App lists. It took about
 40 seconds. Its last line is
 `` the Modeling App can reach Chap; open DHIS2 with `chap-devops open dhis2` ``.
 
-Tested on 2026-10-19 with chap-devops v0.110.0, Modeling App 7.3.0, DHIS2
-2.42.6 with the Laos demo database, chap-core v2.5.0 and Simple Multistep
-(chapkit) 0.1.2. Other versions of the Modeling
+Tested on 2026-11-24 with chap-devops v0.125.0, Modeling App 7.6.1, DHIS2
+2.42.7.1 with the Laos demo database, chap-core v2.8.0 and Simple Multistep
+(chapkit) 0.1.5. Other versions of the Modeling
 App may name a button differently; the steps stay the same. `chap-devops dhis2 show`
 says which Modeling App version a deployment has.
 
@@ -45,7 +45,8 @@ weekly cases up to months when an evaluation is monthly.
 Log in to DHIS2 with `admin` / `district`, open the app menu (the grid of
 squares at the top right), type `Modeling` in its search box and pick
 **Modeling**: the menu shows only a few top apps until you search. The
-dashboard is empty until the first evaluation.
+dashboard lists the latest evaluations and prediction setups. It is empty
+until the first evaluation; the picture is from the end of this walkthrough.
 
 ![The Modeling App dashboard](images/modeling-app/01-dashboard.png)
 
@@ -69,7 +70,7 @@ tab **Use saved dataset**, which needs a dataset saved before. Choose the tab
 | Model | **Select model**, click **Simple Multistep Model (chapkit) [Monthly climate]** in the list, then **Use this model** |
 
 The list cuts long names short, for example `Simple Multistep Model
-(chapkit) [Mont…`. The panel on the right shows the full name of the entry you
+(chapkit) [Monthl…`. The panel on the right shows the full name of the entry you
 clicked, and **Use this model** picks that entry.
 
 Leave the **Backtest parameters** as they are: 3 forecast periods, 7 splits, a
@@ -96,10 +97,10 @@ configs add`. See [Adding](./models.md#adding).
 Under each name, the list shows the author of the model. The list also holds
 models that chap-core ships configured on its own and runs inside its worker,
 such as **CHAP-EWARS Model** and **Monthly CHAP-EWARS model**. Some of them
-have the status *Deprecated*. From chap-core v2.5.0, it also has the three
-built-in baselines, **Persistence**, **Global median** and **Seasonal
-median**. chap-core runs them beside each evaluation, so you can compare a
-model with them. None of these are models that `chap-devops` started. The two
+have the status *Deprecated*. From chap-core v2.5.0, it also has the
+built-in baselines, such as **Persistence**, **Global median** and **Seasonal
+median**; chap-core v2.8.0 also runs **Seasonal shift persistence**. chap-core
+runs them beside each evaluation, so you can compare a model with them. None of these are models that `chap-devops` started. The two
 `(chapkit)` entries have the status *Limited*.
 
 ![Organisation units: Lao PDR at the Province level](images/modeling-app/03-org-units.png)
@@ -129,13 +130,16 @@ anything, and should say *All 18 locations can be successfully imported*.
 ![The dry run: 18 valid locations](images/modeling-app/05-dry-run.png)
 
 Close it and choose **Start import**. The app moves to **Jobs**, where the
-evaluation runs. With Simple Multistep it took about 24 seconds on an Apple
+evaluation runs. With Simple Multistep it took about 21 seconds on an Apple
 Silicon Mac (M2 Max), where the model runs under emulation. `chap-devops jobs` in the
-terminal shows the same job; its type is `create_backtest_from_data`.
+terminal shows the same work as a `create_dataset` job, then a `create_backtest`
+job, and one `run_baseline` job for each baseline.
 
 ## 4. Read the result
 
-Back in **Evaluate**, **Overview**, open the evaluation. The chart shows the
+Back in **Evaluate**, **Overview**, open the evaluation. The app names it
+after the name you gave and the model:
+`Multistep Laos dengue/chapkit-simple-multistep-model:monthly_climate`. The chart shows the
 real cases (orange) and, for the period picked under **Split period**, the
 model's forecast with its 50% and 80% prediction intervals. The list on the left
 switches between all of Laos and one province.
@@ -143,9 +147,11 @@ switches between all of Laos and one province.
 ![An evaluation result](images/modeling-app/06-evaluation.png)
 
 **Evaluation metrics**, lower on the right, scores the forecasts over every
-split and province: lower is better for *CRPS (log1p)*, *MAE* and *RMSE*, and
-*Coverage 10-90* should be close to its target of 0.8 (80% of the real values
-inside the 80% interval). **Show all 13 metrics** lists the others.
+split and province: lower is better for *CRPS (log1p)*, *Winkler 25-75
+(log1p)*, *MAE* and *RMSE*, and *Coverage 10-90* should be close to its
+target of 0.8 (80% of the real values inside the 80% interval). **Compare
+with** picks a baseline, and each metric shows how much better or worse it is
+than that baseline. **Show all 13 metrics** lists the others.
 
 ![Evaluation metrics](images/modeling-app/07-metrics.png)
 
@@ -154,15 +160,17 @@ To compare two models, run a second evaluation on the same data:
 1. On the first evaluation, choose **Create new based on...**. It asks which
    settings to copy; leave them all ticked and choose **Create**.
 2. The copy has the name, provinces, model, data mapping and periods of the
-   first, and its name ends in `(Copy)`.
+   first, and its name ends in `(Copy)`. In Modeling App 7.6.1 the `/` in
+   the copied name shows as `&#x2F;`; see `BUGS.md`.
 3. On the copy, **Select model** picks another model, for example
    **Simple Multistep Model (chapkit) [Monthly selfhistory]**. This clears the
-   data mapping (seen with Modeling App 7.3.2), and **Start import** does
+   data mapping (seen with Modeling App 7.6.1), and **Start import** does
    nothing until it is mapped again.
 4. Choose **Configure sources**, pick `Dengue Cases (Any) - Weekly` for
    **Disease cases**, and choose **Save**. Then choose **Start import**.
 5. In **Evaluate**, **Compare**, pick the first evaluation in the left box and
-   the copy in the box beside it.
+   the copy in the box beside it. That box also lists the baselines, such as
+   *Persistence (baseline)*.
 
 The evaluation of *Monthly selfhistory* took about 20 seconds. The comparison shows the two side by side, province
 by province; the box **Location(s)** starts with ten provinces selected. More
@@ -175,8 +183,8 @@ marketplace models come with `chap-devops models enable ID` and `chap-devops up`
 
 On the evaluation, **Create prediction setup** keeps the model, the data
 mapping and the provinces under a name: type one in **Setup name**, leave
-**Alert policy** at *No alert policy* and **Set default import mapping** off,
-and **Save**. The app then opens the setup.
+**Signal policy** at *No signal policy* and **Set default import mapping**
+off, and **Save**. The app then opens the setup.
 Once the evaluation has a setup, the same button says **Predict**.
 
 ![Creating a prediction setup](images/modeling-app/09-prediction-setup.png)
@@ -203,11 +211,8 @@ first; open it, and it lists the elements of the demo database under
 **Suggested**. Pick `CHAP Dengue Cases (Any) - Weekly Quantile High` to
 `... Quantile Low`.
 
-Leave **Use alert outputs** off: it is off for a setup with no alert policy
-(seen with Modeling App 7.3.2). If you turn it on, the page also needs an
-**Outbreak indicator**: **Clear and import** does nothing until it has one.
-Pick `CHAP Dengue Cases (Any) - Weekly Outbreak Alert`; type `Outbreak` to find
-it.
+Leave **Use signal outputs** off. It imports 1 when an outbreak is likely and
+0 otherwise, and a setup with no signal policy raises no signals.
 **Clear and import** asks once more before it writes, then the app goes back
 to the setup and says *Prediction data posted successfully*. DHIS2 2.42.7
 accepted the monthly values into those elements, but their data set is weekly. For a monthly forecast, create monthly data
@@ -220,7 +225,7 @@ elements in DHIS2's Maintenance app and pick those.
 | Typing `Modeling` in the app menu finds nothing | `chap-devops dhis2 connect` has not run, or failed; run it and read its last line. |
 | The model list does not have the model `chap-devops` enabled | `chap-devops status`: the model must be `registered`. If it says `registered, not configured`, run `chap-devops models configs sync`. Otherwise the line under the table says why. |
 | `Oops! Sorry, an unexpected error`, or `Unnamed evaluation` rows, after the deployment was recreated | The browser holds a login to the DHIS2 that was removed: open DHIS2 again and log in. See [Troubleshooting](./troubleshooting.md#oops-sorry-an-unexpected-error-or-unnamed-evaluation-in-the-modeling-app). |
-| **Clear and import** does nothing | Scroll down: with **Use alert outputs** on, the page says `Outbreak indicator is required`. Pick `CHAP Dengue Cases (Any) - Weekly Outbreak Alert`, or turn **Use alert outputs** off. |
+| **Clear and import** does nothing | Scroll down: the page names each quantile box that is still empty, for example `Quantile high is required`. Fill all five. |
 | A job in **Jobs** says it failed | `chap-devops jobs`, then `chap-devops jobs logs ID` with the id it prints: the model's own error is at the end. |
 
 More on connecting DHIS2 and Chap: [DHIS2](./dhis2.md). The Modeling App's own
