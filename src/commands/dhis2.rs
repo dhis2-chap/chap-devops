@@ -187,6 +187,10 @@ pub struct AppReport {
     /// The version that was there before, for one that moved.
     pub previous: Option<String>,
     pub reason: Option<String>,
+    /// The unstable Modeling App build that is installed now, which the
+    /// state records. `None` for an App Hub version.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub build: Option<crate::components::ModelingAppBuild>,
 }
 
 /// Every app this command touched.
@@ -271,6 +275,11 @@ pub struct ShownApp {
     pub installed: bool,
     /// The version it has, empty when it does not have it.
     pub version: String,
+    /// The unstable build chap-devops recorded when it installed it, such as
+    /// `unstable 0c30f8d`. DHIS2 lists that build under the version of the
+    /// release before it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub build: Option<String>,
 }
 
 /// What `show` found.

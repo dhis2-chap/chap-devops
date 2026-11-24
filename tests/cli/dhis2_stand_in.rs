@@ -180,7 +180,32 @@ pub(crate) struct Dhis2State {
     /// chap-core's API token: when set, anything proxied past `/health`
     /// answers 401 unless the route's `auth` sends `Bearer` and this token.
     pub(crate) chap_token: Option<String>,
+    /// The port the stand-in listens on, for the download URL GitHub lists.
+    pub(crate) port: u16,
+    /// Which of [`STAND_IN_BUILDS`] the GitHub `latest` release of
+    /// chap-frontend holds; `None` is no such release.
+    pub(crate) unstable: Option<usize>,
+    /// A digest for the release to list in place of the right one.
+    pub(crate) unstable_digest: Option<&'static str>,
+    /// The body of every `POST /api/apps`, the upload of an unstable build.
+    pub(crate) uploads: Vec<String>,
 }
+
+/// The unstable builds the GitHub stand-in can serve: the commit, the zip and
+/// its digest.
+#[cfg(unix)]
+pub(crate) const STAND_IN_BUILDS: &[(&str, &str, &str)] = &[
+    (
+        "0c30f8de28515c933aeb5916a3d94b8478f843de",
+        "PK fake modeling app build one",
+        "sha256:46f3cb8716812ae404bdb97b947bbda52dc0afcb29a50597a00a6eb1fa078d61",
+    ),
+    (
+        "9a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+        "PK fake modeling app build two",
+        "sha256:63eed785e8f5c028c84b033cc519f6b861f75f614510d228aa33f711365c44d4",
+    ),
+];
 
 /// A stand-in for one DHIS2 instance and for the App Hub beside it.
 #[cfg(unix)]
@@ -201,7 +226,7 @@ impl Dhis2StandIn {
 
         let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).expect("a free port");
         let port = listener.local_addr().expect("a local address").port();
-        let state = std::sync::Arc::new(std::sync::Mutex::new(state));
+        let state = std::sync::Arc::new(std::sync::Mutex::new(Dhis2State { port, ..state }));
         let shared = std::sync::Arc::clone(&state);
         std::thread::spawn(move || {
             for stream in listener.incoming() {
@@ -389,6 +414,41 @@ pub(crate) fn dhis2_answer(
             None => (404, "{}".to_string()),
         };
     }
+    // GitHub, for the unstable Modeling App: never authenticated either.
+    if path == "/github/repos/dhis2-chap/chap-frontend/releases/tags/latest" {
+        let Some(index) = state.unstable else {
+            return (404, serde_json::json!({"message": "Not Found"}).to_string());
+        };
+        let (commit, _, digest) = STAND_IN_BUILDS[index];
+        return (
+            200,
+            serde_json::json!({
+                "tag_name": "latest",
+                "prerelease": true,
+                // What the real release keeps: the commit it was created for,
+                // not the one the tag points at now.
+                "target_commitish": "1111111111111111111111111111111111111111",
+                "body": format!("Unstable build of {commit}. Use a versioned release for production."),
+                "assets": [{
+                    "name": "modeling-app-latest.zip",
+                    "browser_download_url": format!("http://127.0.0.1:{}/github/download/{index}", state.port),
+                    "digest": state.unstable_digest.unwrap_or(digest),
+                    "updated_at": "2026-11-19T10:26:50Z",
+                }],
+            })
+            .to_string(),
+        );
+    }
+    if let Some(index) = path.strip_prefix("/github/download/") {
+        return match index
+            .parse::<usize>()
+            .ok()
+            .and_then(|i| STAND_IN_BUILDS.get(i))
+        {
+            Some((_, zip, _)) => (200, zip.to_string()),
+            None => (404, "{}".to_string()),
+        };
+    }
     if state.unauthorized {
         return (
             401,
@@ -411,6 +471,17 @@ pub(crate) fn dhis2_answer(
             info["lastAnalyticsTableSuccess"] = serde_json::json!("2026-09-25T10:01:00.000");
         }
         return (200, info.to_string());
+    }
+    if method == "POST" && path == "/api/apps" {
+        // An unstable build carries the version of the release before it.
+        state.uploads.push(body.to_string());
+        state
+            .apps
+            .retain(|app| app["name"] != serde_json::json!("Modeling"));
+        state
+            .apps
+            .push(serde_json::json!({"name": "Modeling", "version": "7.1.0"}));
+        return (201, "{}".to_string());
     }
     if path == "/api/apps" {
         return (
@@ -638,6 +709,10 @@ pub(crate) fn dhis2_chap(
             cmd.env(
                 "CHAP_DEVOPS_APP_HUB",
                 format!("http://127.0.0.1:{port}/apphub"),
+            )
+            .env(
+                "CHAP_DEVOPS_GITHUB_API",
+                format!("http://127.0.0.1:{port}/github"),
             );
         }
         None => {

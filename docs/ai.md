@@ -743,6 +743,9 @@ chap-devops open dhis2
 It worked when `chap-devops dhis2 connect` finishes without `error:` and the login
 `admin` / `district` works.
 
+If they also want the latest Modeling App from chap-frontend's `main`, add
+`--modeling-app unstable` to the `chap-devops init` line.
+
 More: [A DHIS2 from chap-devops, with a chap-core elsewhere](./use-cases/dhis2-with-chap-core-elsewhere.md).
 
 ### 19. Two of these at the same time

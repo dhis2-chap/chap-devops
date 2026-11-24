@@ -1187,7 +1187,8 @@ chap-devops dhis2 apps
 resolves each app's newest version that this DHIS2 can run from
 `https://apps.dhis2.org/api/v1/apps/{id}`, then `POST /api/appHub/{versionId}` -
 and **DHIS2 downloads the app itself.** Nothing is fetched here and no multipart
-upload is built.
+upload is built. The one exception is the unstable Modeling App; see
+[Which Modeling App build](#which-modeling-app-build).
 
 | App | What it is for |
 | --- | --- |
@@ -1223,6 +1224,55 @@ missing: the Climate App is not installed
 
 Installed apps live in `/opt/dhis2`, which is the `dhis2_home` volume, so they
 survive a recreate and [a backup](#backing-it-up) carries them.
+
+### Which Modeling App build
+
+`--modeling-app` chooses the Modeling App build. It takes one of three values:
+
+| Value | What is installed | From |
+| --- | --- | --- |
+| `stable` (default) | the newest version this DHIS2 can run | the App Hub |
+| a version, such as `7.5.0` | that version | the App Hub |
+| `unstable` | the latest build of chap-frontend's `main` branch | GitHub |
+
+Give it to `chap-devops init`, or to `chap-devops dhis2 apps` and
+`chap-devops dhis2 connect`:
+
+```sh
+chap-devops init lab --with dhis2 --modeling-app unstable
+chap-devops dhis2 apps --modeling-app 7.5.0
+```
+
+The choice is written to `modeling_app:` in `.chap-devops/components.yaml`,
+in the block of the DHIS2 that `chap-devops dhis2` uses, and later runs follow
+it. `stable` is not written. A version that cannot be installed is not
+written either: the App Hub must have it, and this DHIS2 must be able to run
+it. The Climate App is always the stable version.
+
+**The unstable build is not on the App Hub.** chap-frontend publishes it as
+the GitHub pre-release
+[`latest`](https://github.com/dhis2-chap/chap-frontend/releases/tag/latest),
+and builds it again on every push to `main`. DHIS2 cannot fetch it, so
+chap-devops does three things:
+
+1. It downloads `modeling-app-latest.zip` from that release.
+2. It checks the zip against the `sha256` digest that GitHub lists.
+3. It uploads the zip to `POST /api/apps`.
+
+**DHIS2 cannot say which build it has.** The unstable build has the version
+of the release before it: the build of 19 November 2026 says `7.6.1`, the same
+as the release. So chap-devops records the build it installed as
+`modeling_app_build:`, with the commit and the digest. A later run uploads
+again only when `main` has a new build, or when the app is gone from DHIS2.
+`chap-devops dhis2 show` names the recorded build after the version:
+
+```text
+apps       Modeling App 7.6.1 (unstable 0c30f8d), DHIS2 Climate App 1.16.2
+```
+
+When you go back to `stable` or to a version, the App Hub version replaces the
+unstable build, though the version number can be the same, and the record is
+removed.
 
 This is the one step that cannot work `--offline`, and it needs the network twice:
 here for the version id, and from DHIS2 for the app. Under `--offline` it is

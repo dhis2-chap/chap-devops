@@ -640,6 +640,7 @@ fn the_dhis2_token_is_named_and_an_external_dhis2_gets_no_default() {
         url: "https://dhis2.example.org".into(),
         chap_url: "https://chap.example.org".into(),
         connected_at: None,
+        ..Default::default()
     });
     sync(&mut project, &registry, false).unwrap();
     let body = std::fs::read_to_string(&env).unwrap();

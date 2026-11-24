@@ -71,7 +71,15 @@ pub fn connect(ctx: &Ctx, args: &Dhis2ConnectArgs) -> Result<()> {
             skipped.push(dhis2::OFFLINE_APPS.to_string());
             None
         }
-        false => Some(install_apps(ctx, &session)),
+        false => {
+            let which = args
+                .modeling_app
+                .clone()
+                .unwrap_or_else(|| session.project.state.components.modeling_app().clone());
+            let apps = install_apps(ctx, &session, &which);
+            record_modeling_app(&mut session.project, args.modeling_app.as_ref(), &apps)?;
+            Some(apps)
+        }
     };
     let failed = apps.as_ref().and_then(failed_apps);
 

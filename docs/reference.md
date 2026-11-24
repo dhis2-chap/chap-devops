@@ -62,6 +62,7 @@ Usage: chap-devops init [OPTIONS] [DIR]
 | `--dhis2-port <PORT\|none>` | Host port to publish DHIS2 on, or none to keep it internal. |
 | `--dhis2-seed <SPEC>` | Dump to seed the DHIS2 database from: default, none, URL or path. |
 | `--dhis2-seed-password <PW>` | Give every DHIS2 user this password (default: district). |
+| `--modeling-app <WHICH>` | Modeling App to install: stable, unstable, or a version such as 7.5.0. |
 | `--dhis2-tag <TAG>` | DHIS2 version to run: an image tag such as 2.41, 2.42 or 2.43.1. |
 | `--dhis2-image <REPO>` | DHIS2 image repository, e.g. dhis2/core-dev for unreleased versions. |
 | `--ocs-read-only` | Refuse ingestion over HTTP on the new OCS instance. |
@@ -624,7 +625,7 @@ Usage: chap-devops dhis2 analytics [OPTIONS]
 
 ## chap-devops dhis2 apps
 
-Install the Modeling and Climate apps from the App Hub.
+Install the Modeling App and the Climate App in DHIS2.
 
 ```text
 Usage: chap-devops dhis2 apps [OPTIONS]
@@ -634,6 +635,7 @@ Usage: chap-devops dhis2 apps [OPTIONS]
 | --- | --- |
 | `--user <NAME>` | DHIS2 user to authenticate as, with a password rather than a token. |
 | `--wait <SECONDS>` | Seconds to wait for DHIS2's API; 1200 local, 60 external by default. |
+| `--modeling-app <WHICH>` | Modeling App to install: stable, unstable, or a version such as 7.5.0. |
 
 Registry options: `--offline` (see [chap-devops](#chap-devops)).
 
@@ -649,6 +651,7 @@ Usage: chap-devops dhis2 connect [OPTIONS]
 | --- | --- |
 | `--user <NAME>` | DHIS2 user to authenticate as, with a password rather than a token. |
 | `--wait <SECONDS>` | Seconds to wait for DHIS2's API; 1200 local, 60 external by default. |
+| `--modeling-app <WHICH>` | Modeling App to install: stable, unstable, or a version such as 7.5.0. |
 | `--timeout <SECONDS>` | Seconds to wait for the analytics run to finish. Default: `3600`. |
 | `--no-wait` | Start the run and return without a wait for it to finish. |
 

@@ -31,14 +31,15 @@ mod apps;
 mod client;
 mod credentials;
 mod route;
+mod unstable;
 
 pub use analytics::{
     AnalyticsEvidence, Progress, analytics_evidence, finished_here, job_id_of, jobs_path,
     queued_job, queued_jobs_query, recorded_success_of, running_job, shown_success,
 };
 pub use apps::{
-    InstalledApp, OFFLINE_APPS, app_hub_base, fetch_hub_app, install_path, installed_app,
-    pick_version,
+    InstalledApp, OFFLINE_APPS, app_hub_base, exact_version, fetch_hub_app, install_path,
+    installed_app, pick_version,
 };
 pub use client::{Dhis2, Ready, said};
 pub use credentials::{
@@ -49,6 +50,7 @@ pub use route::{
     RouteAction, allowlist_hint, external_route_target, is_allowlist_refusal, route_action,
     route_in, route_origin, route_payload, route_run_path, route_target, routes_query,
 };
+pub use unstable::{FRONTEND_REPO, UNSTABLE_ASSET, app_upload, download_unstable, fetch_unstable};
 
 use std::time::Duration;
 
@@ -208,10 +210,14 @@ pub const DEFAULT_USERNAME: &str = "admin";
 /// production server is a failed login in its audit log and nothing else.
 pub const DEFAULT_PASSWORD: &str = "district";
 
+/// The App Hub id of the Modeling App, the one app whose build
+/// `--modeling-app` chooses.
+pub const MODELING_APP_ID: &str = "a29851f9-82a7-4ecd-8b2c-58e0f220bc75";
+
 /// The two apps a Chap deployment wants, in the order they are installed.
 pub const HUB_APPS: &[HubAppRef] = &[
     HubAppRef {
-        id: "a29851f9-82a7-4ecd-8b2c-58e0f220bc75",
+        id: MODELING_APP_ID,
         name: "Modeling App",
         label: "the Modeling App",
         what: "the Chap user interface inside DHIS2",

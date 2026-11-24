@@ -8,6 +8,7 @@ use tempfile::TempDir;
 
 mod answers;
 mod external;
+mod modeling_app;
 
 /// The `dhis2` row, out of a `chap-devops status --json` document.
 #[cfg(unix)]

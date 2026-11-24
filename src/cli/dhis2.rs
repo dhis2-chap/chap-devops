@@ -21,7 +21,7 @@ pub enum Dhis2Sub {
     /// Generate DHIS2's analytics tables and wait for them
     Analytics(Dhis2AnalyticsArgs),
 
-    /// Install the Modeling and Climate apps from the App Hub
+    /// Install the Modeling App and the Climate App in DHIS2
     Apps(Dhis2AppsArgs),
 
     /// The route, the apps, then analytics; the route only on an external DHIS2
@@ -77,11 +77,19 @@ pub struct Dhis2AnalyticsArgs {
     pub no_wait: bool,
 }
 
-/// Install the Modeling and Climate apps from the App Hub
+/// Install the Modeling App and the Climate App in DHIS2
 #[derive(Debug, Clone, Args)]
 pub struct Dhis2AppsArgs {
     #[command(flatten)]
     pub common: Dhis2CommonArgs,
+
+    /// Modeling App to install: stable, unstable, or a version such as 7.5.0
+    #[arg(
+        long = "modeling-app",
+        value_name = "WHICH",
+        value_parser = crate::components::ModelingApp::parse
+    )]
+    pub modeling_app: Option<crate::components::ModelingApp>,
 }
 
 /// The route, the apps, then analytics; the route only on an external DHIS2
@@ -89,6 +97,14 @@ pub struct Dhis2AppsArgs {
 pub struct Dhis2ConnectArgs {
     #[command(flatten)]
     pub common: Dhis2CommonArgs,
+
+    /// Modeling App to install: stable, unstable, or a version such as 7.5.0
+    #[arg(
+        long = "modeling-app",
+        value_name = "WHICH",
+        value_parser = crate::components::ModelingApp::parse
+    )]
+    pub modeling_app: Option<crate::components::ModelingApp>,
 
     /// Seconds to wait for the analytics run to finish
     #[arg(long, value_name = "SECONDS", default_value_t = crate::dhis2::DEFAULT_ANALYTICS_TIMEOUT)]

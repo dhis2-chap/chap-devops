@@ -1311,3 +1311,92 @@ fn the_seed_password_comes_from_the_env_file() {
     // Not seeded with a password: the line is not read.
     assert!(credentials_for(dir.path(), Some("em"), true, false).is_err());
 }
+
+/// The commit comes from the release notes, because chap-frontend moves the
+/// tag but not `target_commitish`; the digest identifies the build.
+#[test]
+fn the_unstable_release_names_its_commit_and_digest() {
+    let body = r#"{"target_commitish":"1111111111111111111111111111111111111111",
+        "body":"Unstable build of 0c30f8de28515c933aeb5916a3d94b8478f843de. Use a versioned release for production.",
+        "assets":[{"name":"modeling-app-latest.zip",
+            "browser_download_url":"https://github.com/dhis2-chap/chap-frontend/releases/download/latest/modeling-app-latest.zip",
+            "digest":"sha256:d96f","updated_at":"2026-11-19T10:26:50Z"}]}"#;
+    let unstable = super::unstable::parse_unstable_release(body).unwrap();
+    assert_eq!(
+        unstable.build.commit,
+        "0c30f8de28515c933aeb5916a3d94b8478f843de"
+    );
+    assert_eq!(unstable.build.digest, "sha256:d96f");
+    assert!(unstable.url.ends_with("/latest/modeling-app-latest.zip"));
+
+    // No digest: the upload time identifies it. No notes: the commit the
+    // release names.
+    let bare = r#"{"target_commitish":"abcdef1234567","assets":[{"name":"modeling-app-latest.zip",
+        "browser_download_url":"u","updated_at":"2026-11-20T00:00:00Z"}]}"#;
+    let unstable = super::unstable::parse_unstable_release(bare).unwrap();
+    assert_eq!(unstable.build.commit, "abcdef1234567");
+    assert_eq!(unstable.build.digest, "uploaded:2026-11-20T00:00:00Z");
+
+    let err = super::unstable::parse_unstable_release(r#"{"assets":[]}"#).unwrap_err();
+    assert!(
+        err.to_string().contains("has no modeling-app-latest.zip"),
+        "{err}"
+    );
+}
+
+#[test]
+fn the_unstable_zip_must_have_the_digest_github_lists() {
+    let abc = "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+    super::unstable::check_digest(b"abc", abc).unwrap();
+    super::unstable::check_digest(b"abc", &abc.to_uppercase().replace("SHA256", "sha256")).unwrap();
+    let err = super::unstable::check_digest(b"abd", abc).unwrap_err();
+    assert!(err.to_string().contains("not the sha256:ba78"), "{err}");
+    // A build identified by its upload time has nothing to check.
+    super::unstable::check_digest(b"abd", "uploaded:2026-11-20T00:00:00Z").unwrap();
+}
+
+/// The body `POST /api/apps` takes: one `file` part, the zip byte for byte.
+#[test]
+fn the_unstable_zip_goes_up_as_one_multipart_file() {
+    let zip = b"PK\x03\x04 not text \xff\x00";
+    let (body, content_type) = app_upload(zip);
+    let boundary = content_type
+        .strip_prefix("multipart/form-data; boundary=")
+        .unwrap();
+    let head = format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; \
+         filename=\"modeling-app-latest.zip\"\r\nContent-Type: application/zip\r\n\r\n"
+    );
+    assert!(body.starts_with(head.as_bytes()));
+    assert!(body.ends_with(format!("\r\n--{boundary}--\r\n").as_bytes()));
+    assert_eq!(&body[head.len()..head.len() + zip.len()], zip);
+}
+
+#[test]
+fn a_pinned_app_version_must_be_published_and_fit() {
+    let versions = vec![
+        HubVersion {
+            id: "a".into(),
+            version: "7.6.1".into(),
+            min_dhis_version: Some("2.40".into()),
+            max_dhis_version: Some(String::new()),
+        },
+        HubVersion {
+            id: "b".into(),
+            version: "8.0.0".into(),
+            min_dhis_version: Some("2.43".into()),
+            max_dhis_version: Some(String::new()),
+        },
+    ];
+    assert_eq!(exact_version(&versions, "7.6.1", "2.42.6").unwrap().id, "a");
+    let err = exact_version(&versions, "8.0.0", "2.42.6").unwrap_err();
+    assert_eq!(
+        err,
+        "version 8.0.0 needs DHIS2 2.43 or newer, and this DHIS2 is 2.42.6"
+    );
+    let err = exact_version(&versions, "6.0.0", "2.42.6").unwrap_err();
+    assert_eq!(
+        err,
+        "the App Hub has no version 6.0.0; the newest are 8.0.0, 7.6.1"
+    );
+}

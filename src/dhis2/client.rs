@@ -8,6 +8,12 @@ use crate::api::Answer;
 use crate::error::{ChapError, Result};
 use std::time::{Duration, Instant};
 
+/// A request body and its content type.
+struct Payload<'a> {
+    bytes: &'a [u8],
+    content_type: &'a str,
+}
+
 /// One DHIS2 instance, ready to be asked.
 #[derive(Debug, Clone)]
 pub struct Dhis2 {
@@ -67,7 +73,27 @@ impl Dhis2 {
 
     /// `method path` with the credentials and an optional JSON body.
     pub fn send(&self, method: &str, path: &str, body: Option<&str>) -> Result<Answer> {
+        let body = body.map(|text| Payload {
+            bytes: text.as_bytes(),
+            content_type: crate::api::JSON,
+        });
         self.request(method, path, body, true)
+    }
+
+    /// `method path` with the credentials and a body of any content type,
+    /// for the zip `POST /api/apps` takes. The trace names its size only.
+    pub fn send_bytes(
+        &self,
+        method: &str,
+        path: &str,
+        bytes: &[u8],
+        content_type: &str,
+    ) -> Result<Answer> {
+        let body = Payload {
+            bytes,
+            content_type,
+        };
+        self.request(method, path, Some(body), true)
     }
 
     /// `GET path` without credentials, for [`PING_PATH`].
@@ -99,7 +125,7 @@ impl Dhis2 {
         &self,
         method: &str,
         path: &str,
-        body: Option<&str>,
+        body: Option<Payload<'_>>,
         authenticated: bool,
     ) -> Result<Answer> {
         let url = self.url(path);
@@ -127,15 +153,23 @@ impl Dhis2 {
         }
         // DHIS2 answers HTML to a request that does not ask for JSON.
         request = request.header("Accept", crate::api::JSON);
-        if body.is_some() {
-            request = request.header("Content-Type", crate::api::JSON);
-        }
-        if let Some(body) = body {
-            crate::output::debug(&format!("  {}", crate::output::trace_body(body)));
+        if let Some(body) = &body {
+            request = request.header("Content-Type", body.content_type);
+            match body.content_type == crate::api::JSON {
+                true => crate::output::debug(&format!(
+                    "  {}",
+                    crate::output::trace_body(&String::from_utf8_lossy(body.bytes))
+                )),
+                false => crate::output::debug(&format!(
+                    "  {} bytes of {}",
+                    body.bytes.len(),
+                    body.content_type
+                )),
+            }
         }
 
         let request = request
-            .body(body.unwrap_or_default().as_bytes().to_vec())
+            .body(body.map(|body| body.bytes.to_vec()).unwrap_or_default())
             .map_err(|e| ChapError::Usage(format!("{method} {url} is not a valid request: {e}")))?;
 
         let started = Instant::now();

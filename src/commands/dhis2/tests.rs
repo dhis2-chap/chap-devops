@@ -89,6 +89,7 @@ fn apps_report(outcomes: &[AppOutcome]) -> AppsReport {
                 version: "7.1.0".to_string(),
                 previous: None,
                 reason: None,
+                build: None,
             })
             .collect(),
     }
@@ -396,6 +397,7 @@ fn the_app_lines_say_which_of_the_four_happened() {
                 version: "7.1.0".to_string(),
                 previous: None,
                 reason: None,
+                build: None,
             },
             AppReport {
                 name: "Climate".to_string(),
@@ -403,6 +405,7 @@ fn the_app_lines_say_which_of_the_four_happened() {
                 version: "1.16.2".to_string(),
                 previous: Some("1.15.0".to_string()),
                 reason: None,
+                build: None,
             },
             AppReport {
                 name: "Old".to_string(),
@@ -410,6 +413,7 @@ fn the_app_lines_say_which_of_the_four_happened() {
                 version: "1.0.0".to_string(),
                 previous: None,
                 reason: None,
+                build: None,
             },
             AppReport {
                 name: "Broken".to_string(),
@@ -417,6 +421,7 @@ fn the_app_lines_say_which_of_the_four_happened() {
                 version: String::new(),
                 previous: None,
                 reason: Some("HTTP 409".to_string()),
+                build: None,
             },
         ],
     };
@@ -503,6 +508,7 @@ fn shown_apps(versions: &[&str]) -> Vec<ShownApp> {
             name: app.name.to_string(),
             installed: !version.is_empty(),
             version: version.to_string(),
+            build: None,
         })
         .collect()
 }
@@ -547,7 +553,7 @@ fn the_apps_row_is_the_two_apps_chap_devops_installs_and_no_others() {
     ]);
     let apps: Vec<ShownApp> = dhis2::HUB_APPS
         .iter()
-        .map(|app| shown_app(app, dhis2::installed_app(&bundled, app.name)))
+        .map(|app| shown_app(app, dhis2::installed_app(&bundled, app.name), None))
         .collect();
     assert_eq!(apps.len(), 2, "{apps:?}");
     assert_eq!(apps[0].name, "Modeling App");
@@ -710,7 +716,7 @@ fn the_missing_apps_are_the_ones_the_instance_does_not_have() {
     ]);
     let found: Vec<ShownApp> = dhis2::HUB_APPS
         .iter()
-        .map(|app| shown_app(app, dhis2::installed_app(&keyed, app.name)))
+        .map(|app| shown_app(app, dhis2::installed_app(&keyed, app.name), None))
         .collect();
     assert!(missing_apps(&found).is_empty(), "{found:?}");
 }
@@ -860,6 +866,7 @@ fn use_names_the_url_that_moved() {
         url: url.to_string(),
         chap_url: chap_url.to_string(),
         connected_at: None,
+        ..Default::default()
     };
     let headline = |previous| {
         let report = UseReport {

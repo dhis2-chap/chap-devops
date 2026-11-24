@@ -205,17 +205,28 @@ pub(super) fn no_chap_core_next(apps_missing: bool, analytics_ok: bool) -> Strin
 /// spelling, the instance's own - it lists the Modeling App as `Modeling`.
 pub(super) fn chap_apps(session: &Session) -> Result<Vec<ShownApp>> {
     let listing = session.dhis2.get_json(dhis2::APPS_PATH)?;
+    let build = session.project.state.components.modeling_app_build();
     Ok(dhis2::HUB_APPS
         .iter()
-        .map(|app| shown_app(app, dhis2::installed_app(&listing, app.name)))
+        .map(|app| {
+            let build = build.filter(|_| app.id == dhis2::MODELING_APP_ID);
+            shown_app(app, dhis2::installed_app(&listing, app.name), build)
+        })
         .collect())
 }
 
 /// One [`dhis2::HUB_APPS`] row, found or not.
-pub(super) fn shown_app(app: &HubAppRef, found: Option<dhis2::InstalledApp>) -> ShownApp {
+pub(super) fn shown_app(
+    app: &HubAppRef,
+    found: Option<dhis2::InstalledApp>,
+    build: Option<&crate::components::ModelingAppBuild>,
+) -> ShownApp {
     ShownApp {
         name: app.name.to_string(),
         installed: found.is_some(),
+        build: build
+            .filter(|_| found.is_some())
+            .map(super::apps::unstable_label),
         version: found.map(|found| found.version).unwrap_or_default(),
     }
 }
