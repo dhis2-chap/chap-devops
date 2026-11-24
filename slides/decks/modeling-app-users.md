@@ -328,7 +328,7 @@ The first source with a value wins:
 | 2 | `DHIS2_ADMIN_PASSWORD` in `.env`, for `DHIS2_ADMIN_USERNAME` |
 | 3 | `CHAP_DEVOPS_DHIS2_TOKEN` in the environment |
 | 4 | `CHAP_DEVOPS_DHIS2_PASSWORD` in the environment |
-| 5 | `seed_password:` in `.chap-devops/components.yaml`, only on a DHIS2 that chap-devops deployed |
+| 5 | `DHIS2_SEED_PASSWORD` in `.env`, only on a DHIS2 that chap-devops restored from a seed |
 | 6 | `admin` / `district`, only on a DHIS2 that chap-devops deployed |
 
 There is **no `--password` flag**: a password on a command line goes into the
