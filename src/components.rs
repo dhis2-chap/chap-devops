@@ -448,6 +448,7 @@ impl Components {
                 self.dhis2.enabled = on;
                 if !on {
                     self.dhis2.connected_at = None;
+                    self.dhis2.modeling_app_build = None;
                 }
             }
         }

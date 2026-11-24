@@ -258,6 +258,32 @@ pub(super) fn forget_dhis2_connect(
     .to_string()))
 }
 
+/// Clear the record of the unstable Modeling App build when `down --volumes`
+/// removed `dhis2_home`, where DHIS2 keeps its apps.
+///
+/// That DHIS2 no longer has the build, and `chap-devops update` would name it
+/// as installed. Nothing else depends on it: `chap-devops dhis2 apps` installs
+/// the app again when DHIS2 does not list it. So a state file that could not
+/// be written is a trace line, not a warning.
+pub(super) fn forget_modeling_app_build(project: &mut Project, removed: &[String]) {
+    if project.state.components.dhis2.modeling_app_build.is_none() {
+        return;
+    }
+    let Some(volume) = project.prefixed_volume(crate::compose::render::DHIS2_HOME_VOLUME) else {
+        return;
+    };
+    if !removed.contains(&volume) {
+        return;
+    }
+    project.state.components.dhis2.modeling_app_build = None;
+    if let Err(why) = project.save() {
+        crate::output::verbose(&format!(
+            "the record of the unstable Modeling App could not be cleared from \
+             `.chap-devops/components.yaml`: {why}"
+        ));
+    }
+}
+
 /// What `down` did about the volumes, for the second half of its line.
 #[derive(Debug, Clone, Copy)]
 pub enum DownVolumes<'a> {

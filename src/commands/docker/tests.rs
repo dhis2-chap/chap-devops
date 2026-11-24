@@ -1019,3 +1019,34 @@ fn the_first_up_on_a_moving_tag_pulls_the_chap_core_images() {
     elsewhere.state.components.chap_core.enabled = false;
     assert!(fresh::pulls(&elsewhere, &[], false).is_empty());
 }
+
+/// The unstable Modeling App lives in `dhis2_home`: a `down --volumes` that
+/// removed it clears the record of the build, and one that left it keeps it.
+#[test]
+fn down_volumes_forgets_the_modeling_app_build_with_dhis2_home() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut project = Project {
+        dir: temp.path().to_path_buf(),
+        state: crate::project::ProjectState {
+            compose_project: "demo-1ab2c3".to_string(),
+            ..Default::default()
+        },
+    };
+    project
+        .state
+        .components
+        .set_enabled(crate::components::Component::Dhis2, true);
+    project.state.components.dhis2.modeling_app_build = Some(crate::components::ModelingAppBuild {
+        commit: "0c30f8de28515c933aeb5916a3d94b8478f843de".into(),
+        digest: "sha256:d96f".into(),
+    });
+    project.save().unwrap();
+
+    forget_modeling_app_build(&mut project, &["demo-1ab2c3_dhis2_db".to_string()]);
+    assert!(project.state.components.dhis2.modeling_app_build.is_some());
+
+    forget_modeling_app_build(&mut project, &["demo-1ab2c3_dhis2_home".to_string()]);
+    assert!(project.state.components.dhis2.modeling_app_build.is_none());
+    let reloaded = Project::load(temp.path()).unwrap();
+    assert!(reloaded.state.components.dhis2.modeling_app_build.is_none());
+}
