@@ -319,6 +319,39 @@ This is `chap-devops jobs` after one `chap-devops models test --backtest` on cha
 
 ---
 
+## Timing chap-core: `chap-devops bench`
+
+`bench` times the requests that the Modeling App sends when a person opens a
+page. It changes nothing.
+
+```sh
+chap-devops bench                        # every page, 3 times each
+chap-devops bench 12 --repeat 10         # the pages of backtest 12
+chap-devops bench --page prediction --parallel 8
+```
+
+- Each request gets min, p50, p95 and max, and each page the time it takes to open.
+- `--resources` adds the CPU and memory of each service, and the database.
+- `chap-devops bench dataset` makes synthetic datasets of any size.
+
+---
+
+## Load: backtests and API workers
+
+```sh
+chap-devops bench --write --model seasonal_median --backtests 8
+chap-devops bench --page prediction --parallel 8 --workers 1,4
+chap-devops restart --api-workers 4
+```
+
+- `--write` imports a dataset, runs the backtests at the same time, and
+  checks what each one stored. Use a deployment of its own for it.
+- `--workers 1,4` runs the same `bench` with 1 and with 4 API worker
+  processes, and puts the numbers side by side.
+- More than one worker needs a chap-core newer than v2.7.0.
+
+---
+
 ## `chap-devops api`: one authenticated request
 
 ```sh
