@@ -250,6 +250,26 @@ safe.
 
 ---
 
+## Which Modeling App build: `--modeling-app`
+
+| Value | What is installed | From |
+| --- | --- | --- |
+| `stable` (default) | the newest version this DHIS2 can run | the App Hub |
+| `7.5.0` | that version | the App Hub |
+| `unstable` | the latest build of chap-frontend's `main` | GitHub |
+
+```sh
+chap-devops init lab --with dhis2 --modeling-app unstable
+chap-devops dhis2 apps --modeling-app 7.5.0
+```
+
+- chap-devops records the choice, and later runs follow it.
+- DHIS2 cannot tell the unstable build from the release before it, so
+  `chap-devops dhis2 show` names the build: `Modeling App 7.6.1 (unstable 0c30f8d)`.
+- `chap-devops update` says when `main` has a newer build.
+
+---
+
 ## The demo database: the seed
 
 | `--dhis2-seed` | What happens |
