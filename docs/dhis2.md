@@ -858,7 +858,7 @@ chap-devops reads are pairs, and the first that has a value wins:
 | 2 | `DHIS2_ADMIN_PASSWORD` in `.env`, for `DHIS2_ADMIN_USERNAME` | The deployment's own answer, and where its other secrets already live. The user is `admin` when the file names none. |
 | 3 | `CHAP_DEVOPS_DHIS2_TOKEN` in the environment | A token kept off disk: `export` it for one shell. |
 | 4 | `CHAP_DEVOPS_DHIS2_PASSWORD` in the environment, for `CHAP_DEVOPS_DHIS2_USERNAME` | A password kept off disk. Without `CHAP_DEVOPS_DHIS2_USERNAME` it is the password of the user `.env` names. |
-| 5 | `seed_password:` in `.chap-devops/components.yaml` | For any user, on a DHIS2 chap-devops restored from a seed with that option. The restore gave every user that password. |
+| 5 | `DHIS2_SEED_PASSWORD` in `.env` | For any user, on a DHIS2 chap-devops restored from a seed with `seed_password: true` in `.chap-devops/components.yaml`. The restore gave every user that password. |
 | 6 | `admin` / `district` | The DHIS2 default, and only on a DHIS2 chap-devops deployed. |
 
 The default is not a guess. A seeded demo dump ships that user, and a
@@ -894,8 +894,8 @@ password, even when a token is on offer, and only a password that belongs to
 
 - `DHIS2_ADMIN_PASSWORD`, when `.env` names `NAME`;
 - `CHAP_DEVOPS_DHIS2_PASSWORD`, unless `CHAP_DEVOPS_DHIS2_USERNAME` gives it to someone else;
-- `seed_password:` in `.chap-devops/components.yaml`, for any user, on a DHIS2 chap-devops
-  restored from a seed with that option;
+- `DHIS2_SEED_PASSWORD` in `.env`, for any user, on a DHIS2 chap-devops restored from a
+  seed with `seed_password: true`;
 - the default, for `admin` on a DHIS2 chap-devops deployed.
 
 Anything else is refused before a request is made, rather than sending one user's
