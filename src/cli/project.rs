@@ -101,6 +101,14 @@ pub struct InitArgs {
     )]
     pub dhis2_seed_password: Option<String>,
 
+    /// Modeling App to install: stable, unstable, or a version such as 7.5.0
+    #[arg(
+        long = "modeling-app",
+        value_name = "WHICH",
+        value_parser = crate::components::ModelingApp::parse
+    )]
+    pub modeling_app: Option<crate::components::ModelingApp>,
+
     /// DHIS2 version to run: an image tag such as 2.41, 2.42 or 2.43.1
     #[arg(long = "dhis2-tag", value_name = "TAG")]
     pub dhis2_tag: Option<String>,

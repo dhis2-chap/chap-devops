@@ -618,3 +618,77 @@ fn a_corrupt_registry_cache_names_registry_update() {
         "{stderr}"
     );
 }
+
+/// An unstable Modeling App is not installed by `update`, which has no DHIS2
+/// login. It compares the newest build of chap-frontend's `main` with the
+/// recorded one, and names `chap-devops dhis2 apps` when they differ.
+#[cfg(unix)]
+#[test]
+fn update_names_a_newer_unstable_modeling_app() {
+    let sandbox = Sandbox::new();
+    let dir = sandbox.project();
+    sandbox
+        .init(&[
+            "--models",
+            "none",
+            "--with",
+            "dhis2",
+            "--dhis2-seed",
+            "none",
+            "--modeling-app",
+            "unstable",
+        ])
+        .assert()
+        .success();
+    let port = Hub {
+        frontend_latest: Some("9a1b2c3d4e5f60718293a4b5c6d7e8f901234567".into()),
+        ..Hub::new()
+    }
+    .start();
+    let (_temp, bin, _) = quiet_docker();
+
+    online_update(&sandbox, port, &bin, &["--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "the unstable Modeling App 9a1b2c3 is not installed; run `chap-devops dhis2 apps` \
+             to install it",
+        ));
+
+    // A recorded older build: the newer one is named with the installed one.
+    // Each record is written into the file as init left it.
+    let file = dir.join(".chap-devops/components.yaml");
+    let base = std::fs::read_to_string(&file).unwrap();
+    assert!(base.contains("modeling_app: unstable\n"), "{base}");
+    let record = |commit: &str| {
+        let text = base.replace(
+            "modeling_app: unstable\n",
+            &format!(
+                "modeling_app: unstable\n  modeling_app_build:\n    commit: {commit}\n    \
+                 digest: sha256:{commit}\n"
+            ),
+        );
+        std::fs::write(&file, text).unwrap();
+    };
+    record("0c30f8de28515c933aeb5916a3d94b8478f843de");
+    online_update(&sandbox, port, &bin, &["--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "the unstable Modeling App has a newer build, 9a1b2c3 (installed: 0c30f8d); run \
+             `chap-devops dhis2 apps` to install it",
+        ));
+
+    // The newest build is installed: a hint only.
+    record("9a1b2c3d4e5f60718293a4b5c6d7e8f901234567");
+    online_update(&sandbox, port, &bin, &["--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("dhis2 apps").not());
+    online_update(&sandbox, port, &bin, &["--dry-run", "-v"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "hint: the unstable Modeling App 9a1b2c3 is the newest build",
+        ));
+}

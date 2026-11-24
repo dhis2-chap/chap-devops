@@ -70,6 +70,8 @@ fn the_settings_round_trip_with_their_defaults() {
             image: "dhis2/core-dev".into(),
             seed: Dhis2Seed::From("dumps/laos.sql.gz".into()),
             seed_password: true,
+            modeling_app: ModelingApp::Unstable,
+            modeling_app_build: None,
             connected_at: None,
         },
         dhis2_external: None,
@@ -802,4 +804,54 @@ fn a_dhis2_tag_older_than_the_oldest_supported_is_refused() {
     for tag in ["2.41", "2.41.3", "2.42", "2.43.1", "master", "latest"] {
         assert_eq!(dhis2_tag_arg(tag, "--tag").unwrap(), tag);
     }
+}
+
+#[test]
+fn the_modeling_app_setting_is_stable_unstable_or_a_version() {
+    assert_eq!(ModelingApp::parse("stable"), Ok(ModelingApp::Stable));
+    assert_eq!(ModelingApp::parse(" unstable "), Ok(ModelingApp::Unstable));
+    assert_eq!(
+        ModelingApp::parse("v7.5.0"),
+        Ok(ModelingApp::Version("7.5.0".into()))
+    );
+    for bad in ["latest", "7.5", "7.5.0-rc1", "", "7..0"] {
+        let err = ModelingApp::parse(bad).unwrap_err();
+        assert!(
+            err.contains("stable, unstable, or a version"),
+            "{bad}: {err}"
+        );
+    }
+    // `stable` is the default and is not written; the others are, and a
+    // value that is none of the three does not load.
+    let written = serde_yaml_ng::to_string(&Dhis2Component::default()).unwrap();
+    assert!(!written.contains("modeling_app"), "{written}");
+    let pinned = Dhis2Component {
+        modeling_app: ModelingApp::Version("7.5.0".into()),
+        ..Dhis2Component::default()
+    };
+    let written = serde_yaml_ng::to_string(&pinned).unwrap();
+    assert!(written.contains("modeling_app: 7.5.0"), "{written}");
+    let back: Dhis2Component = serde_yaml_ng::from_str(&written).unwrap();
+    assert_eq!(back.modeling_app, pinned.modeling_app);
+    assert!(serde_yaml_ng::from_str::<Dhis2Component>("modeling_app: nightly\n").is_err());
+}
+
+/// The setting and the record follow whichever DHIS2 `chap-devops dhis2`
+/// talks to.
+#[test]
+fn the_modeling_app_follows_the_dhis2_in_use() {
+    let mut components = Components::default();
+    *components.modeling_app_mut() = ModelingApp::Unstable;
+    assert_eq!(components.dhis2.modeling_app, ModelingApp::Unstable);
+    components.dhis2_external = Some(ExternalDhis2::default());
+    assert_eq!(*components.modeling_app(), ModelingApp::Stable);
+    *components.modeling_app_build_mut() = Some(ModelingAppBuild {
+        commit: "0c30f8de28515c933aeb5916a3d94b8478f843de".into(),
+        digest: "sha256:aa".into(),
+    });
+    assert!(components.dhis2.modeling_app_build.is_none());
+    assert_eq!(
+        components.modeling_app_build().unwrap().short_commit(),
+        "0c30f8d"
+    );
 }

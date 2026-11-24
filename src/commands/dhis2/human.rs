@@ -359,9 +359,10 @@ pub(super) fn show_summary(report: &ShowReport, lines: &mut Report) {
 
 /// One of the two apps in the `apps` row: the version, or that it is absent.
 fn app_cell(app: &ShownApp, out: &Out) -> String {
-    match app.installed {
-        true => format!("{} {}", app.name, out.value(&app.version)),
-        false => format!("{} {}", app.name, out.warn("not installed")),
+    match (app.installed, &app.build) {
+        (true, Some(build)) => format!("{} {} ({build})", app.name, out.value(&app.version)),
+        (true, None) => format!("{} {}", app.name, out.value(&app.version)),
+        (false, _) => format!("{} {}", app.name, out.warn("not installed")),
     }
 }
 

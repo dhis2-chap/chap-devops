@@ -2236,3 +2236,37 @@ secret.
 1. Give the URL without the part before the `@`.
 2. Set `DHIS2_ADMIN_USERNAME` and `DHIS2_ADMIN_PASSWORD`, or
    `DHIS2_API_TOKEN`, in `.env`.
+
+## `cannot be installed: the App Hub has no version`
+
+`chap-devops dhis2 apps --modeling-app 7.5.0` stops with a line such as:
+
+```text
+error: 1 of 2 could not be installed: Modeling App 6.0.0 cannot be installed: the App Hub has no version 6.0.0; the newest are 7.6.1, 7.6.0, 7.5.0, 7.4.0, 7.3.2; pass another `--modeling-app`, or `--modeling-app stable`
+```
+
+The App Hub does not have that version, or the line says `needs DHIS2 2.43 or
+newer` and this DHIS2 cannot run it. chap-devops did not record the choice,
+so later runs install what they did before.
+
+1. Pick a version from the list in the message.
+2. Run `chap-devops dhis2 apps --modeling-app <version>` again, or use
+   `--modeling-app stable` for the newest version this DHIS2 can run.
+
+## `not the sha256:... that GitHub lists`
+
+`chap-devops dhis2 apps --modeling-app unstable` downloaded
+`modeling-app-latest.zip`, and the file is not the one the GitHub release
+lists. A download that was cut short, or a release that chap-frontend replaced
+during the download, does this. chap-devops did not upload the file to DHIS2.
+
+1. Run the command again.
+2. If it fails again with the same digest, report it to chap-frontend.
+
+## ``has no `latest` release, so there is no unstable Modeling App to install``
+
+GitHub has no `latest` pre-release in `dhis2-chap/chap-frontend`, so
+`--modeling-app unstable` has nothing to install.
+
+1. Run `chap-devops dhis2 apps --modeling-app stable`.
+2. When chap-frontend publishes the pre-release again, use `unstable` again.

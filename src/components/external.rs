@@ -23,6 +23,12 @@ pub struct ExternalDhis2 {
     /// [`Dhis2Component::connected_at`].
     #[serde(default)]
     pub connected_at: Option<String>,
+    /// The same setting as [`Dhis2Component::modeling_app`], for this DHIS2.
+    #[serde(default, skip_serializing_if = "ModelingApp::is_stable")]
+    pub modeling_app: ModelingApp,
+    /// The same record as [`Dhis2Component::modeling_app_build`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modeling_app_build: Option<ModelingAppBuild>,
 }
 
 /// A chap-core this deployment did not start, which its model services

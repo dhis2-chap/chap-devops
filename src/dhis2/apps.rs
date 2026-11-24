@@ -111,6 +111,35 @@ pub fn pick_version<'a>(versions: &'a [HubVersion], dhis_version: &str) -> Optio
         .max_by(|a, b| compare_versions(&a.version, &b.version))
 }
 
+/// The one published version `wanted`, for `--modeling-app 7.5.0`, or why it
+/// cannot be installed on a DHIS2 of `dhis_version`.
+pub fn exact_version<'a>(
+    versions: &'a [HubVersion],
+    wanted: &str,
+    dhis_version: &str,
+) -> std::result::Result<&'a HubVersion, String> {
+    let Some(version) = versions.iter().find(|version| {
+        !version.id.trim().is_empty()
+            && compare_versions(&version.version, wanted) == std::cmp::Ordering::Equal
+    }) else {
+        let mut published: Vec<&str> = versions.iter().map(|v| v.version.as_str()).collect();
+        published.sort_by(|a, b| compare_versions(b, a));
+        published.truncate(5);
+        return Err(format!(
+            "the App Hub has no version {wanted}; the newest are {}",
+            published.join(", ")
+        ));
+    };
+    let instance = dhis_version_parts(dhis_version);
+    if !instance.is_empty() && !fits(version, &instance) {
+        return Err(format!(
+            "version {wanted} needs DHIS2 {} or newer, and this DHIS2 is {dhis_version}",
+            version.min_dhis_version.as_deref().unwrap_or("?")
+        ));
+    }
+    Ok(version)
+}
+
 /// Whether one published version runs on an instance of these parts.
 fn fits(version: &HubVersion, instance: &[u64]) -> bool {
     let at_least = bound(version.min_dhis_version.as_deref())

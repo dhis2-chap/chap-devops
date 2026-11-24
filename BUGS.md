@@ -7,6 +7,17 @@ bug that is fixed leaves the file.
 
 ## Modeling App
 
+### The unstable build has the version of the last release
+
+- Seen: chap-frontend `latest` pre-release, build of `0c30f8d`, 2026-11-19.
+- `manifest.webapp` and `d2.config.json` in `modeling-app-latest.zip` say
+  `"version": "7.6.1"`, the same as the release `v7.6.1`. DHIS2's App
+  Management page shows the unstable build as 7.6.1, and nothing in DHIS2 can
+  tell the two apart. chap-devops records the build it installed to work
+  around this.
+- Fix: give the unstable build a pre-release version, such as
+  `7.6.2-dev.20261119.0c30f8d`, in the build of the `latest` job.
+
 ### A new model on a copied evaluation clears the data mapping
 
 - Seen: Modeling App 7.3.2, DHIS2 2.42.7.1, chap-core `master` (2.6.0.dev0,

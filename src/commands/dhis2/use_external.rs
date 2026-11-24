@@ -149,6 +149,16 @@ pub fn use_external(ctx: &Ctx, args: &Dhis2UseArgs) -> Result<()> {
                     true => before.as_ref().and_then(|b| b.connected_at.clone()),
                     false => None,
                 },
+                // The choice stays with the deployment. The installed build
+                // is a fact about one DHIS2, like the connect.
+                modeling_app: before
+                    .as_ref()
+                    .map(|b| b.modeling_app.clone())
+                    .unwrap_or_default(),
+                modeling_app_build: match same {
+                    true => before.as_ref().and_then(|b| b.modeling_app_build.clone()),
+                    false => None,
+                },
             };
             let outcome = match (&before, same) {
                 (None, _) => UseOutcome::Recorded,

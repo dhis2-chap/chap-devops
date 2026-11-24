@@ -19,6 +19,7 @@ pub(super) struct ComponentFlags<'a> {
     pub(super) dhis2_port: Option<ComponentPortArg>,
     pub(super) dhis2_seed: Option<&'a str>,
     pub(super) dhis2_seed_password: Option<&'a str>,
+    pub(super) modeling_app: Option<&'a crate::components::ModelingApp>,
     pub(super) dhis2_tag: Option<&'a str>,
     pub(super) dhis2_image: Option<&'a str>,
     pub(super) ocs_read_only: bool,
@@ -40,6 +41,7 @@ impl<'a> ComponentFlags<'a> {
             dhis2_port: args.dhis2_port,
             dhis2_seed: args.dhis2_seed.as_deref(),
             dhis2_seed_password: args.dhis2_seed_password.as_deref(),
+            modeling_app: args.modeling_app.as_ref(),
             dhis2_tag: args.dhis2_tag.as_deref(),
             dhis2_image: args.dhis2_image.as_deref(),
             ocs_read_only: args.ocs_read_only,
@@ -182,6 +184,15 @@ pub(super) fn parse_components(flags: &ComponentFlags) -> Result<Components> {
             ));
         }
         components.dhis2.seed_password = true;
+    }
+    if let Some(which) = flags.modeling_app {
+        if !components.dhis2.enabled {
+            return Err(anyhow::anyhow!(
+                "--modeling-app needs the dhis2 component; add `--with dhis2`, or pass it to \
+                 `chap-devops dhis2 apps` for a DHIS2 elsewhere"
+            ));
+        }
+        components.dhis2.modeling_app = which.clone();
     }
     if flags.ocs_read_only {
         if !components.ocs.enabled {

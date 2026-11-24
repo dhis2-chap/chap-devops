@@ -22,6 +22,7 @@ mod args;
 mod blocks;
 mod dump_version;
 mod external;
+mod modeling_app;
 mod notes;
 mod seed;
 
@@ -29,6 +30,7 @@ pub use args::*;
 pub use blocks::*;
 pub use dump_version::*;
 pub use external::*;
+pub use modeling_app::*;
 pub use notes::*;
 pub use seed::*;
 

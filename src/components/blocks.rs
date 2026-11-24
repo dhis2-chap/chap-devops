@@ -120,6 +120,14 @@ pub struct Dhis2Component {
     /// never here. `false` keeps the passwords of the dump.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub seed_password: bool,
+    /// Which Modeling App build `chap-devops dhis2 apps` and `connect`
+    /// install. Set by `init --modeling-app` or by `--modeling-app` on those
+    /// two commands.
+    #[serde(default, skip_serializing_if = "ModelingApp::is_stable")]
+    pub modeling_app: ModelingApp,
+    /// The unstable build installed last; see [`ModelingAppBuild`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modeling_app_build: Option<ModelingAppBuild>,
     /// When `chap-devops dhis2 connect` last got as far as a verified route and both
     /// apps here, as a UTC timestamp. `None` for a deployment no such run has
     /// been recorded for, which is every deployment until one happens.
@@ -152,6 +160,8 @@ impl Default for Dhis2Component {
             image: DHIS2_IMAGE.to_string(),
             seed: Dhis2Seed::Default,
             seed_password: false,
+            modeling_app: ModelingApp::Stable,
+            modeling_app_build: None,
             connected_at: None,
         }
     }
