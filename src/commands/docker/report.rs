@@ -2,8 +2,8 @@
 //! for docker to do.
 
 use super::down::{
-    DownVolumes, down_lines, down_next, forget_dhis2_connect, remove_leftovers, removed_volumes,
-    still_there_line,
+    DownVolumes, down_lines, down_next, forget_dhis2_connect, forget_modeling_app_build,
+    remove_leftovers, removed_volumes, still_there_line,
 };
 use crate::cli::DockerCmd;
 use crate::commands::Ctx;
@@ -71,6 +71,9 @@ pub(super) fn report_what_changed(
             };
             // Said after the line that names what went, because it is a
             // consequence of it.
+            if let Some(names) = removed.as_deref() {
+                forget_modeling_app_build(project, names);
+            }
             let forgot = removed
                 .as_deref()
                 .and_then(|names| forget_dhis2_connect(project, names));
