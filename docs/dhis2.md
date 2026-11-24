@@ -1274,6 +1274,15 @@ When you go back to `stable` or to a version, the App Hub version replaces the
 unstable build, though the version number can be the same, and the record is
 removed.
 
+`chap-devops update` does not install the Modeling App, because it does not log
+in to DHIS2. With `unstable`, it asks GitHub for the newest build and compares
+it with the record. When `main` has a newer build, `update` ends on this line,
+and `chap-devops dhis2 apps` installs the build:
+
+```text
+the unstable Modeling App has a newer build, 9a1b2c3 (installed: 0c30f8d); run `chap-devops dhis2 apps` to install it
+```
+
 This is the one step that cannot work `--offline`, and it needs the network twice:
 here for the version id, and from DHIS2 for the app. Under `--offline` it is
 refused with what it would have needed, and `chap-devops dhis2 connect --offline` does

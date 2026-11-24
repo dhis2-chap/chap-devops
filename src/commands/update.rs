@@ -30,6 +30,7 @@
 
 mod chap_core;
 mod components;
+mod modeling_app;
 mod models;
 mod registry;
 mod report;
@@ -80,6 +81,10 @@ pub struct UpdateReport {
     /// could not be asked.
     pub stack_running: Option<bool>,
     pub dry_run: bool,
+    /// An unstable Modeling App, and whether `main` has a newer build than
+    /// the one installed. `None` for any other setting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modeling_app: Option<modeling_app::ModelingAppUpdate>,
 }
 
 #[derive(Debug, Serialize)]
@@ -243,6 +248,7 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
         restart_needed: Vec::new(),
         stack_running: running.as_ref().map(|c| !c.is_empty()),
         dry_run: args.dry_run,
+        modeling_app: modeling_app::plan_modeling_app(&project, ctx.registry.timeout, warnings),
     };
 
     // The plan first, before any of docker's own noise: it is what the pull
@@ -277,6 +283,7 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
         return ctx.out.report(&report, |lines| {
             dry_run(lines, updated(&report).as_deref());
             registry_hint(&report, lines);
+            modeling_app::modeling_app_lines(report.modeling_app.as_ref(), lines);
             for warning in &warnings {
                 lines.warning(warning.as_str());
             }
@@ -363,6 +370,7 @@ fn update(ctx: &Ctx, args: &UpdateArgs, warnings: &mut Vec<String>) -> Result<()
             report.stack_running,
         );
         registry_hint(&report, lines);
+        modeling_app::modeling_app_lines(report.modeling_app.as_ref(), lines);
         for warning in &warnings {
             lines.warning(warning.as_str());
         }

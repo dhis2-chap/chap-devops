@@ -86,6 +86,9 @@ pub(crate) struct Hub {
     pub(crate) arm64: bool,
     /// The `runtime_image` of the served marketplace entry.
     pub(crate) runtime: String,
+    /// The commit of chap-frontend's unstable Modeling App, which the
+    /// `latest` release names; `None` is no such release.
+    pub(crate) frontend_latest: Option<String>,
 }
 
 /// The chap-core releases the hub publishes by default: two of them, so a
@@ -148,6 +151,7 @@ impl Hub {
             built: Vec::new(),
             arm64: false,
             runtime: R_INLA_RUNTIME.to_string(),
+            frontend_latest: None,
         }
     }
 
@@ -329,6 +333,25 @@ impl Hub {
         }
         if path.starts_with("/registry.yaml") {
             return (200, "text/plain", REGISTRY_INDEX.to_string());
+        }
+        if path.starts_with("/repos/dhis2-chap/chap-frontend/releases/tags/latest") {
+            return match &self.frontend_latest {
+                Some(commit) => (
+                    200,
+                    json,
+                    serde_json::json!({
+                        "body": format!("Unstable build of {commit}. Use a versioned release for production."),
+                        "assets": [{
+                            "name": "modeling-app-latest.zip",
+                            "browser_download_url": "http://127.0.0.1:1/modeling-app-latest.zip",
+                            "digest": format!("sha256:{commit}"),
+                            "updated_at": "2026-11-19T10:26:50Z",
+                        }],
+                    })
+                    .to_string(),
+                ),
+                None => (404, json, r#"{"message":"Not Found"}"#.to_string()),
+            };
         }
         // chap-core's own releases and the compose file each ref publishes.
         // Before the model repository's routes, which are the wider match.

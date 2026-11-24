@@ -210,6 +210,7 @@ fn a_following_manual_model_moves_when_its_branch_has_a_newer_build() {
             restart_needed: Vec::new(),
             stack_running: Some(false),
             dry_run: true,
+            modeling_app: None,
         },
         &Out::default(),
     );
@@ -318,6 +319,7 @@ fn the_plan_lists_each_model_before_anything_is_pulled() {
         restart_needed: Vec::new(),
         stack_running: Some(true),
         dry_run: true,
+        modeling_app: None,
     };
     let text = plan_text(&report, &Out::default());
     // Where the registry came from is a hint under the closing lines, not
@@ -391,6 +393,7 @@ fn a_row_whose_image_changed_its_user_says_so_under_the_pin() {
         restart_needed: Vec::new(),
         stack_running: Some(true),
         dry_run: true,
+        modeling_app: None,
     };
     let text = plan_text(&report, &Out::default());
     assert!(
