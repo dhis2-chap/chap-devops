@@ -18,10 +18,24 @@ bug that is fixed leaves the file.
 - Fix: give the unstable build a pre-release version, such as
   `7.6.2-dev.20261119.0c30f8d`, in the build of the `latest` job.
 
+### A copied evaluation shows `&#x2F;` in place of `/` in its name
+
+- Seen: Modeling App 7.6.1, DHIS2 2.42.7.1, chap-core v2.8.0, 2026-11-24.
+- **Create new based on...** on the evaluation
+  `Multistep Laos dengue/chapkit-simple-multistep-model:monthly_climate` fills
+  the name of the copy with
+  `Multistep Laos dengue&#x2F;chapkit-simple-multistep-model:monthly_climate (Copy)`.
+  chap-core stores that text as the name, so the dashboard, **Compare** and
+  `chap-devops jobs` all show `&#x2F;`.
+- The app escapes the name as HTML when it copies it, and the field shows the
+  escaped text.
+- Fix: copy the name as text, without HTML escaping.
+
 ### A new model on a copied evaluation clears the data mapping
 
 - Seen: Modeling App 7.3.2, DHIS2 2.42.7.1, chap-core `master` (2.6.0.dev0,
-  `sha256:ccbfaada86a0`), 2026-10-31.
+  `sha256:ccbfaada86a0`), 2026-10-31. Still so in Modeling App 7.6.1, DHIS2
+  2.42.7.1, chap-core v2.8.0, 2026-11-24.
 - On a copy from **Create new based on...**, **Select model** with
   `Simple Multistep Model (chapkit) [Monthly selfhistory]` shows
   `0/1 data items mapped` and `Please map all model covariates to valid data
